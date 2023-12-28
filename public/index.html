@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Doppler Effect</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  </head>
+  <body>
+    <script src="./wasm/pong.js"></script>
+    <style>
+      body {
+        margin: 0px;
+        display: block;
+        justify-content: center;
+        background-color: black;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+    <script>
+      window.addEventListener("load", async () => {
+        await wasm_bindgen("./wasm/pong_bg.wasm");
+      });
+    </script>
+  </body>
+</html>
