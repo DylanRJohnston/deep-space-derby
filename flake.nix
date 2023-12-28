@@ -1,67 +1,69 @@
-{ inputs = {
-  naersk = {
-    url = "github:nix-community/naersk";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-
-  fenix = {
-    url = "github:nix-community/fenix";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-
-  nix-filter.url = "github:numtide/nix-filter";
-};
-  outputs = { nixpkgs, flake-utils, naersk, fenix, nix-filter, ...  }: flake-utils.lib.eachDefaultSystem (system:
-  let
-    pkgs = import nixpkgs { inherit system; };
-
-    dev-toolchain = fenix.packages.${system}.complete.toolchain;
-
-    wasm-toolchain = with fenix.packages.${system}; combine [
-      minimal.cargo
-      minimal.rustc
-      targets.wasm32-unknown-unknown.latest.rust-std
-    ];
-
-    rust-wasm = naersk.lib.${system}.override {
-      cargo = wasm-toolchain;
-      rustc = wasm-toolchain;
+{
+  inputs = {
+    naersk = {
+      url = "github:nix-community/naersk";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    darwin-compatability = with pkgs.darwin.apple_sdk.frameworks; [ Security AppKit ];
-  in
-  rec {
-    packages = {
-      wasm = rust-wasm.buildPackage {
-        CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-        src = nix-filter.lib {
-          root = ./.;
-          include = [
-            "Cargo.lock"
-            "Cargo.toml"
-            (nix-filter.lib.inDirectory "src")
-            (nix-filter.lib.inDirectory "assets")
-          ];
+    nix-filter.url = "github:numtide/nix-filter";
+  };
+  outputs = { nixpkgs, flake-utils, naersk, rust-overlay, nix-filter, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        overlays = [ (import rust-overlay) ];
+
+        pkgs = import nixpkgs { inherit system overlays; };
+
+        toolchain = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" ];
+          targets = [ "wasm32-unknown-unknown" ];
         };
-      };
 
-      web-application = pkgs.runCommand "quibble-web-app" {} ''
-        ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.wasm}/bin/pong.wasm --out-dir $out/web-app/wasm --no-modules --no-typescript
+        naersk' = pkgs.callPackage naersk {
+          cargo = toolchain;
+          rustc = toolchain;
+        };
+      in rec {
+        packages = {
+          wasm = naersk'.buildPackage {
+            CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
 
-        cp ${./public/index.html} $out/web-app/index.html
-        cp -r ${./assets} $out/web-app/assets
-      '';
-    };
+            src = nix-filter.lib {
+              root = ./.;
+              include = [
+                "Cargo.lock"
+                "Cargo.toml"
+                (nix-filter.lib.inDirectory "src")
+                (nix-filter.lib.inDirectory "assets")
+              ];
+            };
+          };
 
-    defaultPackage = packages.web-application;
+          web-application = pkgs.runCommand "quibble-web-app" { } ''
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.wasm}/bin/pong.wasm --out-dir $out/web-app/wasm --no-modules --no-typescript
 
+            cp ${./public/index.html} $out/web-app/index.html
+            cp -r ${./assets} $out/web-app/assets
+          '';
+        };
 
-    devShell = with pkgs; mkShell {
-      # buildInputs = [ rustc cargo rust-analyzer rustfmt iconv clippy darwin.apple_sdk.frameworks.AppKit ];
-      buildInputs = [ dev-toolchain pkgs.wasm-bindgen-cli pkgs.simple-http-server ] ++ (if pkgs.stdenv.isDarwin then darwin-compatability else []);
+        defaultPackage = packages.web-application;
 
-      RUST_SRC_PATH = "${dev-toolchain}/lib/rustlib/src/rust/library";
-    };
-  });
+        devShell = with pkgs;
+          mkShell {
+            buildInputs = [
+              toolchain
+              iconv
+              simple-http-server
+              darwin.apple_sdk.frameworks.AppKit
+            ];
+
+            RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
+          };
+      });
 }

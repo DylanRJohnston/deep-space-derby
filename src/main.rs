@@ -28,7 +28,7 @@ fn main() {
         .add_plugins(MainMenuPlugin)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
-            brightness: 1.0,
+            brightness: 0.70,
         })
         .add_systems(Startup, setup)
         .run();
