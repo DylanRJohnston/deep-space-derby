@@ -61,6 +61,7 @@
               iconv
               simple-http-server
               darwin.apple_sdk.frameworks.AppKit
+              aws-sam-cli
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";

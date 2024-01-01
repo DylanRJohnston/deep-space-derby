@@ -3,11 +3,14 @@ use std::f32::consts::PI;
 use animation_link::AnimationLinkPlugin;
 use asset_loader::AssetLoaderPlugin;
 use bevy::{pbr::CascadeShadowConfigBuilder, prelude::*};
+use fetch_data::FetchDataPlugin;
 use main_menu::MainMenuPlugin;
 use monster::MonsterPlugin;
 
 mod animation_link;
 mod asset_loader;
+mod async_task;
+mod fetch_data;
 mod main_menu;
 mod monster;
 mod pallet;
@@ -30,6 +33,7 @@ fn main() {
             color: Color::WHITE,
             brightness: 0.70,
         })
+        .add_plugins(FetchDataPlugin)
         .add_systems(Startup, setup)
         .run();
 }
