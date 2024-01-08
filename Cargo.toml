@@ -1,5 +1,5 @@
 [workspace]
-members = ["client", "server"]
+members = ["client", "server", "core"]
 
 
 [patch.crates-io]

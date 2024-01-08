@@ -31,6 +31,8 @@
       in rec {
         packages = {
           wasm = naersk'.buildPackage {
+            pname = "client";
+
             CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
 
             src = nix-filter.lib {
@@ -38,8 +40,8 @@
               include = [
                 "Cargo.lock"
                 "Cargo.toml"
-                (nix-filter.lib.inDirectory "src")
-                (nix-filter.lib.inDirectory "assets")
+                "server/Cargo.toml"
+                (nix-filter.lib.inDirectory "client")
               ];
             };
           };

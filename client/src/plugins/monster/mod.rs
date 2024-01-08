@@ -4,20 +4,18 @@ use std::time::Duration;
 
 use bevy::{gltf::Gltf, prelude::*, utils::hashbrown::HashMap};
 
-use crate::{
-    animation_link::AnimationLink,
-    asset_loader::{AssetLoaderState, AssetPack},
-    AppState,
-};
+use crate::AppState;
+
+use super::{animation_link::AnimationLink, asset_loader::AssetPack};
 
 pub struct MonsterPlugin;
 
 impl Plugin for MonsterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AssetLoaderState::Done), setup)
+        app.add_systems(OnEnter(AppState::MainMenu), setup)
             .add_systems(Update, run_behaviour)
             .add_systems(Update, move_forward)
-            .add_systems(OnEnter(AppState::Playing), start_race);
+            .add_systems(OnEnter(AppState::InGame), start_race);
     }
 }
 
@@ -37,21 +35,6 @@ pub struct NamedAnimations {
     pub jump: Handle<AnimationClip>,
     pub dance: Handle<AnimationClip>,
     pub death: Handle<AnimationClip>,
-}
-
-fn named_gltf<'a>(
-    name: &str,
-    asset_pack: &Res<AssetPack>,
-    assets: &'a Res<Assets<Gltf>>,
-) -> &'a Gltf {
-    let handle = asset_pack
-        .0
-        .get(name)
-        .unwrap_or_else(|| panic!("Failed to find {} in asset pack", name));
-
-    return assets
-        .get(handle)
-        .unwrap_or_else(|| panic!("Failed to find asset from {} handle", name));
 }
 
 fn extract_animations(animation_map: &HashMap<String, Handle<AnimationClip>>) -> NamedAnimations {
@@ -76,7 +59,7 @@ fn extract_animations(animation_map: &HashMap<String, Handle<AnimationClip>>) ->
 }
 
 fn setup(mut commands: Commands, asset_pack: Res<AssetPack>, assets: Res<Assets<Gltf>>) {
-    let mushnub = named_gltf("mushnub", &asset_pack, &assets);
+    let mushnub = assets.get(&asset_pack.mushnub).unwrap();
 
     commands.spawn(MonsterBundle {
         scene: SceneBundle {
@@ -91,7 +74,7 @@ fn setup(mut commands: Commands, asset_pack: Res<AssetPack>, assets: Res<Assets<
         ..default()
     });
 
-    let alien = named_gltf("alien", &asset_pack, &assets);
+    let alien = assets.get(&asset_pack.alien).unwrap();
 
     commands.spawn(MonsterBundle {
         scene: SceneBundle {
@@ -106,7 +89,7 @@ fn setup(mut commands: Commands, asset_pack: Res<AssetPack>, assets: Res<Assets<
         ..default()
     });
 
-    let cactoro = named_gltf("cactoro", &asset_pack, &assets);
+    let cactoro = assets.get(&asset_pack.cactoro).unwrap();
 
     commands.spawn(MonsterBundle {
         scene: SceneBundle {

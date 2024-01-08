@@ -1,23 +1,28 @@
 use std::f32::consts::PI;
 
-use animation_link::AnimationLinkPlugin;
-use asset_loader::AssetLoaderPlugin;
 use bevy::{pbr::CascadeShadowConfigBuilder, prelude::*};
-use fetch_data::FetchDataPlugin;
-use main_menu::MainMenuPlugin;
-use monster::MonsterPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
+use plugins::animation_link::AnimationLinkPlugin;
+use plugins::asset_loader::load_assets;
+use plugins::fetch_data::FetchDataPlugin;
+use plugins::menus::main_menu::MainMenuPlugin;
+use plugins::menus::MenuPlugin;
+use plugins::monster::MonsterPlugin;
 
-mod animation_link;
-mod asset_loader;
-mod async_task;
-mod fetch_data;
-mod main_menu;
-mod monster;
-mod pallet;
+mod plugins;
+
+#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
+enum AppState {
+    #[default]
+    Splash,
+    MainMenu,
+    GameLoading,
+    InGame,
+}
 
 fn main() {
     App::new()
-        .add_state::<AppState>()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 fit_canvas_to_parent: true,
@@ -25,24 +30,36 @@ fn main() {
             }),
             ..default()
         }))
+        .add_state::<AppState>()
+        .add_plugins(
+            ProgressPlugin::new(AppState::Splash)
+                .continue_to(AppState::MainMenu)
+                .track_assets(),
+        )
+        .add_systems(OnEnter(AppState::Splash), load_assets)
+        .add_systems(
+            Update,
+            ui_progress_bar
+                .after(TrackedProgressSet)
+                .run_if(in_state(AppState::Splash)),
+        )
         .add_plugins(AnimationLinkPlugin)
-        .add_plugins(AssetLoaderPlugin)
         .add_plugins(MonsterPlugin)
-        .add_plugins(MainMenuPlugin)
+        .add_plugins(MenuPlugin)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 0.70,
         })
         .add_plugins(FetchDataPlugin)
         .add_systems(Startup, setup)
+        .add_plugins(WorldInspectorPlugin::new())
         .run();
 }
 
-#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
-enum AppState {
-    #[default]
-    MainMenu,
-    Playing,
+fn ui_progress_bar(counter: Res<ProgressCounter>) {
+    let progress = counter.progress();
+
+    println!("{}", Into::<f32>::into(progress));
 }
 
 fn setup(
@@ -51,13 +68,13 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(5.0, 10.0, 15.0)
-            .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+        transform: Transform::from_xyz(5.0, 9.0, 8.0)
+            .looking_at(Vec3::new(0.0, 0.0, -5.0), Vec3::Y),
         ..default()
     });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(500000.0).into()),
+        mesh: meshes.add(shape::Plane::from_size(10000.0).into()),
         material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
         ..default()
     });

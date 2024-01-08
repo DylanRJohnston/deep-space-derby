@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::async_task::AsyncTask;
+use crate::plugins::async_task::AsyncTask;
 
 pub struct FetchDataPlugin;
 
