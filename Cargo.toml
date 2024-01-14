@@ -1,6 +1,6 @@
 [workspace]
 members = ["client", "server", "core"]
-
+resolver = "2"
 
 [patch.crates-io]
 statig = { git = "ssh://git@github.com/DylanRJohnston/statig.git" }

@@ -9,6 +9,8 @@
     "**/Thumbs.db": true,
     "result": true,
     "target": true,
-    ".direnv": true
+    ".direnv": true,
+    "node_modules": true,
+    ".wrangler": true
   }
 }

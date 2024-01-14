@@ -5,7 +5,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use bevy::{ecs::component::Component, tasks::AsyncComputeTaskPool};
+use bevy::ecs::component::Component;
+use bevy::tasks::IoTaskPool;
 
 #[derive(Debug, Component)]
 pub struct AsyncTask<T>(Arc<RwLock<Option<T>>>);
@@ -15,6 +16,18 @@ impl<T> Clone for AsyncTask<T> {
         Self(self.0.clone())
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub trait TaskTrait<T>: Future<Output = T> + Send + 'static {}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl<T, F: Future<Output = T> + Send + 'static> TaskTrait<T> for F {}
+
+#[cfg(target_arch = "wasm32")]
+pub trait TaskTrait<T>: Future<Output = T> + 'static {}
+
+#[cfg(target_arch = "wasm32")]
+impl<T, F: Future<Output = T> + 'static> TaskTrait<T> for F {}
 
 impl<T: Send + Sync + 'static + Debug> AsyncTask<T> {
     fn new() -> Self {
@@ -37,11 +50,11 @@ impl<T: Send + Sync + 'static + Debug> AsyncTask<T> {
         };
     }
 
-    pub fn spawn(t: impl Future<Output = T> + Send + Sync + 'static) -> AsyncTask<T> {
+    pub fn spawn(t: impl TaskTrait<T>) -> AsyncTask<T> {
         let task: AsyncTask<T> = AsyncTask::new();
 
         let mut task_clone = task.clone();
-        AsyncComputeTaskPool::get()
+        IoTaskPool::get()
             .spawn(async move {
                 task_clone.register(t).await;
             })

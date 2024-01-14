@@ -1,0 +1,7 @@
+name = "worker-rust"
+main = "result/shim.js"
+compatibility_date = "2023-06-28"
+
+[build]
+command = "nix build .#wasm-bindgen-server"
+watch_dir = "result/*"

@@ -15,7 +15,7 @@ impl Plugin for FetchDataPlugin {
 pub struct DataRequest(AsyncTask<Result<String, reqwest::Error>>);
 
 fn fetch_data(mut commands: Commands) {
-    let task = AsyncTask::spawn(async move {
+    let task = AsyncTask::spawn(async {
         reqwest::get("https://dummyjson.com/products/1")
             .await?
             .text()

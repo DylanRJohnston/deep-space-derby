@@ -28,33 +28,52 @@
           cargo = toolchain;
           rustc = toolchain;
         };
-      in rec {
-        packages = {
-          wasm = naersk'.buildPackage {
-            pname = "client";
+
+        buildWorkspacePackage = pname:
+          naersk'.buildPackage {
+            inherit pname;
 
             CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+            cargoBuildOptions = options: options ++ [ "-p" pname ];
+            copyLibs = true;
 
-            src = nix-filter.lib {
+            src = nix-filter {
               root = ./.;
+
               include = [
-                "Cargo.lock"
-                "Cargo.toml"
-                "server/Cargo.toml"
-                (nix-filter.lib.inDirectory "client")
+                ./Cargo.toml
+                ./Cargo.lock
+
+                ./client/Cargo.toml
+                ./client/src/main.rs
+
+                ./server/Cargo.toml
+                ./server/src/lib.rs
+
+                ./core/Cargo.toml
+                ./core/src/lib.rs
+
+                pname
               ];
             };
           };
+      in rec {
+        packages = {
+          client-wasm = buildWorkspacePackage "client";
+          server-wasm = buildWorkspacePackage "server";
 
-          web-application = pkgs.runCommand "quibble-web-app" { } ''
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.wasm}/bin/pong.wasm --out-dir $out/web-app/wasm --no-modules --no-typescript
+          wasm-bindgen-server = pkgs.runCommand "intermediate" { } ''
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.server-wasm}/lib/server.wasm --out-name index --target bundler --out-dir $out --no-typescript
+            cp ${./build/shim.js} $out/shim.js
+          '';
+
+          wasm-bindgen-client = pkgs.runCommand "quibble-web-app" { } ''
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.client-wasm}/bin/pong.wasm --out-dir $out/web-app/wasm --no-modules --no-typescript
 
             cp ${./public/index.html} $out/web-app/index.html
             cp -r ${./assets} $out/web-app/assets
           '';
         };
-
-        defaultPackage = packages.web-application;
 
         devShell = with pkgs;
           mkShell {
@@ -63,7 +82,10 @@
               iconv
               simple-http-server
               darwin.apple_sdk.frameworks.AppKit
-              aws-sam-cli
+              wrangler
+              nodejs
+              wasm-bindgen-cli
+              entr
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
