@@ -175,6 +175,7 @@ impl Behaviour {
         }
     }
 
+    #[allow(unused_variables)]
     #[state(entry_action = "enter_dead")]
     fn dead(event: &InputEvent) -> Response<State> {
         Handled

@@ -62,16 +62,49 @@
           client-wasm = buildWorkspacePackage "client";
           server-wasm = buildWorkspacePackage "server";
 
-          wasm-bindgen-server = pkgs.runCommand "intermediate" { } ''
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.server-wasm}/lib/server.wasm --out-name index --target bundler --out-dir $out --no-typescript
+          wasm-bindgen = pkgs.writeShellScriptBin "wasm-bindgen" ''
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $1 --out-name index --target bundler --out-dir $2 --no-typescript
+          '';
+
+          wasm-bindgen-server = pkgs.runCommandLocal "intermediate" { } ''
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.server-wasm}/lib/server.wasm  \
+              --out-name index \
+              --target bundler \
+              --outdir $out \
+              --no-typescript
+
             cp ${./build/shim.js} $out/shim.js
           '';
 
-          wasm-bindgen-client = pkgs.runCommand "quibble-web-app" { } ''
+          wasm-bindgen-client = pkgs.runCommandLocal "quibble-web-app" { } ''
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.client-wasm}/bin/pong.wasm --out-dir $out/web-app/wasm --no-modules --no-typescript
 
             cp ${./public/index.html} $out/web-app/index.html
             cp -r ${./assets} $out/web-app/assets
+          '';
+
+          dev = pkgs.writeShellScriptBin "dev" ''
+            find {server} | ${pkgs.entr}/bin/entr cargo build --target wasm32-unknown-unknown &
+
+            echo "./target/wasm32-unknown-unknown/debug/server.wasm" \
+              | ${pkgs.entr}/bin/entr ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen \
+                ./target/wasm32-unknown-unknown/debug/server.wasm \
+                --out-name index \
+                --target bundler \
+                --out-dir ./build \
+                --no-typescript &
+
+            # echo "./target/wasm32-unknown-unknown/debug/client.wasm" \
+            #   | ${pkgs.entr}/bin/entr ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen \
+            #     ./target/wasm32-unknown-unknown/debug/client.wasm \
+            #     --out-name index \
+            #     --target no-modules \
+            #     --out-dir ./build/static/js \
+            #     --no-typescript &
+
+            wrangler dev &
+
+            wait
           '';
         };
 
@@ -86,6 +119,9 @@
               nodejs
               wasm-bindgen-cli
               entr
+              cargo-watch
+              cargo-expand
+              trunk
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";

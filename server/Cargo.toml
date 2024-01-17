@@ -5,12 +5,36 @@ edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+name = "client"
 
 [dependencies]
+cfg-if = "1.0.0"
+console_error_panic_hook = "0.1.7"
+console_log = "1.0.0"
+futures = "0.3.30"
+futures-util = { version = "0.3.28", default-features = false }
+js-sys = "0.3.67"
+leptos = { version = "0.5.4", default-features = false }
+leptos_integration_utils = { version = "0.5.5", optional = true }
+leptos_meta = { version = "0.5.4", default-features = false }
+leptos_router = { version = "0.5.4", default-features = false }
+macros = { path = "../macros" }
+serde = "1.0.195"
+serde-wasm-bindgen = "0.6.3"
+tower = { version = "0.4.13" }
+tracing = "0.1.40"
 wasm-bindgen = "0.2.89"
-worker = { git = 'https://github.com/DylanRJohnston/workers-rs.git' }
+wasm-bindgen-futures = "0.4.39"
+web-sys = "0.3.67"
+worker = { path = "/Users/dylanj/Workspace/github/workers-rs/worker" }
+worker-sys = { path = "/Users/dylanj/Workspace/github/workers-rs/worker-sys" }
 
-[profile.release]
-lot = true
-strip = true
-codegen-units = 1
+[features]
+default = ["ssr"]
+ssr = [
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+  "dep:leptos_integration_utils",
+]
+hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::plugins::{menus::components, pallet};
 
-use super::{components::button, MenuState};
+use super::MenuState;
 
 #[derive(Debug)]
 pub struct JoinMenuPlugin;

@@ -6,9 +6,10 @@ use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 use plugins::animation_link::AnimationLinkPlugin;
 use plugins::asset_loader::load_assets;
 use plugins::fetch_data::FetchDataPlugin;
-use plugins::menus::main_menu::MainMenuPlugin;
 use plugins::menus::MenuPlugin;
 use plugins::monster::MonsterPlugin;
+
+use leptos::*;
 
 mod plugins;
 
@@ -17,7 +18,6 @@ enum AppState {
     #[default]
     Splash,
     MainMenu,
-    GameLoading,
     InGame,
 }
 
@@ -52,8 +52,13 @@ fn main() {
         })
         .add_plugins(FetchDataPlugin)
         .add_systems(Startup, setup)
-        .add_plugins(WorldInspectorPlugin::new())
-        .run();
+        .add_plugins(WorldInspectorPlugin::new());
+
+    mount_to_body(|| {
+        view! {
+            <h1>"Hello, World!"</h1>
+        }
+    });
 }
 
 fn ui_progress_bar(counter: Res<ProgressCounter>) {

@@ -1,6 +1,11 @@
-use worker::*;
+use leptos::mount_to_body;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-#[event(fetch)]
-pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
-    Response::ok("Hello Worlds!")
+mod app;
+
+#[wasm_bindgen]
+pub fn hydrate() {
+    console_error_panic_hook::set_once();
+
+    mount_to_body(app::App);
 }

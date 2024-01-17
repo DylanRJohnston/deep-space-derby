@@ -1,0 +1,17 @@
+[package]
+name = "macros"
+version = "0.0.1"
+edition = "2021"
+
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[dependencies]
+syn = "2.0.17"
+proc-macro2 = "1.0.60"
+quote = "1.0.28"
+wasm-bindgen = "0.2.89"
+wasm-bindgen-futures = "0.4.36"
+wasm-bindgen-macro-support = "0.2.89"

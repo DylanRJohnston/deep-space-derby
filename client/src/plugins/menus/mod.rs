@@ -14,7 +14,7 @@ pub enum MenuState {
     JoinMenu,
     Joining,
     HostMenu,
-    None,
+    // None,
 }
 
 impl Plugin for MenuPlugin {

@@ -1,3 +1,6 @@
 *
+pkg/*
+!_routes.json
 !.gitignore
-!shim.js
+!_worker.js
+!pkg

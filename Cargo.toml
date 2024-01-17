@@ -1,6 +1,18 @@
 [workspace]
-members = ["client", "server", "core"]
+members = ["client", "server", "core", "macros"]
 resolver = "2"
 
 [patch.crates-io]
 statig = { git = "ssh://git@github.com/DylanRJohnston/statig.git" }
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+strip = true
+codegen-units = 1
