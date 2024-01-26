@@ -3,8 +3,6 @@ export * from "./index_bg.js";
 import wkmod from "./index_bg.wasm";
 import * as nodemod from "./index_bg.wasm";
 
-console.log("In shim")
-
 if (typeof process !== "undefined" && process.release.name === "node") {
   imports.__wbg_set_wasm(nodemod);
 } else {

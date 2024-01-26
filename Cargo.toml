@@ -3,7 +3,10 @@ members = ["client", "server", "core", "macros"]
 resolver = "2"
 
 [patch.crates-io]
+leptos-cloudflare = { path = "/Users/dylanj/Workspace/github/leptos-cloudflare/leptos-cloudflare" }
 statig = { git = "ssh://git@github.com/DylanRJohnston/statig.git" }
+worker = { version = "*", path = "/Users/dylanj/Workspace/github/workers-rs/worker" }
+worker-sys = { path = "/Users/dylanj/Workspace/github/workers-rs/worker-sys" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -14,5 +17,22 @@ opt-level = 1
 opt-level = 3
 
 [profile.release]
-strip = true
 codegen-units = 1
+strip = true
+
+[[workspace.metadata.leptos]]
+name = "deep-space-derby"
+
+bin-package = "server"
+bin-target-tripple = "wasm32-unknown-unknown"
+bin-exe-name = "server.wasm"
+bin-features = ["ssr"]
+
+lib-package = "server"
+lib-features = ["hydrate"]
+
+site-root = "site"
+assets-dir = "assets"
+
+site-addr = "127.0.0.1:8788"
+reload-port = 3001

@@ -1,0 +1,47 @@
+body {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  margin: 0px;
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.main-menu {
+  display: flex;
+
+  height: 100%;
+  width: 100%;
+
+  padding: 24px;
+
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.join-screen {
+  display: flex;
+
+  height: 100%;
+  width: 100%;
+
+  padding: 24px;
+
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.join-input {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+}
+
+.join-input > p {
+  margin: 0px;
+}

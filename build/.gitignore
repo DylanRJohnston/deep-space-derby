@@ -1,6 +1,0 @@
-*
-pkg/*
-!_routes.json
-!.gitignore
-!_worker.js
-!pkg

@@ -2,8 +2,8 @@ name = "worker-rust"
 compatibility_date = "2023-10-30"
 
 [durable_objects]
-bindings = [{ name = "Example", class_name = "Example" }]
+bindings = [{ name = "game", class_name = "Game" }]
 
 [[migrations]]
 tag = "v1"
-new_classes = ["Example"]
+new_classes = ["game"]
