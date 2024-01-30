@@ -1,5 +1,6 @@
 use im::Vector;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::models::events::Event;
 
@@ -10,6 +11,7 @@ pub struct Input {
     pub code: String,
 }
 
+#[derive(Default)]
 pub struct CreateGame;
 
 impl Command for CreateGame {
@@ -19,7 +21,11 @@ impl Command for CreateGame {
         format!("/api/object/game/by_code/{}/commands/create_game", game_id)
     }
 
-    fn precondition(events: &Vector<Event>, input: &Self::Input) -> Result<(), String> {
+    fn handle(
+        session_id: Uuid,
+        events: &Vector<Event>,
+        input: Self::Input,
+    ) -> Result<Option<Event>, String> {
         if !events.is_empty() {
             return Err(
                 "create game cannot be called after the game has already been created".to_owned(),
@@ -33,12 +39,9 @@ impl Command for CreateGame {
             ));
         }
 
-        Ok(())
-    }
-
-    fn handle(_events: &Vector<Event>, input: Self::Input) -> Event {
-        Event::GameCreated {
+        Ok(Some(Event::GameCreated {
             game_id: input.code,
-        }
+            session_id,
+        }))
     }
 }

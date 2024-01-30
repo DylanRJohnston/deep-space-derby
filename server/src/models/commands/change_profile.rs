@@ -12,13 +12,16 @@ pub struct Input {
 }
 
 #[derive(Default)]
-pub struct JoinGame;
+pub struct ChangeProfile;
 
-impl Command for JoinGame {
+impl Command for ChangeProfile {
     type Input = Input;
 
     fn url(game_id: &str) -> String {
-        format!("/api/object/game/by_code/{}/command/join_game", game_id)
+        format!(
+            "/api/object/game/by_code/{}/commands/change_profile",
+            game_id
+        )
     }
 
     fn handle(
@@ -26,21 +29,17 @@ impl Command for JoinGame {
         events: &Vector<Event>,
         input: Self::Input,
     ) -> Result<Option<Event>, String> {
-        if projections::player_exists(events, session_id) {
-            return Ok(None);
+        if !projections::player_exists(events, session_id) {
+            return Err("cannot modify player that doesn't exist".to_owned());
         }
 
         if projections::game_has_started(events) {
-            return Err("cannot join after game has already started".to_owned());
+            return Err("cannot modify profile after game has started".to_owned());
         }
 
-        if projections::player_count(events) >= 15 {
-            return Err("maximum number of players reached".to_owned());
-        }
-
-        Ok(Some(Event::PlayerJoined {
-            name: input.name,
+        Ok(Some(Event::ChangedProfile {
             session_id,
+            name: input.name,
         }))
     }
 }

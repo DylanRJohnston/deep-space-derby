@@ -1,9 +1,11 @@
+use cookie::Cookie;
 use im::Vector;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
+
+use uuid::Uuid;
 use worker::{
-    console_error, console_log, durable_object, Env, ListOptions, Request, Response, Result,
-    RouteContext, Router, State, Storage, WebSocket, WebSocketPair,
+    console_error, console_log, durable_object, Env, ListOptions, Request, Result, RouteContext,
+    Router, State, Storage, WebSocket, WebSocketPair,
 };
 
 use crate::models::{
@@ -27,20 +29,11 @@ impl DurableObject for Game {
         // Recover listeners from hibernation
         let recovered_sockets = state.get_websockets();
 
-        console_log!(
-            "Reloaded durable object, {} listeners recovered",
-            recovered_sockets.len()
-        );
-
         let mut sessions = Sessions::new();
 
         for listener in recovered_sockets.into_iter() {
             match listener.deserialize_attachment::<Metadata>() {
-                Ok(Some(mut metadata)) => {
-                    console_log!("Found metadata {:?}", metadata);
-
-                    metadata.reloaded_count += 1;
-
+                Ok(Some(metadata)) => {
                     sessions.insert(Session {
                         metadata,
                         socket: listener,
@@ -68,6 +61,8 @@ impl DurableObject for Game {
             .get_async("/api/object/game/by_code/:code/connect", Self::on_connect)
             .register_command::<commands::CreateGame>()
             .register_command::<commands::JoinGame>()
+            .register_command::<commands::ChangeProfile>()
+            .register_command::<commands::ReadyPlayer>()
             .run(req, env)
             .await
     }
@@ -100,12 +95,20 @@ pub struct Counter {
     pub count: usize,
 }
 
-#[wasm_bindgen]
 impl Game {
     async fn on_connect(
-        _: Request,
+        req: Request,
         ctx: RouteContext<&mut Game>,
     ) -> worker::Result<worker::Response> {
+        let game = ctx.data;
+
+        let session_id = match extract_session_id(&req) {
+            None => {
+                return worker::Response::error("cannot connect to game without session_id", 400)
+            }
+            Some(session_id) => session_id,
+        };
+
         let pair = WebSocketPair::new()
             .map_err(|err| {
                 console_error!("Failed to create websocket pair");
@@ -113,21 +116,17 @@ impl Game {
             })
             .unwrap();
 
-        let metadata = Metadata {
-            username: format!("User {}", ctx.data.sessions.len() + 1),
-            reloaded_count: 0,
-        };
-
+        let metadata = Metadata { session_id };
         pair.server.serialize_attachment(&metadata)?;
 
-        ctx.data.sessions.insert(Session {
+        game.sessions.insert(Session {
             metadata,
             socket: pair.server.clone(),
         });
 
-        ctx.data.state.accept_websocket(&pair.server);
+        game.state.accept_websocket(&pair.server);
 
-        for event in ctx.data.events.iter().await? {
+        for event in game.events.iter().await? {
             pair.server.send(event)?;
         }
 
@@ -135,8 +134,6 @@ impl Game {
     }
 
     async fn add_event(&mut self, event: Event) -> Result<()> {
-        console_log!("Storing and broadcasting new event, {:?}", event);
-
         self.events.push(event.clone()).await?;
 
         self.sessions.broadcast(&event)
@@ -172,8 +169,6 @@ impl EventLog {
             let event = serde_wasm_bindgen::from_value::<Event>(value)
                 .expect("unable to deserialize value from storage during rehydration");
 
-            console_log!("Rehydrated event {:?}", event);
-
             self.events.push_back(event);
         });
 
@@ -206,30 +201,100 @@ impl EventLog {
     }
 }
 
-trait CommandHandler {
-    fn register_command<C: Command>(self) -> Self;
+trait CommandHandler<'handler> {
+    fn register_command<C: Command + 'handler>(self) -> Self;
 }
 
-impl<'handler, 'game> CommandHandler for Router<'handler, &'game mut Game>
+impl<'handler, 'game> CommandHandler<'handler> for Router<'handler, &'game mut Game>
 where
     'game: 'handler,
 {
-    fn register_command<C: Command>(self) -> Self {
-        self.post_async(&C::url(":code"), |mut req, ctx| async move {
-            let response: Result<()> = try {
-                let input = req.json::<C::Input>().await?;
-                let events = ctx.data.events.vector().await?;
+    fn register_command<C: Command + 'handler>(self) -> Self {
+        self.post_async(
+            &C::url(":code"),
+            middleware::session(middleware::command::<C, _, _, _>(command_handler::<C>)),
+        )
+    }
+}
 
-                C::precondition(events, &input)?;
+fn extract_session_id(req: &Request) -> Option<Uuid> {
+    let cookie_header = req.headers().get("cookie").ok()??;
 
-                let new_event = C::handle(events, input);
-                ctx.data.add_event(new_event).await?;
-            };
+    let cookie = Cookie::split_parse(&cookie_header)
+        .filter_map(|it| it.ok())
+        .find(|it| it.name() == "session_id")?;
 
-            match response {
-                Ok(_) => Response::empty(),
-                Err(err) => Response::error(err.to_string(), 400),
-            }
+    Uuid::parse_str(cookie.value()).ok()
+}
+
+mod middleware {
+    use std::convert::identity;
+
+    use cookie::CookieBuilder;
+    use futures_util::Future;
+    use uuid::Uuid;
+    use worker::{Request, Response, Result, RouteContext};
+
+    use crate::models::commands::Command;
+
+    use super::extract_session_id;
+
+    pub fn session<Next, Data, Fut>(
+        next: Next,
+    ) -> impl Copy + Fn(Request, RouteContext<Data>) -> impl Future<Output = Result<Response>>
+    where
+        Next: Fn(Uuid, Request, RouteContext<Data>) -> Fut + Copy,
+        Fut: Future<Output = Result<Response>>,
+    {
+        identity(move |req: Request, ctx: RouteContext<Data>| async move {
+            let session_id = extract_session_id(&req).unwrap_or_else(Uuid::new_v4);
+
+            let cookie = CookieBuilder::new("session_id", session_id.to_string())
+                .path("/")
+                .secure(true)
+                .http_only(false)
+                .same_site(cookie::SameSite::Strict)
+                .build();
+
+            Ok(next(session_id, req, ctx).await?.with_headers(
+                [("Set-Cookie", cookie.to_string().as_str())]
+                    .into_iter()
+                    .collect(),
+            ))
         })
     }
+
+    pub fn command<C, Next, Data, Fut>(
+        next: Next,
+    ) -> impl Copy + Fn(Uuid, Request, RouteContext<Data>) -> impl Future<Output = Result<Response>>
+    where
+        C: Command,
+        Next: Fn(Uuid, Data, C::Input) -> Fut + Copy,
+        Fut: Future<Output = Result<()>>,
+    {
+        identity(
+            move |session_id: Uuid, mut req: Request, ctx: RouteContext<Data>| async move {
+                let input = req.json::<C::Input>().await?;
+
+                match next(session_id, ctx.data, input).await {
+                    Ok(_) => Response::empty(),
+                    Err(err) => Response::error(err.to_string(), 400),
+                }
+            },
+        )
+    }
+}
+
+async fn command_handler<C: Command>(
+    session_id: Uuid,
+    game: &mut Game,
+    input: C::Input,
+) -> Result<()> {
+    let events = game.events.vector().await?;
+
+    if let Some(new_event) = C::handle(session_id, events, input)? {
+        game.add_event(new_event).await?;
+    };
+
+    Ok(())
 }

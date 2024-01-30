@@ -1,6 +1,8 @@
 #![feature(type_alias_impl_trait)]
 #![feature(try_blocks)]
 #![feature(async_closure)]
+#![feature(impl_trait_in_assoc_type)]
+#![feature(impl_trait_in_fn_trait_return)]
 
 use leptos::mount_to_body;
 use wasm_bindgen::prelude::wasm_bindgen;

@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use worker::*;
 
 use crate::models::events::Event;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
-    pub username: String,
-    pub reloaded_count: i32,
+    pub session_id: Uuid,
 }
 
 #[derive(Debug)]
@@ -33,10 +33,6 @@ impl Sessions {
         self.0.push(session)
     }
 
-    // pub fn get(&self, ws: &WebSocket) -> Option<&Session> {
-    //     self.0.iter().find(|it| &it.socket == ws)
-    // }
-
     pub fn remove(&mut self, ws: &WebSocket) -> Option<Session> {
         if let Some(position) = self.0.iter().position(|it| &it.socket == ws) {
             return Some(self.0.remove(position));
@@ -44,14 +40,6 @@ impl Sessions {
 
         None
     }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    // pub fn is_empty(&self) -> bool {
-    //     self.len() == 0
-    // }
 
     pub fn iter(&self) -> impl Iterator<Item = &Session> {
         self.0.iter()

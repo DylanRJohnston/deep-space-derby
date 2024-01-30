@@ -130,7 +130,7 @@
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 
-            find site | ${pkgs.entr}/bin/entr -rn wrangler pages dev site --compatibility-date=2023-10-30 &
+            find site | ${pkgs.entr}/bin/entr -rn wrangler pages dev site --local-protocol https --compatibility-date=2023-10-30 &
 
             wait
           '';

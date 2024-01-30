@@ -45,3 +45,107 @@ body {
 .join-input > p {
   margin: 0px;
 }
+
+
+.player-lobby-container {
+  display: flex;
+
+  height: 100%;
+  width: 100%;
+
+  padding: 24px;
+  gap: 24px;
+
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.top-row {
+  display: flex;
+
+  width: 100%;
+
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 24px;
+}
+
+.player-lobby-container > img {
+  width: 50%;
+  border-radius: 50%;
+  border: 8px solid black;
+}
+
+.name-change {
+  display: flex;
+
+  width: 50%;
+  height: 1em;
+
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+}
+
+.button-tray {
+  display: flex;
+  
+  width: 100%;
+  margin-top: auto;
+
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.host-lobby-container {
+  display: flex;
+
+  height: 100%;
+  width: 100%;
+
+  padding: 24px;
+  gap: 24px;
+
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.avatar-previews {
+  display: grid;
+  width: 100%;
+
+  grid-template-columns: repeat(5, 1fr);
+  gap: 100px;
+}
+
+.avatar-container {
+  display: flex;
+
+  flex-direction: column;
+  
+  border: solid black;
+  gap: 24px;
+
+  justify-content: center;
+  padding: 24px;
+  align-items: center;
+}
+
+.avatar-container > img {
+  width: 50%;
+  border-radius: 50%;
+  border: 1px solid black;
+}
+
+.avatar-container > .name {
+  font-size: 48px;
+}
+
+.avatar-container > .status {
+  font-size: 24px;
+}
