@@ -2,14 +2,18 @@
 #![feature(async_closure)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(impl_trait_in_fn_trait_return)]
+#![feature(more_qualified_paths)]
 
 use std::net::SocketAddr;
 
+use futures_util::Future;
 use leptos::*;
 use leptos_cloudflare::{LeptosRoutes, WorkerRouterData};
-use std::str::FromStr;
+use models::commands::{Command, CreateGame, GameCode, JoinGame};
+use std::{convert::identity, str::FromStr};
 use utils::generate_game_code;
-use worker::{event, Method, Request};
+use wasm_bindgen::JsValue;
+use worker::{event, Method, Request, RequestInit, RouteContext};
 
 mod durable_objects;
 mod models;
@@ -20,6 +24,58 @@ mod utils;
 #[event(start)]
 pub fn start() {
     console_error_panic_hook::set_once();
+}
+
+pub fn redirect_to_durable_object<C, D, F, Fut>(
+    extractor: F,
+) -> impl Fn(Request, RouteContext<D>) -> impl Future<Output = worker::Result<worker::Response>>
+where
+    C: Command,
+    <C as Command>::Input: GameCode,
+    F: Copy + Fn(Request) -> Fut,
+    Fut: Future<Output = worker::Result<C::Input>>,
+{
+    identity(move |req: Request, ctx: RouteContext<D>| async move {
+        let headers = req.headers().clone();
+        let input = extractor(req).await?;
+
+        let request = Request::new_with_init(
+            &format!("https://localhost{}", C::url(input.game_code())),
+            RequestInit::new()
+                .with_method(Method::Post)
+                .with_headers(headers)
+                .with_body(Some(JsValue::from_str(
+                    &serde_qs::to_string(&input).map_err(|_| worker::Error::BadEncoding)?,
+                ))),
+        )?;
+
+        let inner_response = ctx
+            .durable_object("game")?
+            .id_from_name(input.game_code())?
+            .get_stub()?
+            .fetch_with_request(request)
+            .await?;
+
+        match C::redirect(input.game_code()) {
+            None => Ok(inner_response),
+            Some(location) => {
+                if inner_response.status_code() != 200 {
+                    return Ok(inner_response);
+                }
+
+                let mut headers = inner_response.headers().clone();
+                headers.append("Location", &location)?;
+
+                Ok(web_sys::Response::new_with_opt_str_and_init(
+                    None,
+                    web_sys::ResponseInit::new()
+                        .status(302)
+                        .headers(&headers.0.into()),
+                )?
+                .into())
+            }
+        }
+    })
 }
 
 #[event(fetch)]
@@ -39,23 +95,21 @@ pub async fn fetch(
         app_fn: screens::App,
     })
     .leptos_routes(leptos_cloudflare::generate_route_list(screens::App))
-    .post_async("/api/create_game", |_req, ctx| async move {
-        let game_code = generate_game_code();
-
-        let request = Request::new(
-            &format!(
-                "https://localhost/api/object/game/by_code/{}/command/create_game",
-                game_code
-            ),
-            Method::Post,
-        )?;
-
-        ctx.durable_object("game")?
-            .id_from_name(&game_code)?
-            .get_stub()?
-            .fetch_with_request(request)
-            .await
-    })
+    .post_async(
+        "/api/create_game",
+        redirect_to_durable_object::<CreateGame, _, _, _>(|_| async {
+            Ok(<CreateGame as Command>::Input {
+                code: generate_game_code(),
+            })
+        }),
+    )
+    .post_async(
+        "/api/join_game",
+        redirect_to_durable_object::<JoinGame, _, _, _>(|mut req| async move {
+            serde_qs::from_str::<<JoinGame as Command>::Input>(&req.text().await?)
+                .map_err(|_| worker::Error::BadEncoding)
+        }),
+    )
     .on_async(
         "/api/object/game/by_code/:code/*command",
         |req, ctx| async move {

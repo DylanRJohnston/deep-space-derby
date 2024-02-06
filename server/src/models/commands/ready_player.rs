@@ -17,7 +17,7 @@ impl Command for ReadyPlayer {
         session_id: Uuid,
         events: &Vector<Event>,
         _input: Self::Input,
-    ) -> Result<Option<Event>, String> {
+    ) -> Result<Vec<Event>, String> {
         if !projections::player_exists(events, session_id) {
             return Err("cannot ready a player that doesn't exist".to_owned());
         }
@@ -26,6 +26,18 @@ impl Command for ReadyPlayer {
             return Err("cannot ready a player after game has started".to_owned());
         }
 
-        Ok(Some(Event::PlayerReady { session_id }))
+        let event = Event::PlayerReady { session_id };
+        let mut new_events = vec![event.clone()];
+
+        if projections::all_players_ready(&{
+            let mut events = events.clone();
+            events.push_back(event);
+
+            events
+        }) {
+            new_events.push(Event::GameStarted)
+        }
+
+        Ok(new_events)
     }
 }

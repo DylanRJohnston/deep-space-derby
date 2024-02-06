@@ -4,15 +4,22 @@ use uuid::Uuid;
 
 use crate::models::{events::Event, projections};
 
-use super::Command;
+use super::{Command, GameCode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
     pub name: String,
+    pub code: String,
 }
 
 #[derive(Default)]
 pub struct JoinGame;
+
+impl GameCode for Input {
+    fn game_code(&self) -> &str {
+        &self.code
+    }
+}
 
 impl Command for JoinGame {
     type Input = Input;
@@ -21,13 +28,17 @@ impl Command for JoinGame {
         format!("/api/object/game/by_code/{}/command/join_game", game_id)
     }
 
+    fn redirect(game_id: &str) -> Option<String> {
+        Some(format!("/play/{}", game_id))
+    }
+
     fn handle(
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Option<Event>, String> {
+    ) -> Result<Vec<Event>, String> {
         if projections::player_exists(events, session_id) {
-            return Ok(None);
+            return Ok(vec![]);
         }
 
         if projections::game_has_started(events) {
@@ -38,9 +49,9 @@ impl Command for JoinGame {
             return Err("maximum number of players reached".to_owned());
         }
 
-        Ok(Some(Event::PlayerJoined {
+        Ok(vec![Event::PlayerJoined {
             name: input.name,
             session_id,
-        }))
+        }])
     }
 }

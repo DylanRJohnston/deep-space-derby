@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["color", "despawn", "Gltf"],
+  "cSpell.words": ["color", "despawn", "Gltf", "leptos"],
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -13,4 +13,5 @@
     "node_modules": true,
     ".wrangler": true
   }
+  // "rust-analyzer.rustfmt.overrideCommand": ["leptosfmt", "--stdin", "--rustfmt"]
 }

@@ -4,3 +4,7 @@ result
 node_modules
 .wrangler
 site/*
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

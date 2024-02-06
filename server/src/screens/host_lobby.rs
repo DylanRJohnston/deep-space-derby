@@ -22,7 +22,7 @@ pub fn host_lobby() -> impl IntoView {
     view! {
         <div class="host-lobby-container">
             <div class="top-row">
-                <div>"Lobby: "{game_id}</div>
+                <div>"Lobby: "<span data-testid="game_code">{game_id}</span></div>
                 <div>"Ready: "{ready_count}"/"{player_count}</div>
             </div>
             <div class="avatar-previews">

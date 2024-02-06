@@ -130,7 +130,9 @@
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 
-            find site | ${pkgs.entr}/bin/entr -rn wrangler pages dev site --local-protocol https --compatibility-date=2023-10-30 &
+            find site | grep -Ev '(pkg|_worker.js)' | ${pkgs.entr}/bin/entr touch site/_worker.js &
+
+            wrangler pages dev site --local-protocol https --compatibility-date=2023-10-30 &
 
             wait
           '';
@@ -141,7 +143,6 @@
             buildInputs = [
               toolchain
               iconv
-              simple-http-server
               darwin.apple_sdk.frameworks.AppKit
               wrangler
               nodejs
@@ -149,7 +150,6 @@
               entr
               cargo-watch
               cargo-expand
-              trunk
               cargo-leptos
               leptosfmt
             ];

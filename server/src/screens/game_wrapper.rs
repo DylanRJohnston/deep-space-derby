@@ -1,5 +1,5 @@
-use leptos::{component, create_memo, view, IntoView, SignalGet};
-use leptos_router::{use_navigate, NavigateOptions, Outlet};
+use leptos::{component, create_memo, view, ChildrenFn, IntoView, SignalGet};
+use leptos_router::{use_navigate, NavigateOptions};
 
 use crate::utils::{
     create_event_signal, get_session_id, provide_events, provide_session_id, use_game_id,
@@ -8,7 +8,7 @@ use crate::utils::{
 
 // Turn this into a resource and add an error boundary
 #[component]
-pub fn game_connection_wrapper() -> impl IntoView {
+pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
     let game_id = use_game_id();
 
     let (connection, events) = create_event_signal(format!(
@@ -24,16 +24,19 @@ pub fn game_connection_wrapper() -> impl IntoView {
     }
 
     provide_session_id(session_id.unwrap());
-    provide_events(events);
+    provide_events(events.into());
 
-    create_memo(move |_| match connection.get() {
+    let connection = create_memo(move |_| connection.get());
+
+    (move || match connection.get() {
         Connection::Connecting => view! { <h1>"Connecting to server"</h1> }.into_view(),
         Connection::Errored(err) => {
-            view! { <h1>"Error encountered with conenction to server: "{err.to_string()}</h1> }
+            view! { <h1>"Error encountered with conenction to server: " {err.to_string()}</h1> }
                 .into_view()
         }
-        Connection::Closed => view! { <h1>"Connection to server closed"</h1>}.into_view(),
-        Connection::Connected => view! { <Outlet /> }.into_view(),
+        Connection::Closed => view! { <h1>"Connection to server closed"</h1> }.into_view(),
+        Connection::Connected => children().into_view(),
     })
     .into_view()
 }
+

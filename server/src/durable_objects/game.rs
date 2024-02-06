@@ -63,6 +63,7 @@ impl DurableObject for Game {
             .register_command::<commands::JoinGame>()
             .register_command::<commands::ChangeProfile>()
             .register_command::<commands::ReadyPlayer>()
+            .register_command::<commands::PlaceBets>()
             .run(req, env)
             .await
     }
@@ -274,7 +275,17 @@ mod middleware {
     {
         identity(
             move |session_id: Uuid, mut req: Request, ctx: RouteContext<Data>| async move {
-                let input = req.json::<C::Input>().await?;
+                let input: C::Input = match req.headers().get("content-type").unwrap().as_deref() {
+                    Some("application/x-www-form-urlencoded") => {
+                        serde_qs::from_str::<C::Input>(&req.text().await?)
+                            .map_err(|_| worker::Error::BadEncoding)?
+                    }
+                    Some("application/json") => req.json::<C::Input>().await?,
+                    Some(_) => Err(worker::Error::BadEncoding)?,
+                    None => Err(worker::Error::RustError(
+                        "content-type must be specified".into(),
+                    ))?,
+                };
 
                 match next(session_id, ctx.data, input).await {
                     Ok(_) => Response::empty(),
@@ -292,9 +303,9 @@ async fn command_handler<C: Command>(
 ) -> Result<()> {
     let events = game.events.vector().await?;
 
-    if let Some(new_event) = C::handle(session_id, events, input)? {
+    for new_event in C::handle(session_id, events, input)? {
         game.add_event(new_event).await?;
-    };
+    }
 
     Ok(())
 }

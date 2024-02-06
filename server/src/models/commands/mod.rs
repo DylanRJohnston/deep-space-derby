@@ -8,11 +8,21 @@ pub trait Command {
     type Input: Serialize + DeserializeOwned;
 
     fn url(game_id: &str) -> String;
+
+    #[allow(unused_variables)]
+    fn redirect(game_id: &str) -> Option<String> {
+        None
+    }
+
     fn handle(
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Option<Event>, String>;
+    ) -> Result<Vec<Event>, String>;
+}
+
+pub trait GameCode {
+    fn game_code(&self) -> &str;
 }
 
 pub mod create_game;
@@ -26,3 +36,6 @@ pub use change_profile::ChangeProfile;
 
 pub mod ready_player;
 pub use ready_player::ReadyPlayer;
+
+pub mod place_bets;
+pub use place_bets::PlaceBets;

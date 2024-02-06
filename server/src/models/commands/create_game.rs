@@ -4,11 +4,17 @@ use uuid::Uuid;
 
 use crate::models::events::Event;
 
-use super::Command;
+use super::{Command, GameCode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
     pub code: String,
+}
+
+impl GameCode for Input {
+    fn game_code(&self) -> &str {
+        &self.code
+    }
 }
 
 #[derive(Default)]
@@ -21,11 +27,15 @@ impl Command for CreateGame {
         format!("/api/object/game/by_code/{}/commands/create_game", game_id)
     }
 
+    fn redirect(game_id: &str) -> Option<String> {
+        Some(format!("/host/{}", game_id))
+    }
+
     fn handle(
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Option<Event>, String> {
+    ) -> Result<Vec<Event>, String> {
         if !events.is_empty() {
             return Err(
                 "create game cannot be called after the game has already been created".to_owned(),
@@ -39,9 +49,9 @@ impl Command for CreateGame {
             ));
         }
 
-        Ok(Some(Event::GameCreated {
+        Ok(vec![Event::GameCreated {
             game_id: input.code,
             session_id,
-        }))
+        }])
     }
 }
