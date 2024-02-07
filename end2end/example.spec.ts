@@ -55,10 +55,10 @@ test("can setup and join lobby", async ({ browser }) => {
     joinGame(bobPage, code, "Bob"),
   ];
 
-  outer: while (true) {
+  loop: while (true) {
     for (const player of players) {
       if ((await player.next()).done) {
-        break outer;
+        break loop;
       }
     }
   }

@@ -94,7 +94,7 @@ struct Bet {
 }
 
 #[component]
-pub fn player_pre_game() -> impl IntoView {
+pub fn pre_game() -> impl IntoView {
     let game_id = use_game_id();
     let player_id = use_session_id();
     let events = use_events();
@@ -163,9 +163,9 @@ pub fn player_pre_game() -> impl IntoView {
 
     let placed_bets = create_memo(move |_| {
         projections::placed_bets(&events())
-            .into_iter()
-            .filter(|it| it.session_id == player_id)
-            .collect::<Vector<_>>()
+            .get(&player_id)
+            .cloned()
+            .unwrap_or_default()
     });
 
     create_effect({

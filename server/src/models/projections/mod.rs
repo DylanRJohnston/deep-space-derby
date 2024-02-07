@@ -95,18 +95,31 @@ pub fn minimum_bet(events: Vector<Event>) -> i32 {
     starting_bet
 }
 
-pub fn placed_bets(events: &Vector<Event>) -> Vector<PlacedBet> {
-    let mut bets = Vector::new();
+pub fn placed_bets(events: &Vector<Event>) -> HashMap<Uuid, Vector<PlacedBet>> {
+    let mut bets = HashMap::<Uuid, Vector<PlacedBet>>::new();
 
     for event in events {
         match event {
-            Event::PlacedBet(bet) => bets.push_back(bet.clone()),
+            Event::PlacedBet(bet) => bets.entry(bet.session_id).or_default().push_back(*bet),
             Event::RaceFinished { .. } => bets.clear(),
             _ => {}
         }
     }
 
     bets
+}
+
+pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
+    let players = players(events);
+    let bets = placed_bets(events);
+
+    for player in players.keys().into_iter() {
+        if !bets.contains_key(player) {
+            return false;
+        }
+    }
+
+    true
 }
 
 pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {

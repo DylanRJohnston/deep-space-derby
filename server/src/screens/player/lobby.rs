@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[component]
-pub fn player_lobby() -> impl IntoView {
+pub fn lobby() -> impl IntoView {
     let events = use_events();
     let game_id = use_game_id();
     let session_id = use_session_id();

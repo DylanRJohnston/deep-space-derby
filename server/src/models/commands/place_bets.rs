@@ -54,7 +54,7 @@ impl Command for PlaceBets {
             return Err("cannot place a bet with a total value greater than your balance".into());
         }
 
-        Ok(input
+        let mut new_events = input
             .bets
             .iter()
             .map(|bet| {
@@ -64,7 +64,18 @@ impl Command for PlaceBets {
                     amount: bet.amount,
                 })
             })
-            .collect())
+            .collect::<Vector<_>>();
+
+        if projections::all_players_have_bet(&{
+            let mut events = events.clone();
+            events.append(new_events.clone());
+
+            events
+        }) {
+            new_events.push_back(Event::RaceStarted);
+        }
+
+        Ok(new_events.into_iter().collect())
     }
 }
 

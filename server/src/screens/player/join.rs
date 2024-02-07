@@ -2,7 +2,7 @@ use leptos::*;
 use leptos_router::*;
 
 #[component]
-pub fn join_screen() -> impl IntoView {
+pub fn join() -> impl IntoView {
     view! {
         <Form action="/api/join_game" method="POST" class="join-screen">
             <h1>"Join Game"</h1>
