@@ -17,6 +17,19 @@ pub fn router() -> impl IntoView {
                     path="/host/:game_id"
                     view=|| {
                         view! {
+                            <script type="module">
+                                "
+                                import init, { sendGameEvent as innerSendGameEvent } from '/pkg/simulation.js';
+                                init().catch(() => {
+                                    window['innerSendGameEvent'] = innerSendGameEvent;
+                                    console.log('Module initialised, flushing pending events')
+                                    while (pendingEvents.length > 0) {
+                                        let event = pendingEvents.shift();
+                                        innerSendGameEvent(event);
+                                    }
+                                });
+                                "
+                            </script>
                             <GameConnectionWrapper>
                                 <GameStateRouter
                                     lobby=host::Lobby
@@ -31,6 +44,7 @@ pub fn router() -> impl IntoView {
                 <Route path="/play" view=player::Join/>
                 <Route
                     path="/play/:game_id"
+
                     view=|| {
                         view! {
                             <GameConnectionWrapper>
@@ -82,7 +96,7 @@ where
             .find_map(|event| match event {
                 Event::GameCreated { .. } => Some(GameState::Lobby),
                 Event::GameStarted => Some(GameState::PreGame),
-                Event::RaceStarted => Some(GameState::Race),
+                Event::RaceStarted { .. } => Some(GameState::Race),
                 Event::RaceFinished { .. } => Some(GameState::Summary),
                 Event::GameFinished => Some(GameState::FinalScreen),
                 _ => None,

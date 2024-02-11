@@ -1,4 +1,4 @@
-use super::Command;
+use super::{Command, Effect};
 use crate::models::{events::Event, projections};
 use im::Vector;
 use uuid::Uuid;
@@ -17,7 +17,7 @@ impl Command for ReadyPlayer {
         session_id: Uuid,
         events: &Vector<Event>,
         _input: Self::Input,
-    ) -> Result<Vec<Event>, String> {
+    ) -> Result<(Vec<Event>, Option<Effect>), String> {
         if !projections::player_exists(events, session_id) {
             return Err("cannot ready a player that doesn't exist".to_owned());
         }
@@ -26,18 +26,13 @@ impl Command for ReadyPlayer {
             return Err("cannot ready a player after game has started".to_owned());
         }
 
-        let event = Event::PlayerReady { session_id };
-        let mut new_events = vec![event.clone()];
+        let events = vec![Event::PlayerReady { session_id }];
 
-        if projections::all_players_ready(&{
-            let mut events = events.clone();
-            events.push_back(event);
+        let maybe_start_game = |events: &Vector<Event>| {
+            projections::all_players_ready(events).then_some(Event::GameStarted)
+        };
 
-            events
-        }) {
-            new_events.push(Event::GameStarted)
-        }
-
-        Ok(new_events)
+        Ok((events, Some(Effect::SoftCommand(maybe_start_game))))
     }
 }
+

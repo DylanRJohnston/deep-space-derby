@@ -1,13 +1,17 @@
+use core::hash;
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use worker::console_log;
 
 use crate::models::{
     events::{Event, PlacedBet},
     projections,
 };
 
-use super::Command;
+use super::{Command, Effect};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Bet {
@@ -34,7 +38,7 @@ impl Command for PlaceBets {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Vec<Event>, String> {
+    ) -> Result<(Vec<Event>, Option<Effect>), String> {
         if !projections::game_has_started(events) {
             return Err("cannot place a bet if the game hasn't started".to_owned());
         }
@@ -54,7 +58,7 @@ impl Command for PlaceBets {
             return Err("cannot place a bet with a total value greater than your balance".into());
         }
 
-        let mut new_events = input
+        let events = input
             .bets
             .iter()
             .map(|bet| {
@@ -64,18 +68,22 @@ impl Command for PlaceBets {
                     amount: bet.amount,
                 })
             })
-            .collect::<Vector<_>>();
+            .collect();
 
-        if projections::all_players_have_bet(&{
-            let mut events = events.clone();
-            events.append(new_events.clone());
+        console_log!("Placing bets {:#?}", events);
 
-            events
-        }) {
-            new_events.push_back(Event::RaceStarted);
-        }
+        let maybe_start_race = |events: &Vector<Event>| {
+            projections::all_players_have_bet(events).then(|| {
+                let mut hasher = DefaultHasher::new();
+                events.hash(&mut hasher);
 
-        Ok(new_events.into_iter().collect())
+                Event::RaceStarted {
+                    seed: hasher.finish() as u32,
+                }
+            })
+        };
+
+        Ok((events, Some(Effect::SoftCommand(maybe_start_race))))
     }
 }
 

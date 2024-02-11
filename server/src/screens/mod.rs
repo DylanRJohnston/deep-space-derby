@@ -1,8 +1,5 @@
 use leptos::{component, view, IntoView};
 use leptos_meta::{provide_meta_context, Stylesheet};
-use leptos_reactive::create_memo;
-
-use crate::{models::events::Event, utils::use_events};
 
 use router::Router;
 
@@ -18,7 +15,21 @@ pub fn app() -> impl leptos::IntoView {
 
     view! {
         <Stylesheet id="leptos" href="/pkg/style.css"/>
-        <Router/>
+        <script>
+            "
+            let pendingEvents = [];
+            function sendGameEvent(event) {
+                if (typeof globalThis['innerSendGameEvent'] !== 'function') {
+                    pendingEvents.push(event);
+                } else {
+                    globalThis['innerSendGameEvent'](event);
+                }
+            }          
+            "
+        </script>
+        <div style="position: fixed; width: 100vw; height: 100vh;">
+            <Router/>
+        </div>
     }
 }
 

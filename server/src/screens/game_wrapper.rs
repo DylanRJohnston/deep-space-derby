@@ -16,26 +16,28 @@ pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
         game_id
     ));
 
-    let session_id = get_session_id();
-    if session_id.is_none() {
-        use_navigate()("/", NavigateOptions::default());
-
-        return ().into_view();
-    }
-
-    provide_session_id(session_id.unwrap());
-    provide_events(events.into());
-
     let connection = create_memo(move |_| connection.get());
 
     (move || match connection.get() {
         Connection::Connecting => view! { <h1>"Connecting to server"</h1> }.into_view(),
         Connection::Errored(err) => {
-            view! { <h1>"Error encountered with conenction to server: " {err.to_string()}</h1> }
+            view! { <h1>"Error encountered with connection to server: " {err.to_string()}</h1> }
                 .into_view()
         }
         Connection::Closed => view! { <h1>"Connection to server closed"</h1> }.into_view(),
-        Connection::Connected => children().into_view(),
+        Connection::Connected => {
+            let session_id = get_session_id();
+            if session_id.is_none() {
+                use_navigate()("/", NavigateOptions::default());
+
+                return ().into_view();
+            }
+
+            provide_session_id(session_id.unwrap());
+            provide_events(events.into());
+
+            children().into_view()
+        }
     })
     .into_view()
 }

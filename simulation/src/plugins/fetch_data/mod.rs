@@ -12,17 +12,17 @@ impl Plugin for FetchDataPlugin {
 }
 
 #[derive(Debug, Component)]
-pub struct DataRequest(AsyncTask<Result<String, reqwest::Error>>);
+pub struct DataRequest(AsyncTask<Result<String, ()>>);
 
 fn fetch_data(mut commands: Commands) {
-    let task = AsyncTask::spawn(async {
-        reqwest::get("https://dummyjson.com/products/1")
-            .await?
-            .text()
-            .await
-    });
+    // let task = AsyncTask::spawn(async {
+    //     reqwest::get("https://dummyjson.com/products/1")
+    //         .await?
+    //         .text()
+    //         .await
+    // });
 
-    commands.spawn(DataRequest(task));
+    // commands.spawn(DataRequest(task));
 }
 
 fn display_data(tasks: Query<(Entity, &DataRequest)>, mut commands: Commands) {
@@ -48,3 +48,4 @@ fn display_data(tasks: Query<(Entity, &DataRequest)>, mut commands: Commands) {
         })
     }
 }
+

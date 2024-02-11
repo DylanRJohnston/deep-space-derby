@@ -14,9 +14,9 @@ pub fn load_assets(
     mut loading: ResMut<AssetsLoading>,
 ) {
     let asset_pack = AssetPack {
-        mushnub: asset_server.load("animated/Mushnub Evolved.glb"),
-        alien: asset_server.load("animated/Alien.glb"),
-        cactoro: asset_server.load("animated/Cactoro.glb"),
+        mushnub: asset_server.load("/assets/animated/Mushnub Evolved.glb"),
+        alien: asset_server.load("/assets/animated/Alien.glb"),
+        cactoro: asset_server.load("/assets/animated/Cactoro.glb"),
     };
 
     loading.add(asset_pack.mushnub.clone());
@@ -25,3 +25,4 @@ pub fn load_assets(
 
     commands.insert_resource(asset_pack);
 }
+

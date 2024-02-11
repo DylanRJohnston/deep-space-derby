@@ -15,9 +15,12 @@ impl Plugin for MonsterPlugin {
         app.add_systems(OnEnter(AppState::MainMenu), setup)
             .add_systems(Update, run_behaviour)
             .add_systems(Update, move_forward)
-            .add_systems(OnEnter(AppState::InGame), start_race);
+            .add_systems(Update, start_race);
     }
 }
+
+#[derive(Component, Default)]
+pub struct Start;
 
 #[derive(Bundle, Default)]
 pub struct MonsterBundle {
@@ -27,6 +30,7 @@ pub struct MonsterBundle {
     pub animations: NamedAnimations,
     pub behaviour: StateMachine<Behaviour>,
     pub behaviour_timer: BehaviourTimer,
+    pub start: Start,
 }
 
 #[derive(Debug, Reflect, Component, Default)]
@@ -264,12 +268,15 @@ impl Behaviour {
 }
 
 fn run_behaviour(
-    mut query: Query<(
-        &AnimationLink,
-        &NamedAnimations,
-        &mut StateMachine<Behaviour>,
-        &mut BehaviourTimer,
-    )>,
+    mut query: Query<
+        (
+            &AnimationLink,
+            &NamedAnimations,
+            &mut StateMachine<Behaviour>,
+            &mut BehaviourTimer,
+        ),
+        Without<Start>,
+    >,
     mut animation_players: Query<&mut AnimationPlayer>,
     time: Res<Time>,
 ) {
@@ -300,15 +307,20 @@ fn run_behaviour(
 }
 
 fn start_race(
-    mut query: Query<(
-        &AnimationLink,
-        &NamedAnimations,
-        &mut StateMachine<Behaviour>,
-        &mut BehaviourTimer,
-    )>,
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &AnimationLink,
+            &NamedAnimations,
+            &mut StateMachine<Behaviour>,
+            &mut BehaviourTimer,
+        ),
+        With<Start>,
+    >,
     mut animation_players: Query<&mut AnimationPlayer>,
 ) {
-    for (animation_link, animations, mut machine, mut behaviour_timer) in &mut query {
+    for (entity, animation_link, animations, mut machine, mut behaviour_timer) in &mut query {
         let player = &mut animation_players
             .get_mut(animation_link.0)
             .expect("animation link refers to removed animation player");
@@ -321,5 +333,8 @@ fn start_race(
                 timer: &mut behaviour_timer.0,
             },
         );
+
+        commands.entity(entity).remove::<Start>();
     }
 }
+

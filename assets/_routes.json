@@ -1,5 +1,5 @@
 {
   "version": 1,
   "include": ["/*"],
-  "exclude": ["/pkg/*"]
+  "exclude": ["/pkg/*", "/assets/*"]
 }

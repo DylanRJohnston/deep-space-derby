@@ -13,7 +13,8 @@ use uuid::Uuid;
 use crate::{
     models::{
         commands::{place_bets, PlaceBets},
-        projections::{self},
+        monsters::Monster,
+        projections,
     },
     server_fns::server_fn,
     utils::{use_events, use_game_id, use_session_id},
@@ -86,7 +87,7 @@ pub fn creature_card(
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Bet {
     name: &'static str,
     monster_id: Uuid,
@@ -109,33 +110,19 @@ pub fn pre_game() -> impl IntoView {
     })
     .into_signal();
 
-    let bets = {
-        [
-            (
-                "Orgalorg",
-                Uuid::from_str("976563ad-2cc8-45a4-a0d1-c535c4fe4bf0").unwrap(),
-            ),
-            (
-                "Cazador",
-                Uuid::from_str("c0408745-ca42-4804-ab59-d1a64ae102d2").unwrap(),
-            ),
-            (
-                "Baphomet",
-                Uuid::from_str("d3321243-deb5-4c3c-9a6a-c60d2ee9c746").unwrap(),
-            ),
-        ]
-        .into_iter()
-        .map(|(name, monster_id)| Bet {
+    let monsters = projections::monsters(&events.get_untracked());
+
+    let bets = monsters
+        .iter()
+        .map(|Monster { name, uuid, .. }| Bet {
             name,
-            monster_id,
+            monster_id: *uuid,
             amount: create_rw_signal(0),
         })
-        .collect::<Vec<_>>()
-    };
+        .collect::<Vec<_>>();
 
     let sum_of_bets = Signal::derive({
         let bets = bets.clone();
-
         move || bets.iter().map(|bet| (bet.amount)()).sum::<i32>()
     });
 
@@ -143,21 +130,27 @@ pub fn pre_game() -> impl IntoView {
 
     let place_bets = {
         let game_id = game_id.clone();
-        let bets = bets.clone();
 
-        create_action(move |_: &()| {
-            server_fn::<PlaceBets>(
-                &game_id,
-                &place_bets::Input {
-                    bets: bets
-                        .iter()
-                        .map(|bet| place_bets::Bet {
-                            monster_id: bet.monster_id,
-                            amount: (bet.amount)(),
-                        })
-                        .collect(),
-                },
-            )
+        create_action({
+            let bets = bets.clone();
+            move |_: &()| {
+                server_fn::<PlaceBets>(
+                    &game_id,
+                    &place_bets::Input {
+                        bets: {
+                            let bets = bets
+                                .iter()
+                                .map(|bet| place_bets::Bet {
+                                    monster_id: bet.monster_id,
+                                    amount: (bet.amount)(),
+                                })
+                                .collect();
+                            console_log(&format!("{:#?}", bets));
+                            bets
+                        },
+                    },
+                )
+            }
         })
     };
 
@@ -170,7 +163,6 @@ pub fn pre_game() -> impl IntoView {
 
     create_effect({
         let bets = bets.clone();
-
         move |_| {
             let placed_bets = placed_bets();
 
@@ -179,8 +171,6 @@ pub fn pre_game() -> impl IntoView {
             }
 
             for placed_bet in placed_bets {
-                console_log(&format!("Placed bet {:?}", placed_bet));
-
                 for bet in bets.iter() {
                     if bet.monster_id == placed_bet.monster_id {
                         bet.amount.set(placed_bet.amount);
@@ -191,10 +181,6 @@ pub fn pre_game() -> impl IntoView {
     });
 
     let disabled = Signal::derive(move || !placed_bets().is_empty());
-
-    create_effect(move |_| {
-        console_log(&format!("Found bets matching player {}", disabled()));
-    });
 
     view! {
         <div class="player-pregame-container">
@@ -215,12 +201,14 @@ pub fn pre_game() -> impl IntoView {
                 <div>"#1"</div>
             </div>
             <div class="creature-line">
-                {bets
-                    .into_iter()
-                    .map(|Bet { name, amount, .. }| {
-                        view! { <CreatureCard name amount available_money disabled/> }
-                    })
-                    .into_fragment()}
+                <For
+                    each=move || bets.clone()
+                    key=|it| it.clone()
+                    children=move |Bet { name, amount, .. }| {
+                        view! { <CreatureCard name amount available_money disabled=disabled/> }
+                    }
+                />
+
             </div>
             <div class="action-line">
                 <button>"Buy Card"</button>

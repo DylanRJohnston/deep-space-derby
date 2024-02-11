@@ -62,6 +62,8 @@ pub fn create_event_signal(url: String) -> (ReadSignal<Connection>, ReadSignal<V
                     Err(err) => Err(ServerFnError::ServerError(err.to_string())),
                 }?;
 
+                leptos::logging::log!("Event {:#?}", &event);
+
                 set_connection.set(Connection::Connected);
                 set_events.update(|events| events.push_back(event));
             }
@@ -97,3 +99,4 @@ pub fn provide_events(signal: Signal<Vector<Event>>) {
 pub fn use_events() -> Signal<Vector<Event>> {
     use_context::<EventsContainer>().unwrap().0
 }
+

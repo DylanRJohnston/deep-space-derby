@@ -1,7 +1,64 @@
 use leptos::*;
 
+use crate::{
+    models::{monsters::Monster, projections},
+    utils::use_events,
+};
+
+#[component]
+pub fn leaderboard() -> impl IntoView {
+    let events = use_events();
+
+    let account_balances = move || {
+        let events = events();
+        let players = projections::players(&events);
+
+        let mut accounts = projections::account_balance(&events)
+            .into_iter()
+            .filter_map(|(id, balance)| Some((players.get(&id).cloned()?.name, balance)))
+            .collect::<Vec<_>>();
+
+        accounts.sort_by(|(_, a), (_, b)| a.cmp(b));
+        accounts.into_iter().enumerate().collect::<Vec<_>>()
+    };
+
+    view! {
+        <div class="leaderboard">
+            <span>"Leaderboard: "</span>
+            <For each=account_balances key=|it| it.clone() let:data>
+                <span>{data.0}</span>
+                <span>{data.1}</span>
+            </For>
+        </div>
+    }
+}
+
+#[component]
+pub fn monster_card(monster: &'static Monster) -> impl IntoView {
+    view! {
+        <div class="monster-container">
+            <div class="monster-avatar"></div>
+            <div class="monster-stats">
+                <div class="monster-name">{monster.name}</div>
+                <div class="monster-stats">"Speed: " {monster.speed}</div>
+            </div>
+        </div>
+    }
+}
+
 #[component]
 pub fn pre_game() -> impl IntoView {
-    view! { <h1>"Host pregame screen!"</h1> }
+    let events = use_events();
+    let monsters = move || projections::monsters(&events());
+
+    view! {
+        <div class="host-pre-game-container">
+            <For
+                each=monsters
+                key=|it| (*it).clone()
+                children=|monster| view! { <MonsterCard monster/> }
+            />
+        </div>
+    }
 }
 

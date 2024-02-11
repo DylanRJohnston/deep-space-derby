@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::models::{events::Event, projections};
 
-use super::{Command, GameCode};
+use super::{Command, Effect, GameCode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
@@ -36,9 +36,9 @@ impl Command for JoinGame {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Vec<Event>, String> {
+    ) -> Result<(Vec<Event>, Option<Effect>), String> {
         if projections::player_exists(events, session_id) {
-            return Ok(vec![]);
+            return Ok((vec![], None));
         }
 
         if projections::game_has_started(events) {
@@ -49,9 +49,13 @@ impl Command for JoinGame {
             return Err("maximum number of players reached".to_owned());
         }
 
-        Ok(vec![Event::PlayerJoined {
-            name: input.name,
-            session_id,
-        }])
+        Ok((
+            vec![Event::PlayerJoined {
+                name: input.name,
+                session_id,
+            }],
+            None,
+        ))
     }
 }
+

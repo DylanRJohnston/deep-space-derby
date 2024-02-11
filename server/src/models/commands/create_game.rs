@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::models::events::Event;
 
-use super::{Command, GameCode};
+use super::{Command, Effect, GameCode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
@@ -35,7 +35,7 @@ impl Command for CreateGame {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Vec<Event>, String> {
+    ) -> Result<(Vec<Event>, Option<Effect>), String> {
         if !events.is_empty() {
             return Err(
                 "create game cannot be called after the game has already been created".to_owned(),
@@ -49,9 +49,13 @@ impl Command for CreateGame {
             ));
         }
 
-        Ok(vec![Event::GameCreated {
-            game_id: input.code,
-            session_id,
-        }])
+        Ok((
+            vec![Event::GameCreated {
+                game_id: input.code,
+                session_id,
+            }],
+            None,
+        ))
     }
 }
+

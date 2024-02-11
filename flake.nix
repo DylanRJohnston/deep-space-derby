@@ -86,9 +86,11 @@
           dev = pkgs.writeShellScriptBin "dev" ''
             rm -rf site/*
             cp -r assets/* site/
+            ln -s ../simulation/assets site/assets
 
             SERVER_TARGET="./target/wasm32-unknown-unknown/debug/server.wasm"
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
+            SIMULATION_TARGET="./target/wasm32-unknown-unknown/release/simulation.wasm"
 
             #entr can't execute bash functions, so we do a little bash metaprogramming
             function build() {
@@ -103,6 +105,10 @@
               echo "$(build lib hydrate)"
             }
 
+            function build_simulation() {
+              echo "cargo build -p simulation --target wasm32-unknown-unknown --release"
+            }
+
             function bindgen() {
               echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $1 --out-name index --target $2 --keep-debug --out-dir $3 --no-typescript"
             }
@@ -115,6 +121,10 @@
                 echo "$(bindgen $CLIENT_TARGET web ./site/pkg)"
             }
 
+            function bindgen_simulation() {
+              echo "wasm-bindgen $SIMULATION_TARGET --out-name simulation --target web --out-dir ./site/pkg --no-typescript"
+            }
+
             # Need to build things synchronously first so they're available for wangler
             $(build_client)
             $(bindgen_client)
@@ -122,11 +132,16 @@
             $(build_server)
             $(bindgen_server)
 
+            $(build_simulation)
+            $(bindgen_simulation)
+
             find server | ${pkgs.entr}/bin/entr -n $(build_server) &
             find server | ${pkgs.entr}/bin/entr -n $(build_client) &
+            find simulation | ${pkgs.entr}/bin/entr -n $(build_simulation) &
 
             echo $SERVER_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_server) &
             echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
+            echo $SIMULATION_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_simulation) &
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 

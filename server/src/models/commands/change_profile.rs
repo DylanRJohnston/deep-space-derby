@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::models::{events::Event, projections};
 
-use super::Command;
+use super::{Command, Effect};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
@@ -28,7 +28,7 @@ impl Command for ChangeProfile {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Vec<Event>, String> {
+    ) -> Result<(Vec<Event>, Option<Effect>), String> {
         if !projections::player_exists(events, session_id) {
             return Err("cannot modify player that doesn't exist".to_owned());
         }
@@ -37,9 +37,13 @@ impl Command for ChangeProfile {
             return Err("cannot modify profile after game has started".to_owned());
         }
 
-        Ok(vec![Event::ChangedProfile {
-            session_id,
-            name: input.name,
-        }])
+        Ok((
+            vec![Event::ChangedProfile {
+                session_id,
+                name: input.name,
+            }],
+            None,
+        ))
     }
 }
+

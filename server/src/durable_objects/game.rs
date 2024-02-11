@@ -1,15 +1,16 @@
+use std::any::type_name;
+
 use cookie::Cookie;
 use im::Vector;
 use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 use worker::{
-    console_error, console_log, durable_object, Env, ListOptions, Request, Result, RouteContext,
-    Router, State, Storage, WebSocket, WebSocketPair,
+    console_error, console_log, console_warn, durable_object, Env, ListOptions, Request, Response, Result, RouteContext, Router, State, Storage, WebSocket, WebSocketPair
 };
 
 use crate::models::{
-    commands::{self, Command},
+    commands::{self, Command, Effect},
     events::Event,
 };
 
@@ -54,7 +55,7 @@ impl DurableObject for Game {
         }
     }
 
-    pub async fn fetch(&mut self, req: Request) -> worker::Result<worker::Response> {
+    pub async fn fetch(&mut self, req: Request) -> Result<Response> {
         let env = self.env.clone();
 
         Router::with_data(self)
@@ -74,7 +75,7 @@ impl DurableObject for Game {
         _code: usize,
         _reason: String,
         _was_clean: bool,
-    ) -> worker::Result<()> {
+    ) -> Result<()> {
         self.sessions.remove(&ws);
 
         Ok(())
@@ -84,10 +85,14 @@ impl DurableObject for Game {
         &mut self,
         ws: WebSocket,
         _error: worker::Error,
-    ) -> worker::Result<()> {
+    ) -> Result<()> {
         self.sessions.remove(&ws);
 
         Ok(())
+    }
+
+    pub async fn alarm(&mut self) -> Result<Response> {
+        Response::empty()
     }
 }
 
@@ -100,12 +105,12 @@ impl Game {
     async fn on_connect(
         req: Request,
         ctx: RouteContext<&mut Game>,
-    ) -> worker::Result<worker::Response> {
+    ) -> Result<Response> {
         let game = ctx.data;
 
         let session_id = match extract_session_id(&req) {
             None => {
-                return worker::Response::error("cannot connect to game without session_id", 400)
+                return Response::error("cannot connect to game without session_id", 400)
             }
             Some(session_id) => session_id,
         };
@@ -131,7 +136,7 @@ impl Game {
             pair.server.send(event)?;
         }
 
-        worker::Response::from_websocket(pair.client)
+        Response::from_websocket(pair.client)
     }
 
     async fn add_event(&mut self, event: Event) -> Result<()> {
@@ -166,9 +171,11 @@ impl EventLog {
             .list_with_options(ListOptions::new().prefix("EVENT#"))
             .await?;
 
-        events.for_each(&mut |value, _key| {
+        events.for_each(&mut |value, key| {
             let event = serde_wasm_bindgen::from_value::<Event>(value)
                 .expect("unable to deserialize value from storage during rehydration");
+
+            console_log!("Rehydration {:#?} {:#?}", key.as_string(), event);
 
             self.events.push_back(event);
         });
@@ -181,7 +188,9 @@ impl EventLog {
     async fn push(&mut self, event: Event) -> Result<()> {
         self.hydrate().await?;
 
-        let key = format!("EVENT#{}", self.events.len());
+        let key = format!("EVENT#{:0>5}", self.events.len());
+
+        console_log!("Saving event with key {:#?}", key);
 
         self.storage.put(&key, &event).await?;
         self.events.push_back(event);
@@ -301,11 +310,54 @@ async fn command_handler<C: Command>(
     game: &mut Game,
     input: C::Input,
 ) -> Result<()> {
-    let events = game.events.vector().await?;
+    let (new_events, effect) = C::handle(session_id, game.events.vector().await?, input)?;
 
-    for new_event in C::handle(session_id, events, input)? {
-        game.add_event(new_event).await?;
+    for event in new_events {
+        game.add_event(event).await?;
     }
+
+    match effect {
+        Some(Effect::Alarm(time)) => {
+            match game.state.storage().get_alarm().await? {
+                Some(_) => { console_warn!("{} attempted to set an alarm while one was already set, noop", type_name::<C>()) },
+                None => game.state.storage().set_alarm(time).await?
+            };
+        },
+        Some(Effect::SoftCommand(f)) => {
+            if let Some(event) = f(game.events.vector().await?) {
+                game.add_event(event).await?
+            }
+        }
+        None => {},
+    }
+
+
+    // game.state.storage().set_alarm(scheduled_time)
 
     Ok(())
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

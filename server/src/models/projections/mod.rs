@@ -1,6 +1,16 @@
-use super::events::{Event, PlacedBet};
+use std::hash::{DefaultHasher, Hash, Hasher};
+
+use crate::models::monsters::MONSTERS;
+
+use super::{
+    events::{Event, PlacedBet},
+    monsters::{Monster, Results},
+};
 use im::{HashMap, Vector};
+use leptos::leptos_dom::logging::console_log;
+use rand::{distributions::Standard, SeedableRng};
 use uuid::Uuid;
+use worker::console_log;
 
 pub fn player_count(events: &Vector<Event>) -> usize {
     let mut count = 0;
@@ -113,7 +123,10 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     let players = players(events);
     let bets = placed_bets(events);
 
-    for player in players.keys().into_iter() {
+    console_log(&format!("Players {:#?}", players));
+    console_log(&format!("Bets {:#?}", bets));
+
+    for player in players.keys() {
         if !bets.contains_key(player) {
             return false;
         }
@@ -152,7 +165,7 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
             }
-            Event::RaceFinished { first, .. } => {
+            Event::RaceFinished(Results { first, .. }) => {
                 for bet in bets.iter() {
                     accounts.entry(bet.session_id).and_modify(|account| {
                         if bet.monster_id == *first {
@@ -170,13 +183,63 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     accounts
 }
 
+pub fn game_id(events: &Vector<Event>) -> String {
+    match &events[0] {
+        Event::GameCreated { game_id, .. } => game_id.clone(),
+        _ => "123456".into(),
+    }
+}
+
+pub fn round(events: &Vector<Event>) -> u64 {
+    let mut round = 0;
+
+    for event in events {
+        match event {
+            Event::GameStarted => round += 1,
+            Event::RaceFinished(_) => round += 1,
+            _ => {}
+        }
+    }
+
+    round
+}
+
+pub fn race_seed(events: &Vector<Event>) -> u32 {
+    for event in events.iter().rev() {
+        if let Event::RaceStarted { seed } = event {
+            return *seed;
+        }
+    }
+
+    0
+}
+
+pub fn monsters(events: &Vector<Event>) -> [&'static Monster; 3] {
+    use rand::seq::SliceRandom;
+
+    let mut hasher = DefaultHasher::new();
+    game_id(events).hash(&mut hasher);
+
+    let seed = hasher.finish() ^ round(events);
+    let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
+
+    MONSTERS
+        .choose_multiple(&mut rng, 3)
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap()
+}
+
 #[cfg(test)]
 mod tests {
 
     use im::{vector, HashMap, Vector};
     use uuid::Uuid;
 
-    use crate::models::events::{Event, PlacedBet};
+    use crate::models::{
+        events::{Event, PlacedBet},
+        monsters::Results,
+    };
 
     use super::account_balance;
 
@@ -407,11 +470,12 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_a,
                 second: monster_b,
-                third: monster_c
-            }
+                third: monster_c,
+                rounds: Vec::new(),
+            })
         ];
 
         let accounts = account_balance(&events);
@@ -456,11 +520,12 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_a,
                 second: monster_b,
-                third: monster_c
-            },
+                third: monster_c,
+                rounds: Vec::new(),
+            }),
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_a,
@@ -471,11 +536,12 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_b,
                 second: monster_a,
-                third: monster_c
-            },
+                third: monster_c,
+                rounds: Vec::new(),
+            }),
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_b,
@@ -486,11 +552,12 @@ mod tests {
                 monster_id: monster_c,
                 amount: 300
             }),
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_c,
                 second: monster_b,
-                third: monster_a
-            }
+                third: monster_a,
+                rounds: Vec::new(),
+            })
         ];
 
         let accounts = account_balance(&events);
@@ -536,11 +603,12 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_a,
                 second: monster_b,
-                third: monster_c
-            },
+                third: monster_c,
+                rounds: Vec::new(),
+            }),
             Event::BoughtCard { session_id: bob },
             Event::BorrowedMoney {
                 session_id: bob,
@@ -560,11 +628,12 @@ mod tests {
                 session_id: alice,
                 amount: 100
             },
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_b,
                 second: monster_a,
-                third: monster_c
-            },
+                third: monster_c,
+                rounds: Vec::new(),
+            }),
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_b,
@@ -575,11 +644,12 @@ mod tests {
                 monster_id: monster_c,
                 amount: 300
             }),
-            Event::RaceFinished {
+            Event::RaceFinished(Results {
                 first: monster_c,
                 second: monster_b,
-                third: monster_a
-            },
+                third: monster_a,
+                rounds: Vec::new(),
+            }),
             Event::PaidBackMoney {
                 session_id: bob,
                 amount: 500

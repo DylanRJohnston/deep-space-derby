@@ -5,11 +5,10 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 use plugins::animation_link::AnimationLinkPlugin;
 use plugins::asset_loader::load_assets;
+use plugins::event_stream::EventStreamPlugin;
 use plugins::fetch_data::FetchDataPlugin;
 use plugins::menus::MenuPlugin;
 use plugins::monster::MonsterPlugin;
-
-use leptos::*;
 
 mod plugins;
 
@@ -30,6 +29,7 @@ fn main() {
             }),
             ..default()
         }))
+        .add_plugins(EventStreamPlugin)
         .add_state::<AppState>()
         .add_plugins(
             ProgressPlugin::new(AppState::Splash)
@@ -45,20 +45,15 @@ fn main() {
         )
         .add_plugins(AnimationLinkPlugin)
         .add_plugins(MonsterPlugin)
-        .add_plugins(MenuPlugin)
+        // .add_plugins(MenuPlugin)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 0.70,
         })
         .add_plugins(FetchDataPlugin)
         .add_systems(Startup, setup)
-        .add_plugins(WorldInspectorPlugin::new());
-
-    mount_to_body(|| {
-        view! {
-            <h1>"Hello, World!"</h1>
-        }
-    });
+        // .add_plugins(WorldInspectorPlugin::new())
+        .run();
 }
 
 fn ui_progress_bar(counter: Res<ProgressCounter>) {
@@ -99,3 +94,4 @@ fn setup(
         ..default()
     });
 }
+

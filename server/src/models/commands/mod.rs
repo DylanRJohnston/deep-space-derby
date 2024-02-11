@@ -4,13 +4,23 @@ use uuid::Uuid;
 
 use super::events::Event;
 
+pub enum Effect {
+    Alarm(i64),
+    SoftCommand(fn(&Vector<Event>) -> Option<Event>),
+}
+
 pub trait Command {
     type Input: Serialize + DeserializeOwned;
 
-    fn url(game_id: &str) -> String;
+    fn url(game_id: &str) -> String
+    where
+        Self: Sized;
 
     #[allow(unused_variables)]
-    fn redirect(game_id: &str) -> Option<String> {
+    fn redirect(game_id: &str) -> Option<String>
+    where
+        Self: Sized,
+    {
         None
     }
 
@@ -18,7 +28,9 @@ pub trait Command {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<Vec<Event>, String>;
+    ) -> Result<(Vec<Event>, Option<Effect>), String>
+    where
+        Self: Sized;
 }
 
 pub trait GameCode {
@@ -39,3 +51,4 @@ pub use ready_player::ReadyPlayer;
 
 pub mod place_bets;
 pub use place_bets::PlaceBets;
+
