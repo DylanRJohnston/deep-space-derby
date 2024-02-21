@@ -4,292 +4,157 @@ body {
   height: 100vh;
   margin: 0px;
   overflow: hidden;
+  background-color: #BBB;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serifx;
 }
 
 * {
   box-sizing: border-box;
 }
 
-.main-menu {
-  display: flex;
-
-  height: 100%;
-  width: 100%;
-
-  padding: 24px;
-
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
+h1 {
+  font-size: 3rem;
+  font-weight: 400;
 }
 
-.join-screen {
-  display: flex;
-
-  height: 100%;
+.headroom {
+  height: 3rem;
   width: 100%;
+}
 
-  padding: 24px;
+.right-aligned {
+  text-align: right;
+}
 
+.container {
+  padding: 2rem;
+  border-radius: 0.5rem;
+}
+
+.full-height {
+  height: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.vertical-stack {
+  display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  gap: 1rem;
 }
 
-.join-input {
+.horizontal-stack {
   display: flex;
   flex-direction: row;
-  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.join-input > p {
+.title {
+  text-align: center;
   margin: 0px;
 }
 
-
-.player-lobby-container {
-  display: flex;
-
-  height: 100%;
-  width: 100%;
-
-  padding: 24px;
-  gap: 24px;
-
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.top-row {
-  display: flex;
-
-  width: 100%;
-
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-
-  font-size: 16px;
-}
-
-.player-lobby-container > img {
-  width: 50%;
-  max-width: 200px;
-  border-radius: 50%;
-  border: 8px solid black;
-}
-
-.name-change {
-  display: flex;
-
-  width: 50%;
-  height: 1em;
-
-  flex-direction: row;
-  align-items: center;
-  gap: 24px;
-}
-
-.button-tray {
-  display: flex;
-  
-  width: 100%;
-  margin-top: auto;
-
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.host-lobby-container {
-  display: flex;
-
-  height: 100%;
-  width: 100%;
-
-  padding: 24px;
-  gap: 24px;
-
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.avatar-previews {
-  display: grid;
-  width: 100%;
-
-  grid-template-columns: repeat(5, 1fr);
-  gap: 100px;
-}
-
-.avatar-container {
-  display: flex;
-
-  flex-direction: column;
-  
-  border: solid black;
-  gap: 24px;
-
-  justify-content: center;
-  padding: 24px;
-  align-items: center;
-}
-
-.avatar-container > img {
-  width: 50%;
-  max-width: 200px;
-  border-radius: 50%;
-  border: 1px solid black;
-}
-
-.avatar-container > .name {
-  font-size: 48px;
-}
-
-.avatar-container > .status {
-  font-size: 24px;
-}
-
-.player-pregame-container {
-  display: flex;
-
-  height: 100%;
-  width: 100%;
-
-  padding: 24px;
-  gap: 24px;
-
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.creature-line {
-  display: flex;
-
-  flex-direction: row;
-  gap: 24px;
-}
-
-.creature-container {
-  display: flex;
-
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  border: 1px grey solid;
-  padding: 24px;
-
-  border-radius: 24px;
-
-  gap: 8px;
-}
-
-.creature-avatar {
-  display: block;
-
-  width: 100px;
-  height: 100px;
-
-  background-color: grey;
-  border-radius: 50%;
-}
-
-.betting-row {
-  display: flex;
-
-  width: 100%;
-
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-.account-line {
-  display: grid;
-
-  grid-template-rows: 1fr 1fr;
-  grid-auto-flow: column;
-
-  background-color: black;
-
-  gap: 1px;
-}
-
-.account-line > div {
-  padding: 4px 8px;
-  background-color: white;
-}
-
-.card-line {
-  display: block;
-  transform: rotate(0deg);
-}
-
-.card {
-  position: absolute;
-
-  top: 0px;
-  right: -75px;
-
-  width: 150px;
-  height: 250px;
-
-  border: 1px solid black;
-  border-radius: 24px;
-  background-color: white;
-
-  box-shadow: grey -2px 2px 4px;
-}
-
-.card-line > :nth-child(1) {
-  transform: rotate(-30deg);
-  transform-origin: 50% 120%;
-}
-
-.card-line > :nth-child(3) {
-  transform: rotate(30deg);
-  transform-origin: 50% 120%;
-}
-
-.host-pre-game-container {
-  display: flex;
-
-  width: 100vw;
-  width: 100vh;
-
-  flex-direction: column;
-}
-
-.monster-container {
-  
-}
-
-.race-container {
-  display: flex;
-  flex-direction: column;
+.full-screen {
   width: 100vw;
   height: 100vh;
 }
 
-.racecourse {
-  
+.splash-image {
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  width: 60%;
+  max-height: 500px;
+  aspect-ratio: 1;
+  padding: 1rem 0;
+  background-color: #888;
+  border-radius: 0.5rem;
+
+  margin-top: 1rem;
+  margin-bottom: 3rem;
 }
 
-body {
-  background: linear-gradient(135deg,
-          white 0%,
-          white 49%,
-          black 49%,
-          black 51%,
-          white 51%,
-          white 100%);
-  background-repeat: repeat;
-  background-size: 20px 20px;
-}
-
-canvas {
+.button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  color: black;
+  font-size: 1rem;
   background-color: white;
+  border: none;
+  border-radius: 0.5rem;
+  height: 4rem;
+  width: 100%;
+  flex-grow: 1;
+  max-width: 400px;
+  min-width: 200px;
+}
+
+.button:hover {
+  border: 2px solid black;
+}
+
+.input {
+  display: flex;
+  flex-direction: column;
+}
+
+.input > label {
+  padding-left: 0.5rem;
+  font-size: 1rem;
+}
+
+.input > input {
+  height: 4rem;
+  width: 100%;
+  flex-grow: 1;
+  max-width: 400px;
+  min-width: 200px;
+  border-radius: 0.5rem;
+  border: none;
+  box-shadow: none;
+  font-size: 2rem;
+  text-align: center;
+  background-color: #555;
+  text-transform: uppercase;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  grid-auto-flow: column dense;
+  gap: 1rem;
+}
+
+.avatar-grid > div:nth-child(2) {
+  grid-row: 1;
+}
+
+.avatar-img {
+  display: flex;
+  background-color: #888;
+  border-radius: 0.5rem;
+  height: 150px;
+  aspect-ratio: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.monster-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3em;
 }

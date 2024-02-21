@@ -1,8 +1,6 @@
-mod generate_game_id;
 mod use_game_id;
 mod use_websocket;
 use cookie::Cookie;
-pub use generate_game_id::*;
 use leptos_reactive::{provide_context, use_context};
 pub use use_game_id::*;
 pub use use_websocket::*;

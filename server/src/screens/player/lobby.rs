@@ -16,53 +16,79 @@ pub fn lobby() -> impl IntoView {
     let session_id = use_session_id();
 
     let players = move || projections::players(&events.get());
-    let player_count = move || players().len();
-    let ready_count = move || {
-        players()
-            .into_iter()
-            .filter_map(|(_, info)| info.ready.then_some(true))
-            .count()
-    };
 
     let player = move || players().get(&session_id).cloned().unwrap_or_default();
 
     let name_ref = create_node_ref::<Input>();
 
-    let change_profile = {
-        let game_id = game_id.clone();
-
-        create_action(move |name: &String| {
-            server_fn::<ChangeProfile>(
-                &game_id,
-                &change_profile::Input {
-                    name: name.to_owned(),
-                },
-            )
-        })
-    };
-
-    let ready_player = {
-        let game_id = game_id.clone();
-
-        create_action(move |_: &()| server_fn::<ReadyPlayer>(&game_id, &()))
-    };
+    let ready_player = create_action(move |_: &()| async move {
+        server_fn::<ChangeProfile>(
+            game_id,
+            &change_profile::Input {
+                name: name_ref.get().unwrap().value(),
+            },
+        )
+        .await?;
+        server_fn::<ReadyPlayer>(game_id, &()).await
+    });
+    
 
     view! {
-        <div class="player-lobby-container">
-            <div class="top-row">
-                <div>"Lobby: "{game_id}</div>
-                <div>"Ready: "{ready_count}"/"{player_count}</div>
+        <div class="vertical-stack container full-width full-height">
+            <div class="headroom">
+                <div class="header right-aligned">"Lobby = " {game_id}</div>
             </div>
-            <img class="profile-picture" src="https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png" />
-            <div class="name-change">
-                <p>"Name:"</p>
-                <input type="text" _ref=name_ref prop:value=move || player().name />
-                <button on:click=move |_| change_profile.dispatch(name_ref.get().unwrap().value()) >"Change"</button>
-            </div>
-            <div class="button-tray">
-                <button>"Leave"</button>
-                <button on:click=move |_| ready_player.dispatch(())>"Ready"</button>
-            </div>
+            {move || {
+                if !player().ready {
+                    view! {
+                        <h1>"Profile"</h1>
+                        <div class="avatar-img">"Image"</div>
+
+                        <div class="vertical-stack container input">
+                            <label for="name">"Name:"</label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                _ref=name_ref
+                                prop:value=move || player().name
+                            />
+                        </div>
+                        <button class="button" on:click=move |_| { ready_player.dispatch(()) }>
+                            "Ready"
+                        </button>
+                        <a class="button" href="/play">
+                            "Leave"
+                        </a>
+                    }
+                        .into_view()
+                } else {
+                    view! {
+                        <span>"Waiting for other players..."</span>
+                        <div class="avatar-img">"Image"</div>
+
+                        <h1>{player().name}</h1>
+                        <span>"Ready"</span>
+                    }
+                        .into_view()
+                }
+            }}
+
         </div>
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

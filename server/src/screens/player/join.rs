@@ -1,33 +1,26 @@
 use leptos::*;
 use leptos_router::*;
 
+use crate::components::{layouts::VerticalStack, molecules::TextInput};
+
 #[component]
 pub fn join() -> impl IntoView {
     view! {
-        <Form action="/api/join_game" method="POST" class="join-screen">
-            <h1>"Join Game"</h1>
-                <label for="code">"Lobby Code"</label>
-                <input
+        <div class="vertical-stack container full-height">
+            <div class="headroom"></div>
+            <h1 class="title">"Join a game"</h1>
+            <div class="splash-image">"Image"</div>
+            <Form action="/api/join_game" method="POST" class="vertical-stack">
+                <TextInput
                     id="code"
-                    type="text"
-                    name="code"
-                    required
+                    name="Lobby Code"
                     pattern="[A-Z0-9]{6}"
                     minlength=6
                     maxlength=6
                 />
-                <input
-                    type="text"
-                    name="name"
-                    prop:value="Bob"
-                    hidden
-                />
-            <div class="button-tray">
-                <button>
-                    <a href="/">"Back"</a>
-                </button>
-               <input type="submit" value="Join" />
-            </div>
-        </Form>
+                <input type="text" name="name" prop:value="Bob" hidden/>
+                <input class="button" type="submit" value="Join"/>
+            </Form>
+        </div>
     }
 }

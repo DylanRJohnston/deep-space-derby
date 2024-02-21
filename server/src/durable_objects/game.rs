@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 use worker::{
-    console_error, console_log, console_warn, durable_object, Env, ListOptions, Request, Response, Result, RouteContext, Router, State, Storage, WebSocket, WebSocketPair
+    console_error, console_log, console_warn, durable_object, Env, ListOptions, Request, Response,
+    Result, RouteContext, Router, State, Storage, WebSocket, WebSocketPair,
 };
 
 use crate::models::{
@@ -81,11 +82,7 @@ impl DurableObject for Game {
         Ok(())
     }
 
-    pub async fn websocket_error(
-        &mut self,
-        ws: WebSocket,
-        _error: worker::Error,
-    ) -> Result<()> {
+    pub async fn websocket_error(&mut self, ws: WebSocket, _error: worker::Error) -> Result<()> {
         self.sessions.remove(&ws);
 
         Ok(())
@@ -102,16 +99,11 @@ pub struct Counter {
 }
 
 impl Game {
-    async fn on_connect(
-        req: Request,
-        ctx: RouteContext<&mut Game>,
-    ) -> Result<Response> {
+    async fn on_connect(req: Request, ctx: RouteContext<&mut Game>) -> Result<Response> {
         let game = ctx.data;
 
         let session_id = match extract_session_id(&req) {
-            None => {
-                return Response::error("cannot connect to game without session_id", 400)
-            }
+            None => return Response::error("cannot connect to game without session_id", 400),
             Some(session_id) => session_id,
         };
 
@@ -319,45 +311,24 @@ async fn command_handler<C: Command>(
     match effect {
         Some(Effect::Alarm(time)) => {
             match game.state.storage().get_alarm().await? {
-                Some(_) => { console_warn!("{} attempted to set an alarm while one was already set, noop", type_name::<C>()) },
-                None => game.state.storage().set_alarm(time).await?
+                Some(_) => {
+                    console_warn!(
+                        "{} attempted to set an alarm while one was already set, noop",
+                        type_name::<C>()
+                    )
+                }
+                None => game.state.storage().set_alarm(time).await?,
             };
-        },
+        }
         Some(Effect::SoftCommand(f)) => {
             if let Some(event) = f(game.events.vector().await?) {
                 game.add_event(event).await?
             }
         }
-        None => {},
+        None => {}
     }
-
 
     // game.state.storage().set_alarm(scheduled_time)
 
     Ok(())
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

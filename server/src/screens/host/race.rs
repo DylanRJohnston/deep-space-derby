@@ -41,4 +41,3 @@ pub fn race() -> impl IntoView {
         </div>
     }
 }
-

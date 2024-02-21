@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -17,7 +19,7 @@ pub struct ChangeProfile;
 impl Command for ChangeProfile {
     type Input = Input;
 
-    fn url(game_id: &str) -> String {
+    fn url(game_id: impl Display) -> String {
         format!(
             "/api/object/game/by_code/{}/commands/change_profile",
             game_id
@@ -46,4 +48,3 @@ impl Command for ChangeProfile {
         ))
     }
 }
-

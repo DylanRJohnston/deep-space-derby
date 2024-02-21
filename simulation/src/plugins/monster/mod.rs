@@ -337,4 +337,3 @@ fn start_race(
         commands.entity(entity).remove::<Start>();
     }
 }
-

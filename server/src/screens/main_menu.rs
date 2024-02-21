@@ -1,21 +1,23 @@
 use leptos::{component, view, IntoView};
 use leptos_router::Form;
 
+use crate::components::layouts::{HorizontalStack, VerticalStack};
+
 #[component]
 pub fn main_menu() -> impl IntoView {
     view! {
-        <Form action="/api/create_game" method="POST" class="main-menu">
+        <div class="vertical-stack container full-height">
+            <div class="headroom"></div>
             <h1 class="title">"Deep Space Derby"</h1>
-            <input class="host" type="submit" value="Host"/>
-            <div class="play">
-                <a href="/play">
-                    <h2>"Play"</h2>
+            <div class="splash-image">"Image"</div>
+            <HorizontalStack>
+                <Form class="button" action="/api/create_game" method="POST">
+                    <input class="button" type="submit" value="Host"/>
+                </Form>
+                <a class="button" href="/play">
+                    "Join"
                 </a>
-            </div>
-            <div class="exit">
-                <h2>"Exit"</h2>
-            </div>
-        </Form>
+            </HorizontalStack>
+        </div>
     }
 }
-

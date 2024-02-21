@@ -1,4 +1,5 @@
-use leptos::{component, view, CollectView, IntoView, SignalGet};
+use im::HashMap;
+use leptos::*;
 
 use crate::{
     models::projections,
@@ -6,49 +7,36 @@ use crate::{
 };
 
 #[component]
+fn player(name: String, ready: bool) -> impl IntoView {
+    view! {
+        <div class="container bg-white vertical-stack">
+            <div class="avatar-img">"Image"</div>
+            <span>{name}</span>
+            {move || if ready { "Ready" } else { "Busy..." }}
+        </div>
+    }
+}
+
+#[component]
 pub fn lobby() -> impl IntoView {
     let events = use_events();
     let game_id = use_game_id();
 
     let players = move || projections::players(&events.get());
-    let player_count = move || players().len();
-    let ready_count = move || {
-        players()
-            .into_iter()
-            .filter_map(|(_, info)| info.ready.then_some(true))
-            .count()
-    };
 
     view! {
-        <div class="host-lobby-container">
-            <div class="top-row">
-                <div>"Lobby: " <span data-testid="game_code">{game_id}</span></div>
-                <div>"Ready: " {ready_count} "/" {player_count}</div>
-            </div>
-            <div class="avatar-previews">
-
-                {move || {
-                    players()
-                        .values()
-                        .map(|info| {
-                            view! {
-                                <div class="avatar-container">
-                                    <img
-                                        class="profile-picture"
-                                        src="https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"
-                                    />
-                                    <div class="name">{info.name.clone()}</div>
-                                    <div class="status">
-                                        "Ready: " {if info.ready { "✅" } else { "❌" }}
-                                    </div>
-                                </div>
-                            }
-                        })
-                        .collect_view()
-                }}
+        <div class="vertical-stack container full-height full-width">
+            <h1>"Lobby Code = " {game_id}</h1>
+            <div class="avatar-grid">
+                <For
+                    each=players
+                    key=|it| it.1.clone()
+                    children=move |(_, player)| {
+                        view! { <Player name=player.name ready=player.ready/> }
+                    }
+                />
 
             </div>
         </div>
     }
 }
-

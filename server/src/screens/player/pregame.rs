@@ -128,31 +128,27 @@ pub fn pre_game() -> impl IntoView {
 
     let available_money = Signal::derive(move || max(account_balance() - sum_of_bets(), 0));
 
-    let place_bets = {
-        let game_id = game_id.clone();
-
-        create_action({
-            let bets = bets.clone();
-            move |_: &()| {
-                server_fn::<PlaceBets>(
-                    &game_id,
-                    &place_bets::Input {
-                        bets: {
-                            let bets = bets
-                                .iter()
-                                .map(|bet| place_bets::Bet {
-                                    monster_id: bet.monster_id,
-                                    amount: (bet.amount)(),
-                                })
-                                .collect();
-                            console_log(&format!("{:#?}", bets));
-                            bets
-                        },
+    let place_bets = create_action({
+        let bets = bets.clone();
+        move |_: &()| {
+            server_fn::<PlaceBets>(
+                game_id,
+                &place_bets::Input {
+                    bets: {
+                        let bets = bets
+                            .iter()
+                            .map(|bet| place_bets::Bet {
+                                monster_id: bet.monster_id,
+                                amount: (bet.amount)(),
+                            })
+                            .collect();
+                        console_log(&format!("{:#?}", bets));
+                        bets
                     },
-                )
-            }
-        })
-    };
+                },
+            )
+        }
+    });
 
     let placed_bets = create_memo(move |_| {
         projections::placed_bets(&events())
@@ -225,4 +221,3 @@ pub fn pre_game() -> impl IntoView {
         </div>
     }
 }
-

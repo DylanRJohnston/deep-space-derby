@@ -126,4 +126,3 @@ mod test {
         race(monsters, seed) == race(monsters, seed)
     }
 }
-

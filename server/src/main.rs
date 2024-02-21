@@ -9,12 +9,15 @@ use std::net::SocketAddr;
 use futures_util::Future;
 use leptos::*;
 use leptos_cloudflare::{LeptosRoutes, WorkerRouterData};
-use models::commands::{Command, CreateGame, GameCode, JoinGame};
+use models::{
+    commands::{Command, CreateGame, GameCode, JoinGame},
+    game_id::generate_game_code,
+};
 use std::{convert::identity, str::FromStr};
-use utils::generate_game_code;
 use wasm_bindgen::JsValue;
 use worker::{event, Method, Request, RequestInit, RouteContext};
 
+mod components;
 mod durable_objects;
 mod models;
 mod screens;
@@ -51,7 +54,7 @@ where
 
         let inner_response = ctx
             .durable_object("game")?
-            .id_from_name(input.game_code())?
+            .id_from_name(&input.game_code())?
             .get_stub()?
             .fetch_with_request(request)
             .await?;

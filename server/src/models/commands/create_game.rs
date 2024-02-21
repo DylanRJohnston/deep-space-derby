@@ -1,19 +1,21 @@
+use std::fmt::Display;
+
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::events::Event;
+use crate::models::{events::Event, game_id::GameID};
 
 use super::{Command, Effect, GameCode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
-    pub code: String,
+    pub code: GameID,
 }
 
 impl GameCode for Input {
-    fn game_code(&self) -> &str {
-        &self.code
+    fn game_code(&self) -> GameID {
+        self.code
     }
 }
 
@@ -23,11 +25,11 @@ pub struct CreateGame;
 impl Command for CreateGame {
     type Input = Input;
 
-    fn url(game_id: &str) -> String {
+    fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/commands/create_game", game_id)
     }
 
-    fn redirect(game_id: &str) -> Option<String> {
+    fn redirect(game_id: impl Display) -> Option<String> {
         Some(format!("/host/{}", game_id))
     }
 
@@ -42,13 +44,6 @@ impl Command for CreateGame {
             );
         }
 
-        if input.code.len() != 6 {
-            return Err(format!(
-                "game code must be exactly 6, got {}",
-                input.code.len()
-            ));
-        }
-
         Ok((
             vec![Event::GameCreated {
                 game_id: input.code,
@@ -58,4 +53,3 @@ impl Command for CreateGame {
         ))
     }
 }
-

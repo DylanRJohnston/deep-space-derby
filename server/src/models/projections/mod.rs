@@ -4,11 +4,12 @@ use crate::models::monsters::MONSTERS;
 
 use super::{
     events::{Event, PlacedBet},
+    game_id::GameID,
     monsters::{Monster, Results},
 };
 use im::{HashMap, Vector};
 use leptos::leptos_dom::logging::console_log;
-use rand::{distributions::Standard, SeedableRng};
+use rand::SeedableRng;
 use uuid::Uuid;
 use worker::console_log;
 
@@ -183,10 +184,10 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     accounts
 }
 
-pub fn game_id(events: &Vector<Event>) -> String {
+pub fn game_id(events: &Vector<Event>) -> GameID {
     match &events[0] {
-        Event::GameCreated { game_id, .. } => game_id.clone(),
-        _ => "123456".into(),
+        Event::GameCreated { game_id, .. } => *game_id,
+        _ => "123456".try_into().unwrap(),
     }
 }
 
@@ -259,7 +260,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -289,7 +290,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -322,7 +323,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -360,7 +361,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -405,7 +406,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -449,7 +450,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -499,7 +500,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -581,7 +582,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: "ABCDEF".to_owned(),
+                game_id: "ABCDEF".try_into().unwrap(),
                 session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
@@ -666,4 +667,3 @@ mod tests {
         )
     }
 }
-

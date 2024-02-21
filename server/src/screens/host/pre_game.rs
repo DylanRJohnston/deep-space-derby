@@ -36,10 +36,10 @@ pub fn leaderboard() -> impl IntoView {
 #[component]
 pub fn monster_card(monster: &'static Monster) -> impl IntoView {
     view! {
-        <div class="monster-container">
-            <div class="monster-avatar"></div>
+        <div class="container vertical-stack bg-white">
+            <span>{monster.name}</span>
+            <div class="avatar-img">"Image"</div>
             <div class="monster-stats">
-                <div class="monster-name">{monster.name}</div>
                 <div class="monster-stats">"Speed: " {monster.speed}</div>
             </div>
         </div>
@@ -52,13 +52,16 @@ pub fn pre_game() -> impl IntoView {
     let monsters = move || projections::monsters(&events());
 
     view! {
-        <div class="host-pre-game-container">
-            <For
-                each=monsters
-                key=|it| (*it).clone()
-                children=|monster| view! { <MonsterCard monster/> }
-            />
+        <div class="vertical-stack full-width full-height container">
+            <h1>"Race Overview"</h1>
+            <div class="monster-grid">
+                <For
+                    each=monsters
+                    key=|it| (*it).clone()
+                    children=|monster| view! { <MonsterCard monster/> }
+                />
+            </div>
+            <span>"Race will start once all bets are placed"</span>
         </div>
     }
 }
-

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::monsters::Results;
+use super::{game_id::GameID, monsters::Results};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Hash)]
 pub struct PlacedBet {
@@ -12,7 +12,7 @@ pub struct PlacedBet {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash)]
 pub enum Event {
-    GameCreated { session_id: Uuid, game_id: String },
+    GameCreated { session_id: Uuid, game_id: GameID },
     PlayerJoined { session_id: Uuid, name: String },
     ChangedProfile { session_id: Uuid, name: String },
     PlayerReady { session_id: Uuid },
@@ -26,4 +26,3 @@ pub enum Event {
     RaceFinished(Results),
     GameFinished,
 }
-

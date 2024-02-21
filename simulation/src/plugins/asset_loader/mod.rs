@@ -25,4 +25,3 @@ pub fn load_assets(
 
     commands.insert_resource(asset_pack);
 }
-

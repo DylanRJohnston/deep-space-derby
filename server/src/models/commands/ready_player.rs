@@ -1,5 +1,7 @@
+use std::fmt::Display;
+
 use super::{Command, Effect};
-use crate::models::{events::Event, projections};
+use crate::models::{events::Event, game_id::GameID, projections};
 use im::Vector;
 use uuid::Uuid;
 
@@ -9,7 +11,7 @@ pub struct ReadyPlayer;
 impl Command for ReadyPlayer {
     type Input = ();
 
-    fn url(game_id: &str) -> String {
+    fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/commands/ready_player", game_id)
     }
 
@@ -35,4 +37,3 @@ impl Command for ReadyPlayer {
         Ok((events, Some(Effect::SoftCommand(maybe_start_game))))
     }
 }
-

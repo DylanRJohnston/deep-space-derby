@@ -1,8 +1,10 @@
+use std::fmt::Display;
+
 use im::Vector;
 use serde::{de::DeserializeOwned, Serialize};
 use uuid::Uuid;
 
-use super::events::Event;
+use super::{events::Event, game_id::GameID};
 
 pub enum Effect {
     Alarm(i64),
@@ -12,12 +14,12 @@ pub enum Effect {
 pub trait Command {
     type Input: Serialize + DeserializeOwned;
 
-    fn url(game_id: &str) -> String
+    fn url(game_id: impl Display) -> String
     where
         Self: Sized;
 
     #[allow(unused_variables)]
-    fn redirect(game_id: &str) -> Option<String>
+    fn redirect(game_id: impl Display) -> Option<String>
     where
         Self: Sized,
     {
@@ -34,7 +36,7 @@ pub trait Command {
 }
 
 pub trait GameCode {
-    fn game_code(&self) -> &str;
+    fn game_code(&self) -> GameID;
 }
 
 pub mod create_game;
@@ -51,4 +53,3 @@ pub use ready_player::ReadyPlayer;
 
 pub mod place_bets;
 pub use place_bets::PlaceBets;
-

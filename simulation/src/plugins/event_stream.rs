@@ -43,4 +43,3 @@ fn read_event_stream(mut next_state: ResMut<NextState<AppState>>, channel: Res<C
 pub fn send_game_event() -> Result<(), JsError> {
     EVENT_CHANNEL.0.send(()).map_err(Into::into)
 }
-

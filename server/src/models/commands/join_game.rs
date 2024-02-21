@@ -1,34 +1,36 @@
+use std::fmt::Display;
+
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::{events::Event, projections};
+use crate::models::{events::Event, game_id::GameID, projections};
 
 use super::{Command, Effect, GameCode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
     pub name: String,
-    pub code: String,
+    pub code: GameID,
 }
 
 #[derive(Default)]
 pub struct JoinGame;
 
 impl GameCode for Input {
-    fn game_code(&self) -> &str {
-        &self.code
+    fn game_code(&self) -> GameID {
+        self.code
     }
 }
 
 impl Command for JoinGame {
     type Input = Input;
 
-    fn url(game_id: &str) -> String {
+    fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/command/join_game", game_id)
     }
 
-    fn redirect(game_id: &str) -> Option<String> {
+    fn redirect(game_id: impl Display) -> Option<String> {
         Some(format!("/play/{}", game_id))
     }
 
@@ -58,4 +60,3 @@ impl Command for JoinGame {
         ))
     }
 }
-

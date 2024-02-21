@@ -1,5 +1,8 @@
 use core::hash;
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::{
+    fmt::Display,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use im::Vector;
 use serde::{Deserialize, Serialize};
@@ -8,6 +11,7 @@ use worker::console_log;
 
 use crate::models::{
     events::{Event, PlacedBet},
+    game_id::GameID,
     projections,
 };
 
@@ -30,7 +34,7 @@ pub struct PlaceBets;
 impl Command for PlaceBets {
     type Input = Input;
 
-    fn url(game_id: &str) -> String {
+    fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/command/place_bet", game_id)
     }
 
@@ -86,4 +90,3 @@ impl Command for PlaceBets {
         Ok((events, Some(Effect::SoftCommand(maybe_start_race))))
     }
 }
-

@@ -48,4 +48,3 @@ fn display_data(tasks: Query<(Entity, &DataRequest)>, mut commands: Commands) {
         })
     }
 }
-

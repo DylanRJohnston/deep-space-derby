@@ -1,10 +1,11 @@
 use crate::models::commands::Command;
+use crate::models::game_id::GameID;
 use leptos::ServerFnError;
 use std::future::Future;
 
-#[cfg(not(feature = "ssr"))]
+// #[cfg(not(feature = "ssr"))]
 pub fn server_fn<C: Command>(
-    game_id: &str,
+    game_id: GameID,
     input: &C::Input,
 ) -> impl Future<Output = Result<(), ServerFnError>> {
     use gloo_net::http::Request;
@@ -28,12 +29,13 @@ pub fn server_fn<C: Command>(
     }
 }
 
-// TODO make this invoke the Durable Object on the server for better SSR, for now, just block forever
-#[cfg(feature = "ssr")]
-#[allow(unused_variables)]
-pub fn server_fn<C: Command>(
-    game_id: &str,
-    input: &C::Input,
-) -> impl Future<Output = Result<(), ServerFnError>> + 'static {
-    async { std::future::pending().await }
-}
+// // TODO make this invoke the Durable Object on the server for better SSR, for now, just block forever
+// #[cfg(feature = "ssr")]
+// #[allow(unused_variables)]
+// pub fn server_fn<C: Command>(
+//     game_id: GameID,
+//     input: &C::Input,
+// ) -> impl Future<Output = Result<(), ServerFnError>> + 'static {
+
+//     async { std::future::pending().await }
+// }

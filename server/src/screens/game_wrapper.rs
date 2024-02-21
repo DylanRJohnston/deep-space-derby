@@ -41,4 +41,3 @@ pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
     })
     .into_view()
 }
-
