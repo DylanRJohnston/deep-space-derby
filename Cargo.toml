@@ -20,8 +20,8 @@ opt-level = 1
 opt-level = 3
 
 [profile.release]
-codegen-units = 1
-strip = true
+lto = true
+opt-level = 's'
 
 [[workspace.metadata.leptos]]
 name = "deep-space-derby"

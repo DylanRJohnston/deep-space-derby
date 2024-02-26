@@ -82,7 +82,7 @@
 
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/server.wasm     --no-typescript --out-name index --target bundler --out-dir ./site    
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/client.wasm     --no-typescript --out-name index --target web     --out-dir ./site/pkg
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/simulation.wasm --no-typescript --out-name index --target web     --out-dir ./site/pkg
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/simulation.wasm --no-typescript --out-name simulation --target web     --out-dir ./site/pkg
           '';
 
           dev = pkgs.writeShellScriptBin "dev" ''
@@ -169,6 +169,7 @@
               cargo-expand
               cargo-leptos
               leptosfmt
+              twiggy
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
