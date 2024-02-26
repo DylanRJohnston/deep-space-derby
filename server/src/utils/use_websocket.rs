@@ -1,7 +1,7 @@
 use im::vector::Vector;
 use leptos::{provide_context, use_context, ReadSignal, ServerFnError};
-use leptos_reactive::{Signal};
-use shared::models::events::Event;
+use leptos_reactive::Signal;
+use shared::models::{events::Event, game_id::GameID};
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
@@ -36,11 +36,18 @@ async fn sleep(ms: i32) {
 }
 
 #[cfg(not(feature = "ssr"))]
-pub fn create_event_signal(url: String) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
+pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
     use futures_util::StreamExt;
     use gloo_net::websocket::{futures::WebSocket, Message};
     use leptos::*;
     use wasm_bindgen_futures::spawn_local;
+
+    let url = {
+        let location = window().location();
+        let host = location.host().unwrap();
+
+        format!("wss://{}/api/object/game/by_code/{}/connect", host, game_id)
+    };
 
     let (connection, set_connection) = create_signal(Connection::Connecting);
     let (events, set_events) = create_signal(Vector::new());
@@ -80,7 +87,7 @@ pub fn create_event_signal(url: String) -> (ReadSignal<Connection>, ReadSignal<V
 
 #[cfg(feature = "ssr")]
 #[allow(unused_variables)]
-pub fn create_event_signal(url: String) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
+pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
     use leptos::create_signal;
 
     let (connection, _) = create_signal(Connection::Connecting);
@@ -99,5 +106,18 @@ pub fn provide_events(signal: Signal<Vector<Event>>) {
 pub fn use_events() -> Signal<Vector<Event>> {
     use_context::<EventsContainer>().unwrap().0
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

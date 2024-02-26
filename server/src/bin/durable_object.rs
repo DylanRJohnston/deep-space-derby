@@ -1,3 +1,9 @@
+#![feature(type_alias_impl_trait)]
+#![feature(try_blocks)]
+#![feature(async_closure)]
+#![feature(impl_trait_in_assoc_type)]
+#![feature(impl_trait_in_fn_trait_return)]
+
 use std::any::type_name;
 
 use cookie::Cookie;
@@ -14,8 +20,6 @@ use shared::models::{
     commands::{self, Command, Effect},
     events::Event,
 };
-
-use super::{Metadata, Session, Sessions};
 
 #[durable_object]
 pub struct Game {
@@ -334,4 +338,61 @@ async fn command_handler<C: Command>(
 }
 
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Metadata {
+    pub session_id: Uuid,
+}
+
+#[derive(Debug)]
+pub struct Session {
+    pub metadata: Metadata,
+    pub socket: WebSocket,
+}
+
+impl PartialEq for Session {
+    fn eq(&self, other: &Self) -> bool {
+        self.socket == other.socket
+    }
+}
+
+#[derive(Debug)]
+pub struct Sessions(Vec<Session>);
+
+impl Sessions {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn insert(&mut self, session: Session) {
+        self.0.push(session)
+    }
+
+    pub fn remove(&mut self, ws: &WebSocket) -> Option<Session> {
+        if let Some(position) = self.0.iter().position(|it| &it.socket == ws) {
+            return Some(self.0.remove(position));
+        }
+
+        None
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Session> {
+        self.0.iter()
+    }
+
+    pub fn broadcast(&self, data: &Event) -> Result<()> {
+        for session in self.iter() {
+            session.socket.send(data)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Default for Sessions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub fn main() {}
 

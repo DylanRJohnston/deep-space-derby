@@ -3,8 +3,6 @@ export * from "./index_bg.js";
 import wkmod from "./index_bg.wasm";
 import * as nodemod from "./index_bg.wasm";
 
-
-
 if (typeof process !== "undefined" && process.release.name === "node") {
   imports.__wbg_set_wasm(nodemod);
 } else {
@@ -22,4 +20,5 @@ export default {
   fetch: imports.fetch,
   scheduled: imports.scheduled,
   queue: imports.queue,
+  Game: imports.Game,
 };

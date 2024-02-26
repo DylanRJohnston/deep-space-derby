@@ -11,10 +11,7 @@ use crate::utils::{
 pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
     let game_id = use_game_id();
 
-    let (connection, events) = create_event_signal(format!(
-        "wss://localhost:8788/api/object/game/by_code/{}/connect",
-        game_id
-    ));
+    let (connection, events) = create_event_signal(game_id);
 
     let connection = create_memo(move |_| connection.get());
 

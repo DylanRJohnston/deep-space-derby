@@ -8,8 +8,7 @@ use leptos::mount_to_body;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 mod components;
-mod durable_objects;
-mod screens;
+pub mod screens;
 mod server_fns;
 mod utils;
 

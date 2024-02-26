@@ -1,9 +1,9 @@
-name = "worker-rust"
+name = "deep-space-derby"
 compatibility_date = "2023-10-30"
 
 [durable_objects]
-bindings = [{ name = "game", class_name = "Game" }]
+bindings = [{ name = "GAME", class_name = "Game" }]
 
 [[migrations]]
 tag = "v1"
-new_classes = ["game"]
+new_classes = ["Game"]

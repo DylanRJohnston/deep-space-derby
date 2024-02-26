@@ -10,5 +10,8 @@
   "scripts": {},
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "wrangler": "^3.29.0"
+  }
 }

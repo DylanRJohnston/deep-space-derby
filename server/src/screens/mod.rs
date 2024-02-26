@@ -10,7 +10,7 @@ mod player;
 mod router;
 
 #[component]
-pub fn app() -> impl leptos::IntoView {
+pub fn app() -> impl IntoView {
     provide_meta_context();
 
     view! {
@@ -32,3 +32,4 @@ pub fn app() -> impl leptos::IntoView {
         </div>
     }
 }
+

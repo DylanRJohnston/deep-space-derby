@@ -1,4 +1,4 @@
-use leptos::{SignalGet, SignalGetUntracked};
+use leptos::SignalGetUntracked;
 
 use leptos_router::use_params_map;
 
