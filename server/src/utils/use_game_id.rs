@@ -1,5 +1,5 @@
 use leptos::{SignalGet, SignalGetUntracked};
-use leptos_reactive::SpecialNonReactiveZone;
+
 use leptos_router::use_params_map;
 
 use shared::models::game_id::GameID;

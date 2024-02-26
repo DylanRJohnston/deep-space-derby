@@ -1,4 +1,4 @@
-use core::hash;
+
 use std::{
     fmt::Display,
     hash::{DefaultHasher, Hash, Hasher},
@@ -10,7 +10,6 @@ use uuid::Uuid;
 
 use crate::models::{
     events::{Event, PlacedBet},
-    game_id::GameID,
     projections,
 };
 

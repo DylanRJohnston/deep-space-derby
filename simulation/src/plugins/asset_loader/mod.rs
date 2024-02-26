@@ -15,8 +15,8 @@ const ASSET_PREFIX: &str = "./";
 
 pub fn load_assets(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut loading: ResMut<AssetsLoading>,
+    _asset_server: Res<AssetServer>,
+    _loading: ResMut<AssetsLoading>,
 ) {
     // let asset_pack = AssetPack {
     //     mushnub: asset_server.load(format!("{}/animated/Mushnub Evolved.glb", ASSET_PREFIX)),

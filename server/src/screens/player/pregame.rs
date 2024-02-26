@@ -1,11 +1,10 @@
 use std::{
     cmp::{max, min},
-    str::FromStr,
 };
 
-use im::Vector;
+
 use leptos::{
-    leptos_dom::{logging::console_log, IntoFragment},
+    leptos_dom::{logging::console_log},
     *,
 };
 use uuid::Uuid;

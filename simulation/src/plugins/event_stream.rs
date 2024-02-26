@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crossbeam_channel::SendError;
+
 use wasm_bindgen::prelude::*;
 
 use lazy_static::lazy_static;

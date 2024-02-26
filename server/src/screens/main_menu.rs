@@ -1,7 +1,7 @@
 use leptos::{component, view, IntoView};
 use leptos_router::Form;
 
-use crate::components::layouts::{HorizontalStack, VerticalStack};
+use crate::components::layouts::{HorizontalStack};
 
 #[component]
 pub fn main_menu() -> impl IntoView {

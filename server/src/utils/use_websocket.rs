@@ -1,6 +1,6 @@
 use im::vector::Vector;
 use leptos::{provide_context, use_context, ReadSignal, ServerFnError};
-use leptos_reactive::{Signal, SignalUpdate};
+use leptos_reactive::{Signal};
 use shared::models::events::Event;
 
 #[derive(Debug, Clone, PartialEq)]

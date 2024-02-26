@@ -1,4 +1,4 @@
-use bevy::{app::Plugins, prelude::*};
+use bevy::{prelude::*};
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 
 use crate::plugins::{

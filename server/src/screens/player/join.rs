@@ -1,7 +1,7 @@
 use leptos::*;
 use leptos_router::*;
 
-use crate::components::{layouts::VerticalStack, molecules::TextInput};
+use crate::components::{molecules::TextInput};
 
 #[component]
 pub fn join() -> impl IntoView {

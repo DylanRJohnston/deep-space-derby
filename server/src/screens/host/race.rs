@@ -18,9 +18,9 @@ pub fn race() -> impl IntoView {
     let monsters = projections::monsters(&events.get_untracked());
     let race_seed = projections::race_seed(&events.get_untracked());
 
-    let race = monsters::race(&monsters, race_seed);
+    let _race = monsters::race(&monsters, race_seed);
 
-    let UseIntervalReturn { counter, .. } = leptos_use::use_interval(1000);
+    let UseIntervalReturn {  .. } = leptos_use::use_interval(1000);
 
     send_game_event();
 

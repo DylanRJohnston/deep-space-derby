@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use super::{Command, Effect};
-use crate::models::{events::Event, game_id::GameID, projections};
+use crate::models::{events::Event, projections};
 use im::Vector;
 use uuid::Uuid;
 

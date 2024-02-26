@@ -14,7 +14,7 @@ impl Plugin for FetchDataPlugin {
 #[derive(Debug, Component)]
 pub struct DataRequest(AsyncTask<Result<String, ()>>);
 
-fn fetch_data(mut commands: Commands) {
+fn fetch_data(_commands: Commands) {
     // let task = AsyncTask::spawn(async {
     //     reqwest::get("https://dummyjson.com/products/1")
     //         .await?
