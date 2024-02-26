@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use worker::*;
 
-use crate::models::events::Event;
+use shared::models::events::Event;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
@@ -59,3 +59,4 @@ impl Default for Sessions {
         Self::new()
     }
 }
+

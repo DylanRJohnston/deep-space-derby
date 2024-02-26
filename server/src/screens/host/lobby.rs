@@ -1,10 +1,8 @@
 use im::HashMap;
 use leptos::*;
 
-use crate::{
-    models::projections,
-    utils::{use_events, use_game_id},
-};
+use crate::utils::{use_events, use_game_id};
+use shared::models::projections;
 
 #[component]
 fn player(name: String, ready: bool) -> impl IntoView {
@@ -26,7 +24,7 @@ pub fn lobby() -> impl IntoView {
 
     view! {
         <div class="vertical-stack container full-height full-width">
-            <h1>"Lobby Code = " {game_id}</h1>
+            <h1>"Lobby Code = " {game_id.to_string()}</h1>
             <div class="avatar-grid">
                 <For
                     each=players
@@ -40,3 +38,4 @@ pub fn lobby() -> impl IntoView {
         </div>
     }
 }
+

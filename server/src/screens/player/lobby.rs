@@ -1,10 +1,10 @@
 use leptos::{component, create_action, create_node_ref, html::Input, view, IntoView, SignalGet};
 
+use shared::models::{
+    commands::{change_profile, ChangeProfile, ReadyPlayer},
+    projections,
+};
 use crate::{
-    models::{
-        commands::{change_profile, ChangeProfile, ReadyPlayer},
-        projections,
-    },
     server_fns::server_fn,
     utils::{use_events, use_game_id, use_session_id},
 };
@@ -36,7 +36,7 @@ pub fn lobby() -> impl IntoView {
     view! {
         <div class="vertical-stack container full-width full-height">
             <div class="headroom">
-                <div class="header right-aligned">"Lobby = " {game_id}</div>
+                <div class="header right-aligned">"Lobby = " {game_id.to_string()}</div>
             </div>
             {move || {
                 if !player().ready {
@@ -77,6 +77,9 @@ pub fn lobby() -> impl IntoView {
         </div>
     }
 }
+
+
+
 
 
 

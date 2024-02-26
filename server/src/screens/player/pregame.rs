@@ -11,13 +11,13 @@ use leptos::{
 use uuid::Uuid;
 
 use crate::{
-    models::{
-        commands::{place_bets, PlaceBets},
-        monsters::Monster,
-        projections,
-    },
     server_fns::server_fn,
     utils::{use_events, use_game_id, use_session_id},
+};
+use shared::models::{
+    commands::{place_bets, PlaceBets},
+    monsters::Monster,
+    projections,
 };
 
 #[component]
@@ -181,7 +181,7 @@ pub fn pre_game() -> impl IntoView {
     view! {
         <div class="player-pregame-container">
             <div class="top-row">
-                <div>"Lobby: " {game_id}</div>
+                <div>"Lobby: " {game_id.to_string()}</div>
                 <div>"Minimum Bet: " {minimum_bet}</div>
             </div>
             <div class="account-line">
@@ -221,3 +221,4 @@ pub fn pre_game() -> impl IntoView {
         </div>
     }
 }
+

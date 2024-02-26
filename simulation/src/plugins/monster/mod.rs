@@ -12,10 +12,11 @@ pub struct MonsterPlugin;
 
 impl Plugin for MonsterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::MainMenu), setup)
+        app
+            // .add_systems(OnEnter(AppState::Lobby), setup)
             .add_systems(Update, run_behaviour)
-            .add_systems(Update, move_forward)
-            .add_systems(Update, start_race);
+            .add_systems(Update, move_forward.run_if(in_state(AppState::Race)))
+            .add_systems(Update, start_race.run_if(in_state(AppState::Race)));
     }
 }
 
@@ -61,6 +62,8 @@ fn extract_animations(animation_map: &HashMap<String, Handle<AnimationClip>>) ->
             .clone(),
     }
 }
+
+// pub fn spawn_monster()
 
 fn setup(mut commands: Commands, asset_pack: Res<AssetPack>, assets: Res<Assets<Gltf>>) {
     let mushnub = assets.get(&asset_pack.mushnub).unwrap();
@@ -151,8 +154,6 @@ pub struct Context<'a> {
     pub timer: &'a mut Timer,
 }
 
-// type Context<'a, 'b> = EventWriter<'a, OutputEvent>;
-
 #[state_machine(initial = "State::idle()", context_identifier = "_context")]
 impl Behaviour {
     #[state(entry_action = "enter_idle")]
@@ -235,14 +236,12 @@ impl Behaviour {
 
     #[action]
     fn enter_idle(_context: &mut Context) {
-        println!("Entering Idle Action Controller");
-
         let Context {
             animations, player, ..
         } = _context;
 
         player
-            .start_with_transition(animations.idle.clone(), Duration::from_secs_f32(0.2))
+            .play_with_transition(animations.idle.clone(), Duration::from_secs_f32(0.2))
             .repeat();
     }
 
@@ -275,7 +274,7 @@ fn run_behaviour(
             &mut StateMachine<Behaviour>,
             &mut BehaviourTimer,
         ),
-        Without<Start>,
+        // Without<Start>,
     >,
     mut animation_players: Query<&mut AnimationPlayer>,
     time: Res<Time>,
@@ -337,3 +336,4 @@ fn start_race(
         commands.entity(entity).remove::<Start>();
     }
 }
+

@@ -2,10 +2,10 @@ use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
 
 use crate::{
-    models::events::Event,
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
     utils::use_events,
 };
+use shared::models::events::Event;
 
 #[component]
 pub fn router() -> impl IntoView {
@@ -112,3 +112,4 @@ where
         GameState::FinalScreen => todo!(),
     }
 }
+

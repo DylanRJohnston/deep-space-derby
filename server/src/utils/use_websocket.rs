@@ -1,7 +1,7 @@
-use crate::models::events::Event;
 use im::vector::Vector;
 use leptos::{provide_context, use_context, ReadSignal, ServerFnError};
 use leptos_reactive::{Signal, SignalUpdate};
+use shared::models::events::Event;
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
@@ -99,3 +99,5 @@ pub fn provide_events(signal: Signal<Vector<Event>>) {
 pub fn use_events() -> Signal<Vector<Event>> {
     use_context::<EventsContainer>().unwrap().0
 }
+
+

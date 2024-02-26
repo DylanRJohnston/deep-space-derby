@@ -9,7 +9,6 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 mod components;
 mod durable_objects;
-mod models;
 mod screens;
 mod server_fns;
 mod utils;
@@ -20,3 +19,4 @@ pub fn hydrate() {
 
     mount_to_body(screens::App);
 }
+

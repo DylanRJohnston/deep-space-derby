@@ -10,7 +10,7 @@ pub struct EventStreamPlugin;
 
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::MainMenu), register_event_stream)
+        app.add_systems(OnEnter(AppState::Lobby), register_event_stream)
             .add_systems(
                 Update,
                 read_event_stream.run_if(not(in_state(AppState::Splash))),
@@ -35,7 +35,8 @@ fn register_event_stream(mut commands: Commands) {
 
 fn read_event_stream(mut next_state: ResMut<NextState<AppState>>, channel: Res<Channel>) {
     while let Ok(_) = channel.0.try_recv() {
-        next_state.set(AppState::InGame)
+        println!("Received event on channel, transitioning to race");
+        next_state.set(AppState::Race)
     }
 }
 
@@ -43,3 +44,4 @@ fn read_event_stream(mut next_state: ResMut<NextState<AppState>>, channel: Res<C
 pub fn send_game_event() -> Result<(), JsError> {
     EVENT_CHANNEL.0.send(()).map_err(Into::into)
 }
+

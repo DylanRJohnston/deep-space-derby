@@ -3,12 +3,19 @@ name = "simulation"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "test"
+path = "src/bin/test.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.12.1"
+bevy = { version = "0.12.1" }
 bevy-inspector-egui = "0.21.0"
 bevy_asset_loader = { version = "0.19.1", features = ["progress_tracking"] }
+bevy_gltf_blueprints = "0.7.3"
+bevy_gltf_components = "0.3.2"
+bevy_registry_export = "0.1.1"
 crossbeam-channel = "0.5.11"
 iyes_progress = { version = "0.10.0", features = ["assets"] }
 lazy_static = "1.4.0"
@@ -16,3 +23,6 @@ rand = "0.8.5"
 statig = { version = "0.3.1", features = ["bevy"] }
 wasm-bindgen = "0.2.91"
 web-sys = "0.3.68"
+
+[features]
+default = ["bevy/dynamic_linking"]

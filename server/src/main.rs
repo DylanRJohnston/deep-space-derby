@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 use futures_util::Future;
 use leptos::*;
 use leptos_cloudflare::{LeptosRoutes, WorkerRouterData};
-use models::{
+use shared::models::{
     commands::{Command, CreateGame, GameCode, JoinGame},
     game_id::generate_game_code,
 };
@@ -19,7 +19,6 @@ use worker::{event, Method, Request, RequestInit, RouteContext};
 
 mod components;
 mod durable_objects;
-mod models;
 mod screens;
 mod server_fns;
 mod utils;
@@ -132,3 +131,4 @@ pub async fn fetch(
 }
 
 pub fn main() {}
+

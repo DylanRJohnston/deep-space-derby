@@ -2,10 +2,8 @@ use leptos::*;
 use leptos_use::UseIntervalReturn;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    models::{monsters, projections},
-    utils::use_events,
-};
+use crate::utils::use_events;
+use shared::models::{monsters, projections};
 
 #[wasm_bindgen]
 extern "C" {
@@ -41,3 +39,4 @@ pub fn race() -> impl IntoView {
         </div>
     }
 }
+

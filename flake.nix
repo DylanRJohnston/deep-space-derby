@@ -66,21 +66,23 @@
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $1 --out-name index --target bundler --out-dir $2 --no-typescript
           '';
 
-          wasm-bindgen-server = pkgs.runCommandLocal "intermediate" { } ''
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.server-wasm}/lib/server.wasm  \
-              --out-name index \
-              --target bundler \
-              --outdir $out \
-              --no-typescript
+          build-site = pkgs.writeShellScriptBin "site" ''
+            set -x
+            set -o nounset
+            set -o errexit
+            set -o pipefail
 
-            cp ${./build/shim.js} $out/shim.js
-          '';
+            rm -rf site/*
+            cp -r assets/* site/
+            cp -r simulation/assets site/assets
 
-          wasm-bindgen-client = pkgs.runCommandLocal "quibble-web-app" { } ''
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ${packages.client-wasm}/bin/pong.wasm --out-dir $out/web-app/wasm --no-modules --no-typescript
+            cargo build -p server     --release --bins --target wasm32-unknown-unknown --no-default-features --features server/ssr
+            cargo build -p server     --release --lib  --target wasm32-unknown-unknown --no-default-features --features server/hydrate
+            cargo build -p simulation --release        --target wasm32-unknown-unknown --no-default-features
 
-            cp ${./public/index.html} $out/web-app/index.html
-            cp -r ${./assets} $out/web-app/assets
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/server.wasm     --no-typescript --out-name index --target bundler --out-dir ./site    
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/client.wasm     --no-typescript --out-name index --target web     --out-dir ./site/pkg
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/simulation.wasm --no-typescript --out-name index --target web     --out-dir ./site/pkg
           '';
 
           dev = pkgs.writeShellScriptBin "dev" ''

@@ -8,3 +8,4 @@ site/*
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+*.blend1

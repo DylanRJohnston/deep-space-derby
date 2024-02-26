@@ -1,9 +1,7 @@
 use leptos::*;
+use shared::models::{monsters::Monster, projections};
 
-use crate::{
-    models::{monsters::Monster, projections},
-    utils::use_events,
-};
+use crate::utils::use_events;
 
 #[component]
 pub fn leaderboard() -> impl IntoView {
@@ -65,3 +63,4 @@ pub fn pre_game() -> impl IntoView {
         </div>
     }
 }
+

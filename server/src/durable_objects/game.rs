@@ -10,7 +10,7 @@ use worker::{
     Result, RouteContext, Router, State, Storage, WebSocket, WebSocketPair,
 };
 
-use crate::models::{
+use shared::models::{
     commands::{self, Command, Effect},
     events::Event,
 };
@@ -237,7 +237,7 @@ mod middleware {
     use uuid::Uuid;
     use worker::{Request, Response, Result, RouteContext};
 
-    use crate::models::commands::Command;
+    use shared::models::commands::Command;
 
     use super::extract_session_id;
 
@@ -332,3 +332,6 @@ async fn command_handler<C: Command>(
 
     Ok(())
 }
+
+
+

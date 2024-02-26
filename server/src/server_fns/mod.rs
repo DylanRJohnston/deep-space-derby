@@ -1,5 +1,5 @@
-use crate::models::commands::Command;
-use crate::models::game_id::GameID;
+use shared::models::commands::Command;
+use shared::models::game_id::GameID;
 use leptos::ServerFnError;
 use std::future::Future;
 
@@ -39,3 +39,4 @@ pub fn server_fn<C: Command>(
 
 //     async { std::future::pending().await }
 // }
+
