@@ -9,64 +9,64 @@ use uuid::Uuid;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Monster {
     pub name: &'static str,
-    pub asset_name: &'static str,
+    pub blueprint_name: &'static str,
     pub uuid: Uuid,
     pub speed: i32,
 }
 
 pub const MONSTERS: [Monster; 9] = [
     Monster {
-        name: "Loser",
+        name: "Cactoro",
         uuid: Uuid::from_u128(0xb19768d8fce94b66a2d7ea84799c0101u128),
-        asset_name: "animated/Cactoro.glb",
+        blueprint_name: "Monster_Cactoro",
         speed: 7,
     },
     Monster {
-        name: "Will",
+        name: "Purglehorn",
         uuid: Uuid::from_u128(0x99a7c5d8c06744eeb856df9d6b04c4e8u128),
-        asset_name: "animated/Alien.glb",
+        blueprint_name: "Monster_Alien",
         speed: 3,
     },
     Monster {
-        name: "Hate",
+        name: "Mawshroom",
         uuid: Uuid::from_u128(0xf8a2f4560fa44e89b915f0b0de101a1au128),
-        asset_name: "animated/Mushnub Evolved.glb",
+        blueprint_name: "Monster_Mushnub",
         speed: 6,
     },
     Monster {
-        name: "Machine",
+        name: "Mechapanda",
         uuid: Uuid::from_u128(0x0ef5f3373cea4c9ca6655bd3e7bc4c63u128),
-        asset_name: "animated/Mech.glb",
+        blueprint_name: "Monster_Mech",
         speed: 6,
     },
     Monster {
-        name: "Fido",
+        name: "Finflare",
         uuid: Uuid::from_u128(0x6cb10197a7234cf980f7fb957f7eb9f1u128),
-        asset_name: "animated/Fish.glb",
+        blueprint_name: "Monster_Fish",
         speed: 4,
     },
     Monster {
-        name: "Mind",
+        name: "Green Spiky Thing",
         uuid: Uuid::from_u128(0xcbde634a2d3648f383b3c7e45cc864b7u128),
-        asset_name: "animated/Green Spiky Blob.glb",
+        blueprint_name: "Monster_Green_Spiky",
         speed: 6,
     },
     Monster {
-        name: "Void",
+        name: "Gallus Cranium",
         uuid: Uuid::from_u128(0x73c68289e1334859a0f4e45883076e10u128),
-        asset_name: "animated/Pink Slime.glb",
+        blueprint_name: "Monster_Pink_Slime",
         speed: 6,
     },
     Monster {
-        name: "Parasite",
+        name: "Cluckerhead",
         uuid: Uuid::from_u128(0x9f987f8ff320446e8930740aca46954fu128),
-        asset_name: "animated/Chicken.glb",
+        blueprint_name: "Monster_Chicken",
         speed: 3,
     },
     Monster {
-        name: "Gambler",
+        name: "Fangmaw",
         uuid: Uuid::from_u128(0xb4775b5b2e1f42debe985d3d7890db0du128),
-        asset_name: "animated/Yeti.glb",
+        blueprint_name: "Monster_Yeti",
         speed: 4,
     },
 ];
@@ -82,7 +82,7 @@ pub struct Results {
     pub rounds: Vec<Round>,
 }
 
-pub fn race(monsters: &[&'static Monster; 3], seed: u32) -> Results {
+pub fn race(monsters: &[&Monster; 3], seed: u32) -> Results {
     let dist = Bernoulli::new(1.0 / 6.0).unwrap();
     let mut rng = StdRng::seed_from_u64(seed as u64);
 
@@ -126,8 +126,12 @@ pub fn race(monsters: &[&'static Monster; 3], seed: u32) -> Results {
 
 #[cfg(test)]
 mod test {
-    use super::{race, MONSTERS};
+    use std::collections::HashMap;
+
+    use super::{race, Monster, MONSTERS};
     use quickcheck_macros::quickcheck;
+    use rand::{thread_rng, RngCore};
+    use uuid::Uuid;
 
     #[quickcheck]
     pub fn same_outcome_for_same_seed(seed: u32) -> bool {

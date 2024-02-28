@@ -1,7 +1,11 @@
 use bevy::{gltf::Gltf, pbr::CascadeShadowConfigBuilder, prelude::*, utils::HashMap};
 use bevy_asset_loader::prelude::*;
+use bevy_gltf_blueprints::{BluePrintBundle, BlueprintName, GltfBlueprintsSet};
 use bevy_registry_export::*;
-use simulation::start;
+use simulation::{
+    plugins::monster::{MonsterBundle, Speed, Stats},
+    start,
+};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
 enum SceneState {
@@ -14,6 +18,7 @@ fn main() {
     start(|app| {
         app.register_type::<RotateSpeed>()
             .register_type::<OrbitPoint>()
+            .register_type::<RaceSpawnPoint>()
             .add_plugins(bevy_gltf_blueprints::BlueprintsPlugin {
                 library_folder: "library".into(),
                 material_library: false,
@@ -31,7 +36,8 @@ fn main() {
             .add_systems(OnEnter(SceneState::Loaded), setup)
             .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::default())
             .add_systems(Update, rotate)
-            .add_systems(Update, orbit);
+            .add_systems(Update, orbit)
+            .add_systems(Update, find_spawn.in_set(GltfBlueprintsSet::AfterSpawn));
     });
 }
 
@@ -61,8 +67,47 @@ pub struct OrbitPoint {
 
 #[derive(Debug, Component, Reflect, Default)]
 #[reflect(Component)]
-pub struct SpawnPoint {
+pub struct RaceSpawnPoint {
     pub id: u32,
+}
+
+fn find_spawn(
+    mut commands: Commands,
+    query: Query<(&RaceSpawnPoint, &Transform), Added<RaceSpawnPoint>>,
+) {
+    for (spawn_point, transform) in &query {
+        if spawn_point.id == 0 {
+            continue;
+        }
+
+        println!(
+            "Found race spawn point {:?} at {:?}",
+            spawn_point, transform
+        );
+
+        let mut name = "Monster_Alien";
+
+        if spawn_point.id == 2 {
+            name = "Monster_Chicken";
+        }
+
+        if spawn_point.id == 3 {
+            name = "Monster_Mushnub";
+        }
+
+        commands.spawn((
+            BluePrintBundle {
+                blueprint: BlueprintName(name.into()),
+                ..default()
+            },
+            MonsterBundle {
+                speed: Speed(1.0),
+                stats: Stats { recovery_time: 2.0 },
+                ..default()
+            },
+            *transform,
+        ));
+    }
 }
 
 fn setup(
@@ -80,7 +125,7 @@ fn setup(
     ambient_light.brightness = 0.1;
 
     commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -2.5, 1.1, 0.0)),
+        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -4.1, 2.1, 0.0)),
         directional_light: DirectionalLight {
             illuminance: 75000.0,
             shadows_enabled: true,

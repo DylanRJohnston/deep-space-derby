@@ -1,22 +1,27 @@
 #![allow(clippy::type_complexity)]
-use statig::prelude::*;
+use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, EaseFunction, Tween};
 use std::time::Duration;
 
-use bevy::{gltf::Gltf, prelude::*, utils::hashbrown::HashMap};
-
-use crate::AppState;
-
-use super::{animation_link::AnimationLink, asset_loader::AssetPack};
+use bevy::{
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    prelude::*,
+    utils::hashbrown::HashMap,
+};
+use bevy_gltf_blueprints::{AnimationPlayerLink, Animations};
 
 pub struct MonsterPlugin;
 
 impl Plugin for MonsterPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // .add_systems(OnEnter(AppState::Lobby), setup)
-            .add_systems(Update, run_behaviour)
-            .add_systems(Update, move_forward.run_if(in_state(AppState::Race)))
-            .add_systems(Update, start_race.run_if(in_state(AppState::Race)));
+        app.register_type::<Monster>()
+            .add_systems(Update, init_animation)
+            .add_systems(Update, run_timers)
+            .add_systems(Startup, |mut commands: Commands| {
+                commands.insert_resource(WireframeConfig {
+                    global: true,
+                    default_color: Color::WHITE,
+                })
+            });
     }
 }
 
@@ -25,92 +30,56 @@ pub struct Start;
 
 #[derive(Bundle, Default)]
 pub struct MonsterBundle {
-    pub scene: SceneBundle,
+    pub monster: Monster,
+    // pub scene: SceneBundle,
     pub speed: Speed,
     pub stats: Stats,
-    pub animations: NamedAnimations,
-    pub behaviour: StateMachine<Behaviour>,
+    // pub animations: NamedAnimations,
+    // pub behaviour: StateMachine<Behaviour>,
     pub behaviour_timer: BehaviourTimer,
     pub start: Start,
 }
 
+#[derive(Debug, Reflect, Default)]
+pub struct TimedAnimation {
+    handle: Handle<AnimationClip>,
+    duration: f32,
+}
+
 #[derive(Debug, Reflect, Component, Default)]
 pub struct NamedAnimations {
-    pub idle: Handle<AnimationClip>,
-    pub jump: Handle<AnimationClip>,
-    pub dance: Handle<AnimationClip>,
-    pub death: Handle<AnimationClip>,
+    pub idle: TimedAnimation,
+    pub jump: TimedAnimation,
+    pub dance: TimedAnimation,
+    pub death: TimedAnimation,
 }
 
-fn extract_animations(animation_map: &HashMap<String, Handle<AnimationClip>>) -> NamedAnimations {
+fn extract_animations(
+    animation_map: &HashMap<String, Handle<AnimationClip>>,
+    animations: &Res<Assets<AnimationClip>>,
+) -> NamedAnimations {
+    let get_timed_animation = |name: &str, alt_name: &str| {
+        let handle = animation_map
+            .get(name)
+            .or_else(|| animation_map.get(alt_name))
+            .expect("failed to find animation");
+        let duration = animations.get(handle).unwrap().duration();
+
+        TimedAnimation {
+            handle: handle.clone(),
+            duration,
+        }
+    };
+
     NamedAnimations {
-        idle: animation_map
-            .get("CharacterArmature|Idle")
-            .expect("failed to find animation Idle")
-            .clone(),
-        jump: animation_map
-            .get("CharacterArmature|Jump")
-            .expect("failed to find animation Jump")
-            .clone(),
-        dance: animation_map
-            .get("CharacterArmature|Dance")
-            .expect("failed to find animation Dance")
-            .clone(),
-        death: animation_map
-            .get("CharacterArmature|Death")
-            .expect("failed to find animation Death")
-            .clone(),
+        idle: get_timed_animation("CharacterArmature|Idle", "RobotArmature|Idle"),
+        jump: get_timed_animation("CharacterArmature|Jump", "RobotArmature|Jump"),
+        dance: get_timed_animation("CharacterArmature|Dance", "RobotArmature|Dance"),
+        death: get_timed_animation("CharacterArmature|Death", "RobotArmature|Death"),
     }
 }
-
-// pub fn spawn_monster()
-
-fn setup(mut commands: Commands, asset_pack: Res<AssetPack>, assets: Res<Assets<Gltf>>) {
-    let mushnub = assets.get(&asset_pack.mushnub).unwrap();
-
-    commands.spawn(MonsterBundle {
-        scene: SceneBundle {
-            scene: mushnub.named_scenes["Root Scene"].clone(),
-            transform: Transform::from_xyz(0.0, 0.0, -5.0),
-            ..default()
-        },
-        speed: Speed(5.0),
-        stats: Stats { recovery_time: 5.0 },
-        animations: extract_animations(&mushnub.named_animations),
-        behaviour: Behaviour.state_machine(),
-        ..default()
-    });
-
-    let alien = assets.get(&asset_pack.alien).unwrap();
-
-    commands.spawn(MonsterBundle {
-        scene: SceneBundle {
-            scene: alien.named_scenes["Root Scene"].clone(),
-            transform: Transform::from_xyz(5.0, 0.0, -5.0),
-            ..default()
-        },
-        speed: Speed(5.0),
-        stats: Stats { recovery_time: 5.0 },
-        animations: extract_animations(&alien.named_animations),
-        behaviour: Behaviour.state_machine(),
-        ..default()
-    });
-
-    let cactoro = assets.get(&asset_pack.cactoro).unwrap();
-
-    commands.spawn(MonsterBundle {
-        scene: SceneBundle {
-            scene: cactoro.named_scenes["Root Scene"].clone(),
-            transform: Transform::from_xyz(-5.0, 0.0, -5.0),
-            ..default()
-        },
-        speed: Speed(5.0),
-        stats: Stats { recovery_time: 5.0 },
-        animations: extract_animations(&cactoro.named_animations),
-        behaviour: Behaviour.state_machine(),
-        ..default()
-    });
-}
+// 0.83333333
+// 0.41666666
 
 #[derive(Component, Debug, Reflect, Default)]
 pub struct Stats {
@@ -118,222 +87,145 @@ pub struct Stats {
 }
 
 #[derive(Component, Debug, Reflect, Default)]
-pub struct BehaviourTimer(Timer);
+pub struct BehaviourTimer {
+    timer: Timer,
+    next_state: Monster,
+}
 
 #[derive(Component, Debug, Reflect, Default)]
 pub struct Speed(pub f32);
-fn move_forward(
-    mut query: Query<(&mut Transform, &Speed, &StateMachine<Behaviour>)>,
+
+#[derive(Debug, Clone, Default, Copy, Component, Reflect, PartialEq)]
+pub enum Monster {
+    #[default]
+    Idle,
+    Jumping,
+    Recovering,
+    Dancing,
+    Dead,
+}
+
+pub fn init_animation(
+    mut commands: Commands,
+    query: Query<(Entity, &AnimationPlayerLink, &Animations, &Monster), With<Start>>,
+    mut anim_players: Query<&mut AnimationPlayer>,
+    clips: Res<Assets<AnimationClip>>,
+) {
+    for (entity, anim_link, animations, monster) in &query {
+        let mut player = anim_players.get_mut(anim_link.0).unwrap();
+
+        let named_animations = extract_animations(&animations.named_animations, &clips);
+
+        player.start(named_animations.idle.handle.clone()).repeat();
+        commands
+            .entity(entity)
+            .insert(named_animations)
+            .remove::<Start>()
+            .insert(BehaviourTimer {
+                timer: Timer::from_seconds(5.0, TimerMode::Once),
+                next_state: Monster::Jumping,
+            });
+    }
+}
+
+#[derive(Debug, Component, Reflect)]
+pub struct JumpTarget {
+    pub start: Vec3,
+    pub end: Vec3,
+}
+
+pub fn run_timers(
+    mut commands: Commands,
+    mut query: Query<(
+        Entity,
+        &AnimationPlayerLink,
+        &NamedAnimations,
+        &mut Monster,
+        &mut BehaviourTimer,
+        &Transform,
+    )>,
+    mut anim_players: Query<&mut AnimationPlayer>,
     time: Res<Time>,
 ) {
-    for (mut transform, speed, state) in &mut query {
-        match state.state() {
-            State::Jumping {} => {}
-            _ => {
-                continue;
+    for (entity, anim_link, animations, mut monster, mut timer, transform) in &mut query {
+        if timer.timer.finished() {
+            continue;
+        }
+
+        timer.timer.tick(time.delta());
+        if !timer.timer.finished() {
+            continue;
+        }
+
+        let mut player = anim_players.get_mut(anim_link.0).unwrap();
+
+        *monster = timer.next_state;
+        match *monster {
+            Monster::Idle => {
+                player
+                    .play_with_transition(
+                        animations.idle.handle.clone(),
+                        Duration::from_secs_f32(0.1),
+                    )
+                    .repeat();
+            }
+            Monster::Jumping => {
+                let target = transform.translation + transform.back() * 0.7;
+
+                let tween = Delay::new(Duration::from_secs_f32(0.25)).then(Tween::new(
+                    EaseFunction::QuadraticInOut,
+                    Duration::from_secs_f32(animations.jump.duration * 2.0 - 0.25),
+                    TransformPositionLens {
+                        start: transform.translation,
+                        end: target,
+                    },
+                ));
+
+                commands.entity(entity).insert(Animator::new(tween));
+
+                player
+                    .play_with_transition(
+                        animations.jump.handle.clone(),
+                        Duration::from_secs_f32(0.1),
+                    )
+                    .set_speed(0.5);
+
+                *timer = BehaviourTimer {
+                    timer: Timer::from_seconds(
+                        animations.jump.duration * 2.0 - 0.2,
+                        TimerMode::Once,
+                    ),
+                    next_state: Monster::Recovering,
+                };
+            }
+            Monster::Recovering => {
+                player.play_with_transition(
+                    animations.idle.handle.clone(),
+                    Duration::from_secs_f32(0.2),
+                );
+
+                let recovery = 0.2 + (0.8333 - animations.jump.duration);
+
+                *timer = BehaviourTimer {
+                    timer: Timer::from_seconds(recovery, TimerMode::Once),
+                    next_state: Monster::Jumping,
+                };
+            }
+            Monster::Dancing => {
+                player
+                    .play_with_transition(
+                        animations.dance.handle.clone(),
+                        Duration::from_secs_f32(0.1),
+                    )
+                    .repeat();
+            }
+            Monster::Dead => {
+                player.play_with_transition(
+                    animations.death.handle.clone(),
+                    Duration::from_secs_f32(0.1),
+                );
             }
         }
-
-        transform.translation =
-            transform.translation + transform.back() * speed.0 * time.delta_seconds()
-    }
-}
-
-#[derive(Default)]
-pub struct Behaviour;
-
-#[derive(Debug)]
-pub enum InputEvent {
-    TimerElapsed,
-    Next,
-}
-
-pub struct Context<'a> {
-    pub animations: &'a NamedAnimations,
-    pub player: &'a mut AnimationPlayer,
-    pub timer: &'a mut Timer,
-}
-
-#[state_machine(initial = "State::idle()", context_identifier = "_context")]
-impl Behaviour {
-    #[state(entry_action = "enter_idle")]
-    fn idle(_context: &mut Context<'_>, event: &InputEvent) -> Response<State> {
-        match event {
-            InputEvent::Next => Transition(State::jumping()),
-            _ => Super,
-        }
-    }
-
-    #[state(entry_action = "enter_dancing")]
-    fn dancing(event: &InputEvent) -> Response<State> {
-        match event {
-            InputEvent::Next => Transition(State::dead()),
-            _ => Super,
-        }
-    }
-
-    #[superstate]
-    fn running(event: &InputEvent) -> Response<State> {
-        match event {
-            InputEvent::Next => Transition(State::dancing()),
-            _ => Super,
-        }
-    }
-
-    #[allow(unused_variables)]
-    #[state(entry_action = "enter_dead")]
-    fn dead(event: &InputEvent) -> Response<State> {
-        Handled
-    }
-
-    #[state(superstate = "running", entry_action = "enter_jumping")]
-    fn jumping(&mut self, event: &InputEvent) -> Response<State> {
-        match event {
-            InputEvent::TimerElapsed => Transition(State::recovering()),
-            _ => Super,
-        }
-    }
-
-    #[state(superstate = "running", entry_action = "enter_recovering")]
-    fn recovering(event: &InputEvent) -> Response<State> {
-        match event {
-            InputEvent::TimerElapsed => Transition(State::jumping()),
-            _ => Super,
-        }
-    }
-
-    #[action]
-    fn enter_jumping(&mut self, _context: &mut Context) {
-        let Context {
-            animations,
-            player,
-            timer,
-            ..
-        } = _context;
-
-        player.start(animations.jump.clone());
-
-        **timer = Timer::from_seconds(0.3, TimerMode::Once);
-    }
-
-    #[action]
-    fn enter_recovering(&mut self, _context: &mut Context) {
-        let Context {
-            animations,
-            player,
-            timer,
-            ..
-        } = _context;
-
-        player
-            .start_with_transition(animations.idle.clone(), Duration::from_secs_f32(0.2))
-            .repeat();
-
-        let recovery = 0.1 + rand::random::<f32>() * 3.0;
-
-        **timer = Timer::from_seconds(recovery, TimerMode::Once);
-    }
-
-    #[action]
-    fn enter_idle(_context: &mut Context) {
-        let Context {
-            animations, player, ..
-        } = _context;
-
-        player
-            .play_with_transition(animations.idle.clone(), Duration::from_secs_f32(0.2))
-            .repeat();
-    }
-
-    #[action]
-    fn enter_dancing(_context: &mut Context) {
-        let Context {
-            animations, player, ..
-        } = _context;
-
-        player
-            .play_with_transition(animations.dance.clone(), Duration::from_secs_f32(1.0))
-            .repeat();
-    }
-
-    #[action]
-    fn enter_dead(_context: &mut Context) {
-        let Context {
-            animations, player, ..
-        } = _context;
-
-        player.start(animations.death.clone());
-    }
-}
-
-fn run_behaviour(
-    mut query: Query<
-        (
-            &AnimationLink,
-            &NamedAnimations,
-            &mut StateMachine<Behaviour>,
-            &mut BehaviourTimer,
-        ),
-        // Without<Start>,
-    >,
-    mut animation_players: Query<&mut AnimationPlayer>,
-    time: Res<Time>,
-) {
-    for (animation_link, animations, mut machine, mut behaviour_timer) in &mut query {
-        let player = &mut animation_players
-            .get_mut(animation_link.0)
-            .expect("animation link refers to removed animation player");
-
-        if behaviour_timer.0.finished() {
-            continue;
-        }
-
-        behaviour_timer.0.tick(time.delta());
-
-        if !behaviour_timer.0.finished() {
-            continue;
-        };
-
-        machine.handle_with_context(
-            &InputEvent::TimerElapsed,
-            &mut Context {
-                animations,
-                player,
-                timer: &mut behaviour_timer.0,
-            },
-        );
-    }
-}
-
-fn start_race(
-    mut commands: Commands,
-    mut query: Query<
-        (
-            Entity,
-            &AnimationLink,
-            &NamedAnimations,
-            &mut StateMachine<Behaviour>,
-            &mut BehaviourTimer,
-        ),
-        With<Start>,
-    >,
-    mut animation_players: Query<&mut AnimationPlayer>,
-) {
-    for (entity, animation_link, animations, mut machine, mut behaviour_timer) in &mut query {
-        let player = &mut animation_players
-            .get_mut(animation_link.0)
-            .expect("animation link refers to removed animation player");
-
-        machine.handle_with_context(
-            &InputEvent::Next,
-            &mut Context {
-                animations,
-                player,
-                timer: &mut behaviour_timer.0,
-            },
-        );
-
-        commands.entity(entity).remove::<Start>();
     }
 }
 

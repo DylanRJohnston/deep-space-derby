@@ -1,9 +1,10 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
+use bevy_tweening::TweeningPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 
 use crate::plugins::{
-    animation_link::AnimationLinkPlugin, asset_loader::load_assets,
-    event_stream::EventStreamPlugin, fetch_data::FetchDataPlugin, monster::MonsterPlugin,
+    asset_loader::load_assets, event_stream::EventStreamPlugin, fetch_data::FetchDataPlugin,
+    monster::MonsterPlugin, spectators::SpectatorPlugin,
 };
 
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
@@ -28,6 +29,8 @@ pub fn start(f: impl FnOnce(&mut App)) {
     }))
     .add_plugins(EventStreamPlugin)
     .add_state::<AppState>()
+    .add_plugins(TweeningPlugin)
+    .add_plugins(SpectatorPlugin)
     .add_plugins(
         ProgressPlugin::new(AppState::Splash)
             .continue_to(AppState::Lobby)
@@ -40,7 +43,6 @@ pub fn start(f: impl FnOnce(&mut App)) {
             .after(TrackedProgressSet)
             .run_if(in_state(AppState::Splash)),
     )
-    .add_plugins(AnimationLinkPlugin)
     .add_plugins(MonsterPlugin)
     // .add_plugins(MenuPlugin)
     .insert_resource(AmbientLight {

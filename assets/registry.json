@@ -9112,6 +9112,21 @@
       "type": "int",
       "typeInfo": "Value"
     },
+    "simulation::plugins::monster::Monster": {
+      "isComponent": false,
+      "isResource": false,
+      "oneOf": [
+        "Idle",
+        "Jumping",
+        "Recovering",
+        "Dancing",
+        "Dead"
+      ],
+      "short_name": "Monster",
+      "title": "simulation::plugins::monster::Monster",
+      "type": "string",
+      "typeInfo": "Enum"
+    },
     "smallvec::SmallVec<[bevy_ecs::Entity; 8]>": {
       "isComponent": false,
       "isResource": false,
@@ -9163,6 +9178,25 @@
       ],
       "short_name": "OrbitPoint",
       "title": "test::OrbitPoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "test::RaceSpawnPoint": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {
+        "id": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "short_name": "RaceSpawnPoint",
+      "title": "test::RaceSpawnPoint",
       "type": "object",
       "typeInfo": "Struct"
     },
