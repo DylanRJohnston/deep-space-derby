@@ -11,8 +11,8 @@ pub struct SpectatorPlugin;
 
 impl Plugin for SpectatorPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Spectator>();
-        //     .add_systems(Update, init_animation);
+        app.register_type::<Spectator>()
+            .add_systems(Update, init_animation);
     }
 }
 
@@ -41,21 +41,21 @@ pub fn init_animation(
 
         match behaviour.as_deref_mut() {
             None => {
-                commands
-                    .entity(entity)
-                    .insert(BehaviourTimer(Timer::from_seconds(
-                        thread_rng().sample(Uniform::new(1.0, 5.0)),
-                        TimerMode::Once,
-                    )));
+                commands.entity(entity).remove::<Spectator>();
+                // .insert(BehaviourTimer(Timer::from_seconds(
+                //     thread_rng().sample(Uniform::new(10000.0, 10001.0)),
+                //     TimerMode::Once,
+                // )));
 
                 player
                     .start(
                         animations
                             .named_animations
-                            .get("CharacterArmature|Idle_Gun")
+                            .get("Armature|mixamo.com|Layer0")
                             .unwrap()
                             .clone(),
                     )
+                    .set_speed(thread_rng().sample(Uniform::new(0.9, 1.1)))
                     .repeat();
             }
             Some(BehaviourTimer(timer)) => {
