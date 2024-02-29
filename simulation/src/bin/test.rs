@@ -20,6 +20,8 @@ fn main() {
             .register_type::<OrbitPoint>()
             .register_type::<RaceSpawnPoint>()
             .register_type::<PreGameSpawnPoint>()
+            .register_type::<PreGameCamera>()
+            .register_type::<RaceStartCamera>()
             .add_plugins(bevy_gltf_blueprints::BlueprintsPlugin {
                 library_folder: "library".into(),
                 material_library: false,
@@ -123,16 +125,10 @@ fn setup(
     models: Res<Assets<Gltf>>,
     mut ambient_light: ResMut<AmbientLight>,
 ) {
-    // commands.spawn(Camera3dBundle {
-    //     transform: Transform::from_xyz(5.0, 9.0, 8.0)
-    //         .looking_at(Vec3::new(0.0, 0.0, -5.0), Vec3::Y),
-    //     ..default()
-    // });
-
-    ambient_light.brightness = 0.1;
+    ambient_light.brightness = 0.075;
 
     commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -4.1, 2.1, 0.0)),
+        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.6, 0.9, 0.0)),
         directional_light: DirectionalLight {
             illuminance: 75000.0,
             shadows_enabled: true,
@@ -170,4 +166,12 @@ pub fn orbit(mut query: Query<(&mut Transform, &OrbitPoint)>, time: Res<Time>) {
         )
     }
 }
+
+#[derive(Debug, Default, Reflect, Component)]
+#[reflect(Component)]
+pub struct PreGameCamera;
+
+#[derive(Debug, Default, Reflect, Component)]
+#[reflect(Component)]
+pub struct RaceStartCamera;
 

@@ -9192,6 +9192,17 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "test::PreGameCamera": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {},
+      "required": [],
+      "short_name": "PreGameCamera",
+      "title": "test::PreGameCamera",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "test::PreGameSpawnPoint": {
       "additionalProperties": false,
       "isComponent": true,
@@ -9227,6 +9238,17 @@
       ],
       "short_name": "RaceSpawnPoint",
       "title": "test::RaceSpawnPoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "test::RaceStartCamera": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {},
+      "required": [],
+      "short_name": "RaceStartCamera",
+      "title": "test::RaceStartCamera",
       "type": "object",
       "typeInfo": "Struct"
     },

@@ -122,7 +122,7 @@ pub fn init_animation(
             .insert(named_animations)
             .remove::<Start>()
             .insert(BehaviourTimer {
-                timer: Timer::from_seconds(5.0, TimerMode::Once),
+                timer: Timer::from_seconds(100.0, TimerMode::Once),
                 next_state: Monster::Jumping,
             });
     }
@@ -228,3 +228,4 @@ pub fn run_timers(
         }
     }
 }
+
