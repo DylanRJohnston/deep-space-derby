@@ -7,6 +7,7 @@ pub fn text_input(
     #[prop(optional)] pattern: Option<&'static str>,
     #[prop(optional)] minlength: Option<i32>,
     #[prop(optional)] maxlength: Option<i32>,
+    #[prop(optional)] title: Option<&'static str>,
 ) -> impl IntoView {
     view! {
         <div class="input full-width">
@@ -19,7 +20,9 @@ pub fn text_input(
                 pattern=pattern
                 minlength=minlength
                 maxlength=maxlength
+                title=title
             />
         </div>
     }
 }
+

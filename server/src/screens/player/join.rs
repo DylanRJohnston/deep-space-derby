@@ -1,7 +1,7 @@
 use leptos::*;
 use leptos_router::*;
 
-use crate::components::{molecules::TextInput};
+use crate::components::molecules::TextInput;
 
 #[component]
 pub fn join() -> impl IntoView {
@@ -14,9 +14,10 @@ pub fn join() -> impl IntoView {
                 <TextInput
                     id="code"
                     name="Lobby Code"
-                    pattern="[A-Z0-9]{6}"
+                    pattern="[a-zA-Z0-9]{6}"
                     minlength=6
                     maxlength=6
+                    title="6 alpha-numerical characters e.g. ABC123"
                 />
                 <input type="text" name="name" prop:value="Bob" hidden/>
                 <input class="button" type="submit" value="Join"/>
@@ -24,3 +25,4 @@ pub fn join() -> impl IntoView {
         </div>
     }
 }
+
