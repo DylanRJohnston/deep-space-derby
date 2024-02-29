@@ -3,9 +3,6 @@ name = "simulation"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "test"
-path = "src/bin/test.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -24,6 +21,8 @@ rand = "0.8.5"
 statig = { version = "0.3.1", features = ["bevy"] }
 wasm-bindgen = "0.2.91"
 web-sys = "0.3.68"
+shared = { workspace = true }
+
 
 [features]
 default = ["bevy/dynamic_linking"]

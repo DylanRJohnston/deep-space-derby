@@ -9127,6 +9127,110 @@
       "type": "string",
       "typeInfo": "Enum"
     },
+    "simulation::plugins::planets::OrbitPoint": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {
+        "point": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        },
+        "velocity": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        }
+      },
+      "required": [
+        "velocity",
+        "point"
+      ],
+      "short_name": "OrbitPoint",
+      "title": "simulation::plugins::planets::OrbitPoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "simulation::plugins::planets::RotateSpeed": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {
+        "speed": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        }
+      },
+      "required": [
+        "speed"
+      ],
+      "short_name": "RotateSpeed",
+      "title": "simulation::plugins::planets::RotateSpeed",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "simulation::plugins::scenes::pregame::PreGameCamera": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {},
+      "required": [],
+      "short_name": "PreGameCamera",
+      "title": "simulation::plugins::scenes::pregame::PreGameCamera",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "simulation::plugins::scenes::pregame::PreGameSpawnPoint": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {
+        "id": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "short_name": "PreGameSpawnPoint",
+      "title": "simulation::plugins::scenes::pregame::PreGameSpawnPoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "simulation::plugins::scenes::race::RaceSpawnPoint": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {
+        "id": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "short_name": "RaceSpawnPoint",
+      "title": "simulation::plugins::scenes::race::RaceSpawnPoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "simulation::plugins::scenes::race::RaceStartCamera": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {},
+      "required": [],
+      "short_name": "RaceStartCamera",
+      "title": "simulation::plugins::scenes::race::RaceStartCamera",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "simulation::plugins::spectators::Spectator": {
       "additionalProperties": false,
       "isComponent": true,
@@ -9166,110 +9270,6 @@
       "title": "std::path::PathBuf",
       "type": "object",
       "typeInfo": "Value"
-    },
-    "test::OrbitPoint": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "properties": {
-        "point": {
-          "type": {
-            "$ref": "#/$defs/glam::Vec3"
-          }
-        },
-        "velocity": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        }
-      },
-      "required": [
-        "velocity",
-        "point"
-      ],
-      "short_name": "OrbitPoint",
-      "title": "test::OrbitPoint",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "test::PreGameCamera": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "properties": {},
-      "required": [],
-      "short_name": "PreGameCamera",
-      "title": "test::PreGameCamera",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "test::PreGameSpawnPoint": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "properties": {
-        "id": {
-          "type": {
-            "$ref": "#/$defs/u32"
-          }
-        }
-      },
-      "required": [
-        "id"
-      ],
-      "short_name": "PreGameSpawnPoint",
-      "title": "test::PreGameSpawnPoint",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "test::RaceSpawnPoint": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "properties": {
-        "id": {
-          "type": {
-            "$ref": "#/$defs/u32"
-          }
-        }
-      },
-      "required": [
-        "id"
-      ],
-      "short_name": "RaceSpawnPoint",
-      "title": "test::RaceSpawnPoint",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "test::RaceStartCamera": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "properties": {},
-      "required": [],
-      "short_name": "RaceStartCamera",
-      "title": "test::RaceStartCamera",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "test::RotateSpeed": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "properties": {
-        "speed": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        }
-      },
-      "required": [
-        "speed"
-      ],
-      "short_name": "RotateSpeed",
-      "title": "test::RotateSpeed",
-      "type": "object",
-      "typeInfo": "Struct"
     },
     "u128": {
       "isComponent": false,

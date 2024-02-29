@@ -2,11 +2,7 @@
 use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, EaseFunction, Tween};
 use std::time::Duration;
 
-use bevy::{
-    pbr::wireframe::{WireframeConfig, WireframePlugin},
-    prelude::*,
-    utils::hashbrown::HashMap,
-};
+use bevy::{pbr::wireframe::WireframeConfig, prelude::*, utils::hashbrown::HashMap};
 use bevy_gltf_blueprints::{AnimationPlayerLink, Animations};
 
 pub struct MonsterPlugin;
@@ -111,7 +107,7 @@ pub fn init_animation(
     mut anim_players: Query<&mut AnimationPlayer>,
     clips: Res<Assets<AnimationClip>>,
 ) {
-    for (entity, anim_link, animations, monster) in &query {
+    for (entity, anim_link, animations, _monster) in &query {
         let mut player = anim_players.get_mut(anim_link.0).unwrap();
 
         let named_animations = extract_animations(&animations.named_animations, &clips);

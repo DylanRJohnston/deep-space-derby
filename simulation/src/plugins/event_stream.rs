@@ -4,16 +4,16 @@ use wasm_bindgen::prelude::*;
 
 use lazy_static::lazy_static;
 
-use crate::AppState;
+use super::scenes::SceneState;
 
 pub struct EventStreamPlugin;
 
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Lobby), register_event_stream)
+        app.add_systems(OnEnter(SceneState::Lobby), register_event_stream)
             .add_systems(
                 Update,
-                read_event_stream.run_if(not(in_state(AppState::Splash))),
+                read_event_stream.run_if(not(in_state(SceneState::Loading))),
             );
     }
 }
@@ -33,10 +33,10 @@ fn register_event_stream(mut commands: Commands) {
     commands.insert_resource(Channel(EVENT_CHANNEL.1.clone()));
 }
 
-fn read_event_stream(mut next_state: ResMut<NextState<AppState>>, channel: Res<Channel>) {
-    while let Ok(_) = channel.0.try_recv() {
+fn read_event_stream(mut next_state: ResMut<NextState<SceneState>>, channel: Res<Channel>) {
+    while channel.0.try_recv().is_ok() {
         println!("Received event on channel, transitioning to race");
-        next_state.set(AppState::Race)
+        next_state.set(SceneState::PreGame)
     }
 }
 
@@ -44,3 +44,4 @@ fn read_event_stream(mut next_state: ResMut<NextState<AppState>>, channel: Res<C
 pub fn send_game_event() -> Result<(), JsError> {
     EVENT_CHANNEL.0.send(()).map_err(Into::into)
 }
+

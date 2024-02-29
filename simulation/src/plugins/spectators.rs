@@ -36,7 +36,7 @@ pub fn init_animation(
     clips: Res<Assets<AnimationClip>>,
     time: Res<Time>,
 ) {
-    for (entity, player_link, animations, spectator, mut behaviour) in &mut query {
+    for (entity, player_link, animations, _spectator, mut behaviour) in &mut query {
         let mut player = players.get_mut(player_link.0).unwrap();
 
         match behaviour.as_deref_mut() {

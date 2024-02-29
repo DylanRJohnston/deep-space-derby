@@ -4870,6 +4870,7 @@ dependencies = [
  "iyes_progress",
  "lazy_static",
  "rand",
+ "shared",
  "statig",
  "wasm-bindgen",
  "web-sys",

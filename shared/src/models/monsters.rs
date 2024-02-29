@@ -126,12 +126,9 @@ pub fn race(monsters: &[&Monster; 3], seed: u32) -> Results {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
 
-    use super::{race, Monster, MONSTERS};
+    use super::{race, MONSTERS};
     use quickcheck_macros::quickcheck;
-    use rand::{thread_rng, RngCore};
-    use uuid::Uuid;
 
     #[quickcheck]
     pub fn same_outcome_for_same_seed(seed: u32) -> bool {
@@ -140,3 +137,4 @@ mod test {
         race(monsters, seed) == race(monsters, seed)
     }
 }
+
