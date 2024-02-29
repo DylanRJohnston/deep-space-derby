@@ -1,12 +1,6 @@
-use std::{
-    cmp::{max, min},
-};
+use std::cmp::{max, min};
 
-
-use leptos::{
-    leptos_dom::{logging::console_log},
-    *,
-};
+use leptos::{leptos_dom::logging::console_log, *};
 use uuid::Uuid;
 
 use crate::{
@@ -220,4 +214,3 @@ pub fn pre_game() -> impl IntoView {
         </div>
     }
 }
-

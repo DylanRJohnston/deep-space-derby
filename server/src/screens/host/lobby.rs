@@ -1,4 +1,3 @@
-
 use leptos::*;
 
 use crate::utils::{use_events, use_game_id};
@@ -38,4 +37,3 @@ pub fn lobby() -> impl IntoView {
         </div>
     }
 }
-

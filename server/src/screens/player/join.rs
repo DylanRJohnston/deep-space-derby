@@ -18,6 +18,7 @@ pub fn join() -> impl IntoView {
                     minlength=6
                     maxlength=6
                     title="6 alpha-numerical characters e.g. ABC123"
+                    uppercase=true
                 />
                 <input type="text" name="name" prop:value="Bob" hidden/>
                 <input class="button" type="submit" value="Join"/>
@@ -25,4 +26,3 @@ pub fn join() -> impl IntoView {
         </div>
     }
 }
-

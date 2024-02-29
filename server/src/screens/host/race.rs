@@ -20,7 +20,7 @@ pub fn race() -> impl IntoView {
 
     let _race = monsters::race(&monsters, race_seed);
 
-    let UseIntervalReturn {  .. } = leptos_use::use_interval(1000);
+    let UseIntervalReturn { .. } = leptos_use::use_interval(1000);
 
     send_game_event();
 
@@ -39,4 +39,3 @@ pub fn race() -> impl IntoView {
         </div>
     }
 }
-

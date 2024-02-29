@@ -18,4 +18,3 @@ pub fn hydrate() {
 
     mount_to_body(screens::App);
 }
-

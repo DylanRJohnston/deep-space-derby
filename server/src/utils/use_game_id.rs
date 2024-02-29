@@ -11,4 +11,3 @@ pub fn use_game_id() -> GameID {
 
     code.as_str().try_into().unwrap()
 }
-

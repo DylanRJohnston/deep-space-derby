@@ -163,4 +163,3 @@ pub fn orbit(mut query: Query<(&mut Transform, &OrbitPoint)>, time: Res<Time>) {
         )
     }
 }
-

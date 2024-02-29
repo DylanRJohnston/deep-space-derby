@@ -49,7 +49,14 @@ impl TryFrom<&str> for GameID {
             return Err("failed to convert from String to GameID, incorrect length");
         }
 
-        Ok(GameID(value.as_bytes().to_owned().try_into().unwrap()))
+        Ok(GameID(
+            value
+                .to_uppercase()
+                .as_bytes()
+                .to_owned()
+                .try_into()
+                .unwrap(),
+        ))
     }
 }
 
@@ -135,5 +142,17 @@ mod test {
 
         assert_eq!(input, result);
     }
-}
 
+    #[test]
+    fn test_uppercase() {
+        #[derive(Debug, Serialize, Deserialize)]
+        struct Test {
+            game_id: GameID,
+        }
+
+        let input = "{ \"game_id\": \"abcdef\" }";
+        let output = serde_json::from_str::<Test>(input).unwrap();
+
+        assert_eq!([b'A', b'B', b'C', b'D', b'E', b'F'], output.game_id.0);
+    }
+}

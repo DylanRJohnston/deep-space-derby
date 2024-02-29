@@ -61,4 +61,3 @@ fn ui_progress_bar(counter: Res<ProgressCounter>) {
 
     println!("{}", Into::<f32>::into(progress));
 }
-

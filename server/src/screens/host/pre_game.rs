@@ -63,4 +63,3 @@ pub fn pre_game() -> impl IntoView {
         </div>
     }
 }
-

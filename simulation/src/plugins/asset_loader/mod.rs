@@ -34,4 +34,3 @@ pub fn load_assets(
         cactoro: Handle::weak_from_u128(0),
     });
 }
-

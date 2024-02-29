@@ -6,4 +6,3 @@ pub mod menus;
 pub mod monster;
 pub mod pallet;
 pub mod spectators;
-

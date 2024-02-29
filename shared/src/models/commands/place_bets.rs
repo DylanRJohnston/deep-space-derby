@@ -1,4 +1,3 @@
-
 use std::{
     fmt::Display,
     hash::{DefaultHasher, Hash, Hasher},
@@ -86,4 +85,3 @@ impl Command for PlaceBets {
         Ok((events, Some(Effect::SoftCommand(maybe_start_race))))
     }
 }
-

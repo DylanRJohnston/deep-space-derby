@@ -32,4 +32,3 @@ pub fn app() -> impl IntoView {
         </div>
     }
 }
-

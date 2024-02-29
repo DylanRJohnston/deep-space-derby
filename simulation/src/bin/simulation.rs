@@ -41,4 +41,3 @@ fn setup(
         ..default()
     });
 }
-

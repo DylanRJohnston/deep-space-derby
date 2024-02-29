@@ -125,7 +125,10 @@ h1 {
   font-size: 2rem;
   text-align: center;
   background-color: #555;
-  text-transform: uppercase;
+}
+
+.uppercase > input {
+    text-transform: uppercase;
 }
 
 .avatar-grid {

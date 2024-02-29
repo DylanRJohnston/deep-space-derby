@@ -228,4 +228,3 @@ pub fn run_timers(
         }
     }
 }
-

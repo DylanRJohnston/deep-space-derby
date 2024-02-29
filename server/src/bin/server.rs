@@ -18,7 +18,6 @@ use std::{convert::identity, str::FromStr};
 use wasm_bindgen::JsValue;
 use worker::{event, Method, Request, RequestInit, RouteContext};
 
-
 #[event(start)]
 pub fn start() {
     console_error_panic_hook::set_once();
@@ -113,10 +112,11 @@ pub async fn fetch(
         |req, ctx| async move {
             let object_name = ctx
                 .param("code")
-                .ok_or("failed to find game code parameter in route")?;
+                .ok_or("failed to find game code parameter in route")?
+                .to_uppercase();
 
             ctx.durable_object("GAME")?
-                .id_from_name(object_name)?
+                .id_from_name(&object_name)?
                 .get_stub()?
                 .fetch_with_request(req)
                 .await
@@ -128,11 +128,6 @@ pub async fn fetch(
 
 pub fn main() {}
 
-
-
-
-
-
 use std::any::type_name;
 
 use cookie::Cookie;
@@ -141,8 +136,8 @@ use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 use worker::{
-    console_error, console_log, console_warn, durable_object, Env, ListOptions, Response,
-    Result, Router, State, Storage, WebSocket, WebSocketPair,
+    console_error, console_log, console_warn, durable_object, Env, ListOptions, Response, Result,
+    Router, State, Storage, WebSocket, WebSocketPair,
 };
 
 use shared::models::{
@@ -466,7 +461,6 @@ async fn command_handler<C: Command>(
     Ok(())
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
     pub session_id: Uuid,
@@ -522,6 +516,3 @@ impl Default for Sessions {
         Self::new()
     }
 }
-
-
-

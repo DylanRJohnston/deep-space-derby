@@ -1,12 +1,12 @@
 use leptos::{component, create_action, create_node_ref, html::Input, view, IntoView, SignalGet};
 
-use shared::models::{
-    commands::{change_profile, ChangeProfile, ReadyPlayer},
-    projections,
-};
 use crate::{
     server_fns::server_fn,
     utils::{use_events, use_game_id, use_session_id},
+};
+use shared::models::{
+    commands::{change_profile, ChangeProfile, ReadyPlayer},
+    projections,
 };
 
 #[component]
@@ -31,7 +31,6 @@ pub fn lobby() -> impl IntoView {
         .await?;
         server_fn::<ReadyPlayer>(game_id, &()).await
     });
-    
 
     view! {
         <div class="vertical-stack container full-width full-height">
@@ -77,21 +76,3 @@ pub fn lobby() -> impl IntoView {
         </div>
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

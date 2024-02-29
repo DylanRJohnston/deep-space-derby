@@ -337,7 +337,6 @@ async fn command_handler<C: Command>(
     Ok(())
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
     pub session_id: Uuid,
@@ -395,4 +394,3 @@ impl Default for Sessions {
 }
 
 pub fn main() {}
-

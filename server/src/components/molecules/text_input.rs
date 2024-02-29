@@ -8,9 +8,10 @@ pub fn text_input(
     #[prop(optional)] minlength: Option<i32>,
     #[prop(optional)] maxlength: Option<i32>,
     #[prop(optional)] title: Option<&'static str>,
+    #[prop(default = false)] uppercase: bool,
 ) -> impl IntoView {
     view! {
-        <div class="input full-width">
+        <div class="input full-width" class:uppercase=uppercase>
             <label for=id>{name}</label>
             <input
                 id=id
@@ -25,4 +26,3 @@ pub fn text_input(
         </div>
     }
 }
-

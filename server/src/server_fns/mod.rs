@@ -1,6 +1,6 @@
+use leptos::ServerFnError;
 use shared::models::commands::Command;
 use shared::models::game_id::GameID;
-use leptos::ServerFnError;
 use std::future::Future;
 
 // #[cfg(not(feature = "ssr"))]
@@ -39,4 +39,3 @@ pub fn server_fn<C: Command>(
 
 //     async { std::future::pending().await }
 // }
-

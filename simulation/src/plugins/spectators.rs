@@ -97,4 +97,3 @@ pub fn init_animation(
         }
     }
 }
-
