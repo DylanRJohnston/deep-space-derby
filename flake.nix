@@ -108,7 +108,7 @@
             }
 
             function build_simulation() {
-              echo "cargo build -p simulation --target wasm32-unknown-unknown --release"
+              echo "cargo build -p simulation --no-default-features --target wasm32-unknown-unknown --release"
             }
 
             function bindgen() {

@@ -19,6 +19,7 @@ fn main() {
         app.register_type::<RotateSpeed>()
             .register_type::<OrbitPoint>()
             .register_type::<RaceSpawnPoint>()
+            .register_type::<PreGameSpawnPoint>()
             .add_plugins(bevy_gltf_blueprints::BlueprintsPlugin {
                 library_folder: "library".into(),
                 material_library: false,
@@ -68,6 +69,12 @@ pub struct OrbitPoint {
 #[derive(Debug, Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct RaceSpawnPoint {
+    pub id: u32,
+}
+
+#[derive(Debug, Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct PreGameSpawnPoint {
     pub id: u32,
 }
 
@@ -163,3 +170,4 @@ pub fn orbit(mut query: Query<(&mut Transform, &OrbitPoint)>, time: Res<Time>) {
         )
     }
 }
+

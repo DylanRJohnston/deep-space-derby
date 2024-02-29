@@ -11,7 +11,7 @@ pub struct SpectatorPlugin;
 
 impl Plugin for SpectatorPlugin {
     fn build(&self, app: &mut App) {
-        // app.register_type::<Spectator>()
+        app.register_type::<Spectator>();
         //     .add_systems(Update, init_animation);
     }
 }
@@ -97,3 +97,4 @@ pub fn init_animation(
         }
     }
 }
+

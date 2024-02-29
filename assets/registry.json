@@ -9127,6 +9127,17 @@
       "type": "string",
       "typeInfo": "Enum"
     },
+    "simulation::plugins::spectators::Spectator": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {},
+      "required": [],
+      "short_name": "Spectator",
+      "title": "simulation::plugins::spectators::Spectator",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "smallvec::SmallVec<[bevy_ecs::Entity; 8]>": {
       "isComponent": false,
       "isResource": false,
@@ -9178,6 +9189,25 @@
       ],
       "short_name": "OrbitPoint",
       "title": "test::OrbitPoint",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "test::PreGameSpawnPoint": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "properties": {
+        "id": {
+          "type": {
+            "$ref": "#/$defs/u32"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "short_name": "PreGameSpawnPoint",
+      "title": "test::PreGameSpawnPoint",
       "type": "object",
       "typeInfo": "Struct"
     },
