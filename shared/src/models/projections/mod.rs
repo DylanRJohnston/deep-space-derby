@@ -191,7 +191,7 @@ pub fn round(events: &Vector<Event>) -> u64 {
 
     for event in events {
         match event {
-            Event::GameStarted => round += 1,
+            Event::GameCreated { .. } => round += 1,
             Event::RaceFinished(_) => round += 1,
             _ => {}
         }
@@ -200,24 +200,18 @@ pub fn round(events: &Vector<Event>) -> u64 {
     round
 }
 
+// Have to use u32 instead of u64 because JS can't handle u64
 pub fn race_seed(events: &Vector<Event>) -> u32 {
-    for event in events.iter().rev() {
-        if let Event::RaceStarted { seed } = event {
-            return *seed;
-        }
-    }
-
-    0
-}
-
-pub fn monsters(events: &Vector<Event>) -> [&'static Monster; 3] {
-    use rand::seq::SliceRandom;
-
     let mut hasher = DefaultHasher::new();
     game_id(events).hash(&mut hasher);
 
-    let seed = hasher.finish() ^ round(events);
-    let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
+    (hasher.finish() ^ round(events)) as u32
+}
+
+pub fn monsters(race_seed: u32) -> [&'static Monster; 3] {
+    use rand::seq::SliceRandom;
+
+    let mut rng = rand::rngs::StdRng::seed_from_u64(race_seed as u64);
 
     MONSTERS
         .choose_multiple(&mut rng, 3)

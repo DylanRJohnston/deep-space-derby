@@ -27,39 +27,39 @@ fn inner_macro(
       #tokens
 
 
-      impl From<#ident> for JsValue {
+      impl From<#ident> for ::wasm_bindgen::JsValue {
         fn from(val: #ident) -> Self {
             serde_wasm_bindgen::to_value(&val).unwrap()
         }
       }
 
-      impl TryFrom<JsValue> for #ident {
+      impl TryFrom<::wasm_bindgen::JsValue> for #ident {
         type Error = serde_wasm_bindgen::Error;
 
-        fn try_from(value: JsValue) -> Result<Self, Self::Error> {
+        fn try_from(value: ::wasm_bindgen::JsValue) -> Result<Self, Self::Error> {
             serde_wasm_bindgen::from_value(value)
         }
       }
 
-      impl wasm_bindgen::describe::WasmDescribe for #ident {
+      impl ::wasm_bindgen::describe::WasmDescribe for #ident {
         fn describe() {
-            JsValue::describe()
+            ::wasm_bindgen::JsValue::describe()
         }
       }
 
-      impl wasm_bindgen::convert::IntoWasmAbi for #ident {
-        type Abi = <JsValue as IntoWasmAbi>::Abi;
+      impl ::wasm_bindgen::convert::IntoWasmAbi for #ident {
+        type Abi = <::wasm_bindgen::JsValue as ::wasm_bindgen::convert::IntoWasmAbi>::Abi;
 
         fn into_abi(self) -> Self::Abi {
-            Into::<JsValue>::into(self).into_abi()
+            Into::<::wasm_bindgen::JsValue>::into(self).into_abi()
         }
       }
 
-      impl wasm_bindgen::convert::FromWasmAbi for #ident {
-        type Abi = <JsValue as FromWasmAbi>::Abi;
+      impl ::wasm_bindgen::convert::FromWasmAbi for #ident {
+        type Abi = <::wasm_bindgen::JsValue as ::wasm_bindgen::convert::FromWasmAbi>::Abi;
 
         unsafe fn from_abi(js: Self::Abi) -> Self {
-            JsValue::from_abi(js).try_into().unwrap()
+            ::wasm_bindgen::JsValue::from_abi(js).try_into().unwrap()
         }
       }
     })

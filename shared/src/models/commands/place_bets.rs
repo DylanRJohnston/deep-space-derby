@@ -72,14 +72,7 @@ impl Command for PlaceBets {
             .collect();
 
         let maybe_start_race = |events: &Vector<Event>| {
-            projections::all_players_have_bet(events).then(|| {
-                let mut hasher = DefaultHasher::new();
-                events.hash(&mut hasher);
-
-                Event::RaceStarted {
-                    seed: hasher.finish() as u32,
-                }
-            })
+            projections::all_players_have_bet(events).then_some(Event::RaceStarted {})
         };
 
         Ok((events, Some(Effect::SoftCommand(maybe_start_race))))

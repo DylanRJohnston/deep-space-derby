@@ -103,7 +103,7 @@ pub fn pre_game() -> impl IntoView {
     })
     .into_signal();
 
-    let monsters = projections::monsters(&events.get_untracked());
+    let monsters = projections::monsters(projections::race_seed(&events.get_untracked()));
 
     let bets = monsters
         .iter()

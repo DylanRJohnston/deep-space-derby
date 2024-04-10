@@ -1,3 +1,4 @@
+use macros::serde_wasm_bindgen;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -22,7 +23,16 @@ pub enum Event {
     BorrowedMoney { session_id: Uuid, amount: i32 },
     PaidBackMoney { session_id: Uuid, amount: i32 },
     PlacedBet(PlacedBet),
-    RaceStarted { seed: u32 },
+    RaceStarted,
     RaceFinished(Results),
     GameFinished,
+}
+
+#[derive(Debug, Clone, PartialEq, Hash)]
+#[serde_wasm_bindgen]
+pub enum SceneEvent {
+    Lobby { seed: u32 },
+    PreGame { seed: u32 },
+    Race { seed: u32 },
+    Results { seed: u32 },
 }

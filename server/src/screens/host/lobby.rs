@@ -1,7 +1,7 @@
 use leptos::*;
 
-use crate::utils::{use_events, use_game_id};
-use shared::models::projections;
+use crate::utils::{send_game_event, use_events, use_game_id};
+use shared::models::{events::SceneEvent, projections};
 
 #[component]
 fn player(name: String, ready: bool) -> impl IntoView {
@@ -18,6 +18,10 @@ fn player(name: String, ready: bool) -> impl IntoView {
 pub fn lobby() -> impl IntoView {
     let events = use_events();
     let game_id = use_game_id();
+
+    send_game_event(SceneEvent::Lobby {
+        seed: projections::race_seed(&events.get_untracked()),
+    });
 
     let players = move || projections::players(&events.get());
 

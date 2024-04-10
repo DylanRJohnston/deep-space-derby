@@ -34,7 +34,7 @@ impl Plugin for ScenesPlugin {
             .add_plugins(LobbyPlugin)
             .add_plugins(RacePlugin)
             .add_plugins(PreGamePlugin)
-            .add_state::<SceneState>()
+            .init_state::<SceneState>()
             .add_loading_state(
                 LoadingState::new(SceneState::Loading)
                     .continue_to_state(SceneState::Spawning)
@@ -66,6 +66,7 @@ fn scene_setup(
     models: Res<Assets<Gltf>>,
     mut images: ResMut<Assets<Image>>,
     mut next_state: ResMut<NextState<SceneState>>,
+    cameras: Query<Entity, With<Camera>>,
 ) {
     let skybox = images.get_mut(&game_assets.skybox).unwrap();
     skybox.reinterpret_stacked_2d_as_array(6);
@@ -74,20 +75,9 @@ fn scene_setup(
         ..default()
     });
 
-    commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.6, 0.9, 0.0)),
-        directional_light: DirectionalLight {
-            illuminance: 75000.0,
-            shadows_enabled: true,
-            ..default()
-        },
-        cascade_shadow_config: CascadeShadowConfigBuilder {
-            maximum_distance: 40.0,
-            ..default()
-        }
-        .into(),
-        ..default()
-    });
+    for camera in &cameras {
+        commands.entity(camera).despawn_recursive();
+    }
 
     commands.spawn(SceneBundle {
         scene: models
@@ -107,9 +97,9 @@ fn setup_skybox(
     mut camera: Query<Entity, Added<Camera>>,
 ) {
     if let Ok(camera) = camera.get_single_mut() {
-        commands
-            .entity(camera)
-            .insert(Skybox(game_assets.skybox.clone()));
+        commands.entity(camera).insert(Skybox {
+            image: game_assets.skybox.clone(),
+            brightness: 1000.0,
+        });
     }
 }
-

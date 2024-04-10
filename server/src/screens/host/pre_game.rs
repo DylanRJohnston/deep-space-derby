@@ -1,7 +1,7 @@
 use leptos::*;
-use shared::models::{monsters::Monster, projections};
+use shared::models::{events::SceneEvent, monsters::Monster, projections};
 
-use crate::utils::use_events;
+use crate::utils::{send_game_event, use_events};
 
 #[component]
 pub fn leaderboard() -> impl IntoView {
@@ -47,7 +47,11 @@ pub fn monster_card(monster: &'static Monster) -> impl IntoView {
 #[component]
 pub fn pre_game() -> impl IntoView {
     let events = use_events();
-    let monsters = move || projections::monsters(&events());
+    let monsters = move || projections::monsters(projections::race_seed(&events()));
+
+    send_game_event(SceneEvent::PreGame {
+        seed: projections::race_seed(&events.get_untracked()),
+    });
 
     view! {
         <div class="vertical-stack full-width full-height container">

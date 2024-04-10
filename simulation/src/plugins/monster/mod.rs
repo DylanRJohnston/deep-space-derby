@@ -107,19 +107,16 @@ pub fn init_animation(
     mut anim_players: Query<&mut AnimationPlayer>,
     clips: Res<Assets<AnimationClip>>,
 ) {
-    for (entity, anim_link, animations, _monster) in &query {
-        let mut player = anim_players.get_mut(anim_link.0).unwrap();
-
+    for (entity, anim_link, animations, monster) in &query {
         let named_animations = extract_animations(&animations.named_animations, &clips);
 
-        player.start(named_animations.idle.handle.clone()).repeat();
         commands
             .entity(entity)
             .insert(named_animations)
             .remove::<Start>()
             .insert(BehaviourTimer {
                 timer: Timer::from_seconds(1.0, TimerMode::Once),
-                next_state: Monster::Jumping,
+                next_state: *monster,
             });
     }
 }
@@ -224,4 +221,3 @@ pub fn run_timers(
         }
     }
 }
-

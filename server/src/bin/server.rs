@@ -128,11 +128,16 @@ async fn create_game(
 
     console_log!("Sending create_game to durable object");
 
-    env.durable_object("GAME")?
+    let response = env
+        .durable_object("GAME")?
         .id_from_name(game_code.deref())?
         .get_stub()?
         .fetch_with_request(req.try_into()?)
         .await?;
+
+    if response.status_code() != 200 {
+        return Ok(response.into());
+    }
 
     Ok(Redirect::to(&commands::CreateGame::redirect(game_code).unwrap()).into_response())
 }
@@ -261,7 +266,7 @@ pub struct Game {
     state: worker::State,
     events: EventLog,
     env: Env,
-    sessions: Sessions,
+    // sessions: Sessions,
 }
 
 #[durable_object]
@@ -270,15 +275,15 @@ impl DurableObject for Game {
         // Recover listeners from hibernation
         let recovered_sockets = state.get_websockets();
 
-        let mut sessions = Sessions::new();
+        // let mut sessions = Sessions::new();
 
         for listener in recovered_sockets.into_iter() {
             match listener.deserialize_attachment::<Metadata>() {
                 Ok(Some(metadata)) => {
-                    sessions.insert(Session {
-                        metadata,
-                        socket: listener,
-                    });
+                    // sessions.insert(Session {
+                    //     metadata,
+                    //     socket: listener,
+                    // });
                 }
                 Ok(None) => console_log!("No metadata found"),
                 Err(err) => console_error!("Metadata failed to load: {}", err.to_string()),
@@ -291,7 +296,7 @@ impl DurableObject for Game {
             state,
             events,
             env,
-            sessions,
+            // sessions,
         }
     }
 
@@ -320,7 +325,7 @@ impl DurableObject for Game {
         _reason: String,
         _was_clean: bool,
     ) -> worker::Result<()> {
-        self.sessions.remove(&ws);
+        // self.sessions.remove(&ws);
 
         Ok(())
     }
@@ -330,7 +335,7 @@ impl DurableObject for Game {
         ws: WebSocket,
         _error: worker::Error,
     ) -> worker::Result<()> {
-        self.sessions.remove(&ws);
+        // self.sessions.remove(&ws);
 
         Ok(())
     }
@@ -391,12 +396,14 @@ async fn on_connect(
     let metadata = Metadata { session_id };
     pair.server.serialize_attachment(&metadata)?;
 
-    game.sessions.insert(Session {
-        metadata,
-        socket: pair.server.clone(),
-    });
+    // game.sessions.insert(Session {
+    //     metadata,
+    //     socket: pair.server.clone(),
+    // });
 
     game.state.accept_web_socket(&pair.server);
+
+    console_log!("Sending {:#?}", game.events.vector().await);
 
     for event in game.events.iter().await? {
         pair.server.send(event)?;
@@ -414,7 +421,13 @@ impl Game {
     async fn add_event(&mut self, event: Event) -> worker::Result<()> {
         self.events.push(event.clone()).await?;
 
-        self.sessions.broadcast(&event)
+        for ws in &self.state.get_websockets() {
+            ws.send(&event)?;
+        }
+
+        Ok(())
+
+        // self.sessions.broadcast(&event)
     }
 }
 
@@ -491,7 +504,6 @@ trait CommandHandler {
 pub async fn command_handler<C: Command>(
     SessionID(session_id): SessionID,
     State(mut game): State<GameWrapper>,
-    Path((game_id, _)): Path<(GameID, String)>,
     Json(input): Json<C::Input>,
 ) -> Result<(), ErrWrapper> {
     console_log!("Inside command handler {:?}, {:?}", session_id, input);
@@ -568,41 +580,41 @@ impl PartialEq for Session {
     }
 }
 
-#[derive(Debug)]
-pub struct Sessions(Vec<Session>);
+// #[derive(Debug)]
+// pub struct Sessions(Vec<Session>);
 
-impl Sessions {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
+// impl Sessions {
+//     pub fn new() -> Self {
+//         Self(Vec::new())
+//     }
 
-    pub fn insert(&mut self, session: Session) {
-        self.0.push(session)
-    }
+//     pub fn insert(&mut self, session: Session) {
+//         self.0.push(session)
+//     }
 
-    pub fn remove(&mut self, ws: &WebSocket) -> Option<Session> {
-        if let Some(position) = self.0.iter().position(|it| &it.socket == ws) {
-            return Some(self.0.remove(position));
-        }
+//     pub fn remove(&mut self, ws: &WebSocket) -> Option<Session> {
+//         if let Some(position) = self.0.iter().position(|it| &it.socket == ws) {
+//             return Some(self.0.remove(position));
+//         }
 
-        None
-    }
+//         None
+//     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Session> {
-        self.0.iter()
-    }
+//     pub fn iter(&self) -> impl Iterator<Item = &Session> {
+//         self.0.iter()
+//     }
 
-    pub fn broadcast(&self, data: &Event) -> worker::Result<()> {
-        for session in self.iter() {
-            session.socket.send(data)?;
-        }
+//     pub fn broadcast(&self, data: &Event) -> worker::Result<()> {
+//         for session in self.iter() {
+//             session.socket.send(data)?;
+//         }
 
-        Ok(())
-    }
-}
+//         Ok(())
+//     }
+// }
 
-impl Default for Sessions {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl Default for Sessions {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }

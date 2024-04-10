@@ -19,9 +19,9 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
-# [profile.release]
+[profile.release]
 # lto = true
-# opt-level = 's'
+opt-level = 's'
 # strip = true
 
 [[workspace.metadata.leptos]]

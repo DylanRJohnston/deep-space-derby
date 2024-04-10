@@ -70,8 +70,8 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
 
                 leptos::logging::log!("Event {:#?}", &event);
 
-                set_connection.set(Connection::Connected);
                 set_events.update(|events| events.push_back(event));
+                set_connection.set(Connection::Connected);
             }
         };
 

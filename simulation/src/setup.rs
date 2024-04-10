@@ -16,14 +16,16 @@ pub fn start(f: impl FnOnce(&mut App)) {
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
-                primary_window: Some(Window {
-                    fit_canvas_to_parent: true,
-                    ..default()
-                }),
+                primary_window: Some(Window { ..default() }),
                 ..default()
             })
             .set(AssetPlugin {
+                #[cfg(target_arch = "wasm32")]
                 file_path: "/assets".into(),
+
+                #[cfg(not(target_arch = "wasm32"))]
+                file_path: "assets".into(),
+
                 ..Default::default()
             }),
     )
@@ -69,10 +71,16 @@ pub struct ProgressBarRoot;
 #[derive(Component)]
 pub struct ProgressBar;
 
+#[derive(Component)]
+pub struct ProgressMessage;
+
 fn spawn_progress_bar(mut commands: Commands) {
+    let camera = commands.spawn(Camera3dBundle::default()).id();
+
     commands
         .spawn((
             ProgressBarRoot,
+            TargetCamera(camera),
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.),
@@ -86,16 +94,19 @@ fn spawn_progress_bar(mut commands: Commands) {
             },
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle {
-                text: Text::from_section(
-                    "Loading",
-                    TextStyle {
-                        font_size: 100.0,
-                        ..default()
-                    },
-                ),
-                ..default()
-            });
+            parent.spawn((
+                ProgressMessage,
+                TextBundle {
+                    text: Text::from_section(
+                        "Loading",
+                        TextStyle {
+                            font_size: 100.0,
+                            ..default()
+                        },
+                    ),
+                    ..default()
+                },
+            ));
 
             parent
                 .spawn(NodeBundle {
@@ -132,13 +143,19 @@ fn remove_progress_bar(progress_bar: Query<Entity, With<ProgressBarRoot>>, mut c
 
 fn ui_progress_bar(
     mut progress_bar: Query<&mut Style, With<ProgressBar>>,
+    mut progress_message: Query<&mut Text, With<ProgressMessage>>,
     counter: Res<ProgressCounter>,
 ) {
     let progress = counter.progress();
     let mut progress_bar = progress_bar.get_single_mut().unwrap();
 
-    println!("{}", Into::<f32>::into(progress));
+    let progress = Into::<f32>::into(progress);
 
-    progress_bar.width = Val::Percent(100. * Into::<f32>::into(progress));
+    progress_bar.width = Val::Percent(100. * progress);
+
+    if progress > 0.99 {
+        let mut text = progress_message.get_single_mut().unwrap();
+
+        "Creating World".clone_into(&mut text.sections[0].value);
+    }
 }
-
