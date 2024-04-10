@@ -6,6 +6,7 @@ fn main() {
     start(|app| {
         app.add_plugins(ExportRegistryPlugin::default())
             .add_plugins(WorldInspectorPlugin::default());
+        // .add_plugins(EditorPlugin::default());
     });
 }
 

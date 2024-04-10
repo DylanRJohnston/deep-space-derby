@@ -14,13 +14,13 @@ use crate::models::{
 
 use super::{Command, Effect};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bet {
     pub monster_id: Uuid,
     pub amount: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Input {
     pub bets: Vec<Bet>,
 }

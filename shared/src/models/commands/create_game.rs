@@ -8,7 +8,7 @@ use crate::models::{events::Event, game_id::GameID};
 
 use super::{Command, Effect, GameCode};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Input {
     pub code: GameID,
 }

@@ -6,10 +6,10 @@ resolver = "2"
 shared = { path = "./shared", version = "0.1.0" }
 
 [patch.crates-io]
-leptos-cloudflare = { path = "/Users/dylanj/Workspace/github/leptos-cloudflare/leptos-cloudflare" }
+# leptos-cloudflare = { path = "/Users/dylanj/Workspace/github/leptos-cloudflare/leptos-cloudflare" }
 statig = { git = "ssh://git@github.com/DylanRJohnston/statig.git" }
-worker = { version = "*", path = "/Users/dylanj/Workspace/github/workers-rs/worker" }
-worker-sys = { path = "/Users/dylanj/Workspace/github/workers-rs/worker-sys" }
+# worker = { version = "*", path = "/Users/dylanj/Workspace/github/workers-rs/worker" }
+# worker-sys = { path = "/Users/dylanj/Workspace/github/workers-rs/worker-sys" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -19,10 +19,10 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
-[profile.release]
-lto = true
-opt-level = 's'
-strip = true
+# [profile.release]
+# lto = true
+# opt-level = 's'
+# strip = true
 
 [[workspace.metadata.leptos]]
 name = "deep-space-derby"

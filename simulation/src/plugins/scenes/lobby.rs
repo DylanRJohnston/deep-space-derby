@@ -15,11 +15,13 @@ impl Plugin for LobbyPlugin {
     }
 }
 
-pub fn init_camera(mut query: Query<&mut Transform, Added<Camera>>) {
-    if let Ok(mut camera) = query.get_single_mut() {
+pub fn init_camera(mut query: Query<(&mut Transform, &mut PerspectiveProjection), Added<Camera>>) {
+    if let Ok((mut transform, mut projection)) = query.get_single_mut() {
         println!("Setting initial camera position");
-        camera.translation = Vec3::new(10.0, 10.0, 10.0);
-        *camera = camera.looking_at(Vec3::ZERO, Vec3::Y);
+        transform.translation = Vec3::new(10.0, 10.0, 10.0);
+        *transform = transform.looking_at(Vec3::ZERO, Vec3::Y);
+
+        // projection.fov = 120.0;
     }
 }
 

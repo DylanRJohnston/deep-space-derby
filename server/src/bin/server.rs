@@ -4,150 +4,261 @@
 #![feature(impl_trait_in_fn_trait_return)]
 #![feature(more_qualified_paths)]
 
-use std::net::SocketAddr;
-
-use client::screens;
-use futures_util::Future;
-use leptos::*;
-use leptos_cloudflare::{LeptosRoutes, WorkerRouterData};
-use shared::models::{
-    commands::{Command, CreateGame, GameCode, JoinGame},
-    game_id::generate_game_code,
+use axum::body::Body;
+use axum::extract::Request;
+use axum::extract::{FromRequestParts, Path};
+use axum::http::header::LOCATION;
+use axum::http::request::Parts;
+use axum::http::{HeaderMap, StatusCode};
+use axum::middleware::Next;
+use axum::response::{AppendHeaders, Response};
+use axum::response::{IntoResponse, Redirect};
+use axum::routing::{any, get};
+use axum::{async_trait, debug_handler, Extension, Json};
+use axum::{
+    extract::{Form, State},
+    routing::post,
 };
-use std::{convert::identity, str::FromStr};
-use wasm_bindgen::JsValue;
-use worker::{event, Method, Request, RequestInit, RouteContext};
+use axum_extra::extract::CookieJar;
+use client::screens;
+use cookie::CookieBuilder;
+use im::Vector;
+use leptos::*;
+use leptos_axum::{generate_route_list, LeptosRoutes};
+use serde::{Deserialize, Serialize};
+use shared::models::commands::{self, JoinGame};
+use shared::models::game_id::{self, GameID};
+use shared::models::{commands::Command, game_id::generate_game_code};
+use shared::models::{commands::Effect, events::Event};
+use std::any::type_name;
+use std::convert::Infallible;
+use std::net::SocketAddr;
+use std::ops::{Deref, DerefMut};
+use std::str::FromStr;
+use tower::Service;
+use uuid::Uuid;
+use worker::{
+    console_error, console_log, console_warn, durable_object, event, Env, ListOptions, Storage,
+    WebSocket, WebSocketPair,
+};
 
 #[event(start)]
 pub fn start() {
     console_error_panic_hook::set_once();
 }
 
-pub fn redirect_to_durable_object<C, D, F, Fut>(
-    extractor: F,
-) -> impl Fn(Request, RouteContext<D>) -> impl Future<Output = worker::Result<worker::Response>>
-where
-    C: Command,
-    <C as Command>::Input: GameCode,
-    F: Copy + Fn(Request) -> Fut,
-    Fut: Future<Output = worker::Result<C::Input>>,
-{
-    identity(move |req: Request, ctx: RouteContext<D>| async move {
-        let headers = req.headers().clone();
-        let input = extractor(req).await?;
+pub enum ErrWrapper {
+    Worker(worker::Error),
+    Axum(axum::http::Error),
+    Json(serde_json::Error),
+    Raw(String),
+}
 
-        let request = Request::new_with_init(
-            &format!("https://localhost{}", C::url(input.game_code())),
-            RequestInit::new()
-                .with_method(Method::Post)
-                .with_headers(headers)
-                .with_body(Some(JsValue::from_str(
-                    &serde_qs::to_string(&input).map_err(|_| worker::Error::BadEncoding)?,
-                ))),
-        )?;
+impl From<worker::Error> for ErrWrapper {
+    fn from(value: worker::Error) -> Self {
+        ErrWrapper::Worker(value)
+    }
+}
 
-        let inner_response = ctx
-            .durable_object("GAME")?
-            .id_from_name(&input.game_code())?
-            .get_stub()?
-            .fetch_with_request(request)
-            .await?;
+impl From<axum::http::Error> for ErrWrapper {
+    fn from(value: axum::http::Error) -> Self {
+        ErrWrapper::Axum(value)
+    }
+}
 
-        match C::redirect(input.game_code()) {
-            None => Ok(inner_response),
-            Some(location) => {
-                if inner_response.status_code() != 200 {
-                    return Ok(inner_response);
-                }
+impl From<serde_json::Error> for ErrWrapper {
+    fn from(value: serde_json::Error) -> Self {
+        ErrWrapper::Json(value)
+    }
+}
 
-                let mut headers = inner_response.headers().clone();
-                headers.append("Location", &location)?;
+impl From<String> for ErrWrapper {
+    fn from(value: String) -> Self {
+        ErrWrapper::Raw(value)
+    }
+}
 
-                Ok(web_sys::Response::new_with_opt_str_and_init(
-                    None,
-                    web_sys::ResponseInit::new()
-                        .status(302)
-                        .headers(&headers.0.into()),
-                )?
-                .into())
+impl From<Infallible> for ErrWrapper {
+    fn from(_: Infallible) -> Self {
+        unimplemented!()
+    }
+}
+
+impl IntoResponse for ErrWrapper {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            ErrWrapper::Worker(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
             }
+            ErrWrapper::Axum(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
+            }
+            ErrWrapper::Json(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
+            }
+            ErrWrapper::Raw(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response(),
         }
-    })
+    }
+}
+
+#[axum::debug_handler]
+#[worker::send]
+async fn create_game(
+    State(env): State<Env>,
+    headers: HeaderMap,
+    req: Request,
+) -> Result<Response, ErrWrapper> {
+    let game_code = generate_game_code();
+
+    console_log!("Inside create_game {}", game_code);
+
+    let mut req = Request::post(format!(
+        "https://DURABLE_OBJECT{}",
+        commands::CreateGame::url(game_code)
+    ));
+
+    *req.headers_mut().unwrap() = headers;
+    req.headers_mut()
+        .unwrap()
+        .insert("Content-Type", "application/json".parse().unwrap());
+
+    let req = req.body(serde_json::to_string(
+        &<commands::CreateGame as Command>::Input { code: game_code },
+    )?)?;
+
+    console_log!("Sending create_game to durable object");
+
+    env.durable_object("GAME")?
+        .id_from_name(game_code.deref())?
+        .get_stub()?
+        .fetch_with_request(req.try_into()?)
+        .await?;
+
+    Ok(Redirect::to(&commands::CreateGame::redirect(game_code).unwrap()).into_response())
+}
+
+#[axum::debug_handler]
+#[worker::send]
+async fn join_game(
+    State(env): State<Env>,
+    headers: HeaderMap,
+    Form(join_game): Form<<JoinGame as Command>::Input>,
+) -> Result<Response, ErrWrapper> {
+    let mut req = Request::post(format!(
+        "https://DURABLE_OBJECT{}",
+        JoinGame::url(join_game.code)
+    ));
+
+    *req.headers_mut().unwrap() = headers;
+    req = req.header("Content-Type", "application/json");
+
+    let req = req.body(serde_json::to_string(&join_game)?)?;
+
+    env.durable_object("GAME")?
+        .id_from_name(join_game.code.deref())?
+        .get_stub()?
+        .fetch_with_request(req.try_into()?)
+        .await?;
+
+    Ok(Redirect::to(&commands::JoinGame::redirect(join_game.code).unwrap()).into_response())
+}
+
+#[axum::debug_handler]
+#[worker::send]
+async fn forward_command(
+    State(env): State<Env>,
+    Path((code, _)): Path<(String, String)>,
+    req: Request,
+) -> Result<Response, ErrWrapper> {
+    console_log!("Forwarding command to durable object");
+
+    Ok(env
+        .durable_object("GAME")?
+        .id_from_name(&code)?
+        .get_stub()?
+        .fetch_with_request(req.try_into()?)
+        .await?
+        .into())
+}
+
+pub async fn session_middleware(
+    session_id: Option<SessionID>,
+    cookie_jar: CookieJar,
+    mut request: Request,
+    next: Next,
+) -> (CookieJar, Response) {
+    console_log!("Inside session middleware");
+
+    let mut cookie_jar = cookie_jar;
+
+    let session_id = match session_id {
+        Some(session_id) => {
+            console_log!("Found session_id, {:?}", session_id);
+            session_id
+        }
+        None => {
+            let session_id = SessionID(Uuid::new_v4());
+            console_log!("Creating new session_id {:?}", session_id);
+            cookie_jar = cookie_jar.add(
+                CookieBuilder::new("session_id", session_id.0.to_string())
+                    .path("/")
+                    .secure(true)
+                    .http_only(false)
+                    .same_site(cookie::SameSite::Strict)
+                    .build(),
+            );
+
+            session_id
+        }
+    };
+
+    request.extensions_mut().insert(session_id);
+
+    (cookie_jar, next.run(request).await)
 }
 
 #[event(fetch)]
 pub async fn fetch(
-    req: worker::Request,
-    env: worker::Env,
+    req: worker::HttpRequest,
+    env: Env,
     _ctx: worker::Context,
-) -> worker::Result<worker::Response> {
-    worker::Router::with_data(WorkerRouterData {
-        options: LeptosOptions::builder()
-            .output_name("index")
-            .site_pkg_dir("pkg")
-            .env(leptos_config::Env::DEV)
-            .site_addr(SocketAddr::from_str("127.0.0.1:8788").unwrap())
-            .reload_port(3001)
-            .build(),
-        app_fn: screens::App,
-    })
-    .leptos_routes(leptos_cloudflare::generate_route_list(screens::App))
-    .post_async(
-        "/api/create_game",
-        redirect_to_durable_object::<CreateGame, _, _, _>(|_| async {
-            Ok(<CreateGame as Command>::Input {
-                code: generate_game_code(),
-            })
-        }),
-    )
-    .post_async(
-        "/api/join_game",
-        redirect_to_durable_object::<JoinGame, _, _, _>(|mut req| async move {
-            serde_qs::from_str::<<JoinGame as Command>::Input>(&req.text().await?)
-                .map_err(|_| worker::Error::BadEncoding)
-        }),
-    )
-    .on_async(
-        "/api/object/game/by_code/:code/*command",
-        |req, ctx| async move {
-            let object_name = ctx
-                .param("code")
-                .ok_or("failed to find game code parameter in route")?
-                .to_uppercase();
+) -> worker::Result<axum::http::Response<Body>> {
+    let leptos_options = LeptosOptions::builder()
+        .output_name("index")
+        .site_pkg_dir("pkg")
+        .env(leptos_config::Env::DEV)
+        .site_addr(SocketAddr::from_str("127.0.0.1:8788").unwrap())
+        .reload_port(3001)
+        .build();
 
-            ctx.durable_object("GAME")?
-                .id_from_name(&object_name)?
-                .get_stub()?
-                .fetch_with_request(req)
-                .await
-        },
-    )
-    .run(req, env)
-    .await
+    let mut router = axum::Router::new()
+        .route("/api/create_game", post(create_game))
+        .route("/api/join_game", post(join_game))
+        .route(
+            "/api/object/game/by_code/:code/*command",
+            any(forward_command),
+        )
+        .with_state(env)
+        .layer(axum::middleware::from_fn(session_middleware))
+        .leptos_routes(
+            &leptos_options,
+            generate_route_list(screens::App),
+            screens::App,
+        )
+        .with_state(leptos_options);
+
+    let response = router.call(req).await?;
+
+    console_log!("Responding with {:?}", &response);
+
+    Ok(response)
 }
 
 pub fn main() {}
 
-use std::any::type_name;
-
-use cookie::Cookie;
-use im::Vector;
-use serde::{Deserialize, Serialize};
-
-use uuid::Uuid;
-use worker::{
-    console_error, console_log, console_warn, durable_object, Env, ListOptions, Response, Result,
-    Router, State, Storage, WebSocket, WebSocketPair,
-};
-
-use shared::models::{
-    commands::{self, Effect},
-    events::Event,
-};
-
 #[durable_object]
 pub struct Game {
-    state: State,
+    state: worker::State,
     events: EventLog,
     env: Env,
     sessions: Sessions,
@@ -184,18 +295,22 @@ impl DurableObject for Game {
         }
     }
 
-    pub async fn fetch(&mut self, req: Request) -> Result<Response> {
-        let env = self.env.clone();
+    pub async fn fetch(&mut self, req: worker::Request) -> worker::Result<worker::Response> {
+        console_log!("Inside fetch in durable object");
 
-        Router::with_data(self)
-            .get_async("/api/object/game/by_code/:code/connect", Self::on_connect)
+        console_log!("{:?}", req.headers());
+
+        axum::Router::new()
+            .route("/api/object/game/by_code/:code/connect", get(on_connect))
             .register_command::<commands::CreateGame>()
             .register_command::<commands::JoinGame>()
             .register_command::<commands::ChangeProfile>()
             .register_command::<commands::ReadyPlayer>()
             .register_command::<commands::PlaceBets>()
-            .run(req, env)
-            .await
+            .with_state(GameWrapper::new(self))
+            .call(req.try_into()?)
+            .await?
+            .try_into()
     }
 
     pub async fn websocket_close(
@@ -204,20 +319,20 @@ impl DurableObject for Game {
         _code: usize,
         _reason: String,
         _was_clean: bool,
-    ) -> Result<()> {
+    ) -> worker::Result<()> {
         self.sessions.remove(&ws);
 
         Ok(())
     }
 
-    pub async fn websocket_error(&mut self, ws: WebSocket, _error: worker::Error) -> Result<()> {
+    pub async fn websocket_error(
+        &mut self,
+        ws: WebSocket,
+        _error: worker::Error,
+    ) -> worker::Result<()> {
         self.sessions.remove(&ws);
 
         Ok(())
-    }
-
-    pub async fn alarm(&mut self) -> Result<Response> {
-        Response::empty()
     }
 }
 
@@ -226,40 +341,77 @@ pub struct Counter {
     pub count: usize,
 }
 
-impl Game {
-    async fn on_connect(req: Request, ctx: RouteContext<&mut Game>) -> Result<Response> {
-        let game = ctx.data;
+// Workers are single threaded, but axum has annoying Send + Send + 'static bounds on State
+pub struct GameWrapper(*mut Game);
 
-        let session_id = match extract_session_id(&req) {
-            None => return Response::error("cannot connect to game without session_id", 400),
-            Some(session_id) => session_id,
-        };
+unsafe impl Sync for GameWrapper {}
+unsafe impl Send for GameWrapper {}
 
-        let pair = WebSocketPair::new()
-            .map_err(|err| {
-                console_error!("Failed to create websocket pair");
-                err
-            })
-            .unwrap();
+impl GameWrapper {
+    fn new(game: &mut Game) -> Self {
+        Self(game as *mut Game)
+    }
+}
 
-        let metadata = Metadata { session_id };
-        pair.server.serialize_attachment(&metadata)?;
+impl Clone for GameWrapper {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
 
-        game.sessions.insert(Session {
-            metadata,
-            socket: pair.server.clone(),
-        });
+impl Deref for GameWrapper {
+    type Target = Game;
 
-        game.state.accept_websocket(&pair.server);
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.0 }
+    }
+}
 
-        for event in game.events.iter().await? {
-            pair.server.send(event)?;
-        }
+impl DerefMut for GameWrapper {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.0 }
+    }
+}
 
-        Response::from_websocket(pair.client)
+#[axum::debug_handler]
+#[worker::send]
+async fn on_connect(
+    State(mut game): State<GameWrapper>,
+    SessionID(session_id): SessionID,
+) -> Result<Response, ErrWrapper> {
+    console_log!("Inside connect handler");
+
+    let pair = WebSocketPair::new()
+        .map_err(|err| {
+            console_error!("Failed to create websocket pair");
+            err
+        })
+        .unwrap();
+
+    let metadata = Metadata { session_id };
+    pair.server.serialize_attachment(&metadata)?;
+
+    game.sessions.insert(Session {
+        metadata,
+        socket: pair.server.clone(),
+    });
+
+    game.state.accept_web_socket(&pair.server);
+
+    for event in game.events.iter().await? {
+        pair.server.send(event)?;
     }
 
-    async fn add_event(&mut self, event: Event) -> Result<()> {
+    // worker::Response::from_websocket(pair.client)
+
+    Ok(Response::builder()
+        .status(101)
+        .extension(pair.client)
+        .body(Body::empty())?)
+}
+
+impl Game {
+    async fn add_event(&mut self, event: Event) -> worker::Result<()> {
         self.events.push(event.clone()).await?;
 
         self.sessions.broadcast(&event)
@@ -281,7 +433,7 @@ impl EventLog {
         }
     }
 
-    async fn hydrate(&mut self) -> Result<()> {
+    async fn hydrate(&mut self) -> worker::Result<()> {
         if self.hydrated {
             return Ok(());
         }
@@ -305,7 +457,7 @@ impl EventLog {
         Ok(())
     }
 
-    async fn push(&mut self, event: Event) -> Result<()> {
+    async fn push(&mut self, event: Event) -> worker::Result<()> {
         self.hydrate().await?;
 
         let key = format!("EVENT#{:0>5}", self.events.len());
@@ -318,118 +470,32 @@ impl EventLog {
         Ok(())
     }
 
-    async fn iter(&mut self) -> Result<impl Iterator<Item = &Event> + '_> {
+    async fn iter(&mut self) -> worker::Result<impl Iterator<Item = &Event> + '_> {
         self.hydrate().await?;
 
         Ok(self.events.iter())
     }
 
-    async fn vector(&mut self) -> Result<&Vector<Event>> {
+    async fn vector(&mut self) -> worker::Result<&Vector<Event>> {
         self.hydrate().await?;
 
         Ok(&self.events)
     }
 }
 
-trait CommandHandler<'handler> {
-    fn register_command<C: Command + 'handler>(self) -> Self;
+trait CommandHandler {
+    fn register_command<C: Command + 'static>(self) -> Self;
 }
 
-impl<'handler, 'game> CommandHandler<'handler> for Router<'handler, &'game mut Game>
-where
-    'game: 'handler,
-{
-    fn register_command<C: Command + 'handler>(self) -> Self {
-        self.post_async(
-            &C::url(":code"),
-            middleware::session(middleware::command::<C, _, _, _>(command_handler::<C>)),
-        )
-    }
-}
+#[worker::send]
+pub async fn command_handler<C: Command>(
+    SessionID(session_id): SessionID,
+    State(mut game): State<GameWrapper>,
+    Path((game_id, _)): Path<(GameID, String)>,
+    Json(input): Json<C::Input>,
+) -> Result<(), ErrWrapper> {
+    console_log!("Inside command handler {:?}, {:?}", session_id, input);
 
-fn extract_session_id(req: &Request) -> Option<Uuid> {
-    let cookie_header = req.headers().get("cookie").ok()??;
-
-    let cookie = Cookie::split_parse(&cookie_header)
-        .filter_map(|it| it.ok())
-        .find(|it| it.name() == "session_id")?;
-
-    Uuid::parse_str(cookie.value()).ok()
-}
-
-mod middleware {
-    use std::convert::identity;
-
-    use cookie::CookieBuilder;
-    use futures_util::Future;
-    use uuid::Uuid;
-    use worker::{Request, Response, Result, RouteContext};
-
-    use shared::models::commands::Command;
-
-    use super::extract_session_id;
-
-    pub fn session<Next, Data, Fut>(
-        next: Next,
-    ) -> impl Copy + Fn(Request, RouteContext<Data>) -> impl Future<Output = Result<Response>>
-    where
-        Next: Fn(Uuid, Request, RouteContext<Data>) -> Fut + Copy,
-        Fut: Future<Output = Result<Response>>,
-    {
-        identity(move |req: Request, ctx: RouteContext<Data>| async move {
-            let session_id = extract_session_id(&req).unwrap_or_else(Uuid::new_v4);
-
-            let cookie = CookieBuilder::new("session_id", session_id.to_string())
-                .path("/")
-                .secure(true)
-                .http_only(false)
-                .same_site(cookie::SameSite::Strict)
-                .build();
-
-            Ok(next(session_id, req, ctx).await?.with_headers(
-                [("Set-Cookie", cookie.to_string().as_str())]
-                    .into_iter()
-                    .collect(),
-            ))
-        })
-    }
-
-    pub fn command<C, Next, Data, Fut>(
-        next: Next,
-    ) -> impl Copy + Fn(Uuid, Request, RouteContext<Data>) -> impl Future<Output = Result<Response>>
-    where
-        C: Command,
-        Next: Fn(Uuid, Data, C::Input) -> Fut + Copy,
-        Fut: Future<Output = Result<()>>,
-    {
-        identity(
-            move |session_id: Uuid, mut req: Request, ctx: RouteContext<Data>| async move {
-                let input: C::Input = match req.headers().get("content-type").unwrap().as_deref() {
-                    Some("application/x-www-form-urlencoded") => {
-                        serde_qs::from_str::<C::Input>(&req.text().await?)
-                            .map_err(|_| worker::Error::BadEncoding)?
-                    }
-                    Some("application/json") => req.json::<C::Input>().await?,
-                    Some(_) => Err(worker::Error::BadEncoding)?,
-                    None => Err(worker::Error::RustError(
-                        "content-type must be specified".into(),
-                    ))?,
-                };
-
-                match next(session_id, ctx.data, input).await {
-                    Ok(_) => Response::empty(),
-                    Err(err) => Response::error(err.to_string(), 400),
-                }
-            },
-        )
-    }
-}
-
-async fn command_handler<C: Command>(
-    session_id: Uuid,
-    game: &mut Game,
-    input: C::Input,
-) -> Result<()> {
     let (new_events, effect) = C::handle(session_id, game.events.vector().await?, input)?;
 
     for event in new_events {
@@ -456,9 +522,33 @@ async fn command_handler<C: Command>(
         None => {}
     }
 
-    // game.state.storage().set_alarm(scheduled_time)
-
     Ok(())
+}
+
+impl CommandHandler for axum::Router<GameWrapper> {
+    fn register_command<C: Command + 'static>(self) -> Self {
+        self.route(&C::url(":code"), post(command_handler::<C>))
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct SessionID(Uuid);
+
+#[async_trait]
+impl<S: Send + Sync> FromRequestParts<S> for SessionID {
+    type Rejection = &'static str;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        console_log!("Inside session_id extractor");
+
+        let jar = CookieJar::from_request_parts(parts, state).await.unwrap();
+
+        jar.get("session_id")
+            .ok_or("missing session_id cookie")
+            .map(|it| it.value())
+            .and_then(|it| Uuid::parse_str(it).map_err(|_| "Unable to parse session_id"))
+            .map(SessionID)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -502,7 +592,7 @@ impl Sessions {
         self.0.iter()
     }
 
-    pub fn broadcast(&self, data: &Event) -> Result<()> {
+    pub fn broadcast(&self, data: &Event) -> worker::Result<()> {
         for session in self.iter() {
             session.socket.send(data)?;
         }

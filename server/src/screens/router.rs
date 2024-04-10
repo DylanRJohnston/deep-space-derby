@@ -17,19 +17,20 @@ pub fn router() -> impl IntoView {
                     path="/host/:game_id"
                     view=|| {
                         view! {
-                            // <script type="module">
-                            // "
-                            // import init, { sendGameEvent as innerSendGameEvent } from '/pkg/simulation.js';
-                            // init().catch(() => {
-                            // window['innerSendGameEvent'] = innerSendGameEvent;
-                            // console.log('Module initialised, flushing pending events')
-                            // while (pendingEvents.length > 0) {
-                            // let event = pendingEvents.shift();
-                            // innerSendGameEvent(event);
-                            // }
-                            // });
-                            // "
-                            // </script>
+                            <script type="module">
+                                "
+                                import init, { sendGameEvent as innerSendGameEvent } from '/pkg/simulation.js';
+                                
+                                init().catch(() => {
+                                    window['innerSendGameEvent'] = innerSendGameEvent;
+                                    console.log('Module initialised, flushing pending events')
+                                    while (pendingEvents.length > 0) {
+                                        let event = pendingEvents.shift();
+                                        innerSendGameEvent(event);
+                                    }
+                                });
+                                "
+                            </script>
                             <GameConnectionWrapper>
                                 <GameStateRouter
                                     lobby=host::Lobby
@@ -112,3 +113,4 @@ where
         GameState::FinalScreen => todo!(),
     }
 }
+

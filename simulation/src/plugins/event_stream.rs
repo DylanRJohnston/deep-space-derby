@@ -10,7 +10,7 @@ pub struct EventStreamPlugin;
 
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(SceneState::Lobby), register_event_stream)
+        app.add_systems(OnEnter(SceneState::Loading), register_event_stream)
             .add_systems(
                 Update,
                 read_event_stream.run_if(not(in_state(SceneState::Loading))),

@@ -8,7 +8,7 @@ use crate::models::{events::Event, projections};
 
 use super::{Command, Effect};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Input {
     pub name: String,
 }

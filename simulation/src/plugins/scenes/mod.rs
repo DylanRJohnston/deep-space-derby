@@ -1,8 +1,12 @@
-use bevy::{gltf::Gltf, pbr::CascadeShadowConfigBuilder, prelude::*, utils::HashMap};
-use bevy_asset_loader::{
-    asset_collection::AssetCollection,
-    loading_state::{config::ConfigureLoadingState, LoadingState, LoadingStateAppExt},
+use bevy::{
+    core_pipeline::Skybox,
+    gltf::Gltf,
+    pbr::CascadeShadowConfigBuilder,
+    prelude::*,
+    render::render_resource::{TextureViewDescriptor, TextureViewDimension},
+    utils::HashMap,
 };
+use bevy_asset_loader::prelude::*;
 
 use self::{lobby::LobbyPlugin, pregame::PreGamePlugin, race::RacePlugin};
 
@@ -14,6 +18,7 @@ pub mod race;
 pub enum SceneState {
     #[default]
     Loading,
+    Spawning,
     Lobby,
     PreGame,
     Race,
@@ -32,26 +37,43 @@ impl Plugin for ScenesPlugin {
             .add_state::<SceneState>()
             .add_loading_state(
                 LoadingState::new(SceneState::Loading)
-                    .continue_to_state(SceneState::Lobby)
+                    .continue_to_state(SceneState::Spawning)
+                    .with_dynamic_assets_file::<StandardDynamicAssetCollection>("all.assets.ron")
                     .load_collection::<Scene>(),
             )
-            .add_systems(OnEnter(SceneState::Lobby), scene_setup);
+            .add_systems(OnEnter(SceneState::Spawning), scene_setup)
+            .add_systems(OnEnter(SceneState::Lobby), setup_skybox);
     }
 }
 
 #[derive(AssetCollection, Resource)]
 struct Scene {
-    #[asset(path = "Scene.glb")]
+    #[asset(key = "world")]
     world: Handle<Gltf>,
 
-    #[asset(path = "library", collection(typed, mapped))]
+    #[asset(key = "models", collection(typed, mapped))]
     #[allow(dead_code)]
     models: HashMap<String, Handle<Gltf>>,
     // #[asset(path = "materials", collection(typed))]
     // materials: Vec<Handle<Gltf>>,
+    #[asset(key = "skybox")]
+    skybox: Handle<Image>,
 }
 
-fn scene_setup(mut commands: Commands, game_assets: Res<Scene>, models: Res<Assets<Gltf>>) {
+fn scene_setup(
+    mut commands: Commands,
+    game_assets: Res<Scene>,
+    models: Res<Assets<Gltf>>,
+    mut images: ResMut<Assets<Image>>,
+    mut next_state: ResMut<NextState<SceneState>>,
+) {
+    let skybox = images.get_mut(&game_assets.skybox).unwrap();
+    skybox.reinterpret_stacked_2d_as_array(6);
+    skybox.texture_view_descriptor = Some(TextureViewDescriptor {
+        dimension: Some(TextureViewDimension::Cube),
+        ..default()
+    });
+
     commands.spawn(DirectionalLightBundle {
         transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.6, 0.9, 0.0)),
         directional_light: DirectionalLight {
@@ -75,5 +97,19 @@ fn scene_setup(mut commands: Commands, game_assets: Res<Scene>, models: Res<Asse
             .clone(),
         ..default()
     });
+
+    next_state.set(SceneState::Lobby);
+}
+
+fn setup_skybox(
+    mut commands: Commands,
+    game_assets: Res<Scene>,
+    mut camera: Query<Entity, Added<Camera>>,
+) {
+    if let Ok(camera) = camera.get_single_mut() {
+        commands
+            .entity(camera)
+            .insert(Skybox(game_assets.skybox.clone()));
+    }
 }
 

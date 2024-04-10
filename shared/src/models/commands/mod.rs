@@ -12,7 +12,7 @@ pub enum Effect {
 }
 
 pub trait Command {
-    type Input: Serialize + DeserializeOwned;
+    type Input: Serialize + DeserializeOwned + std::fmt::Debug + Send + 'static;
 
     fn url(game_id: impl Display) -> String
     where

@@ -1,6 +1,5 @@
 use im::vector::Vector;
-use leptos::{provide_context, use_context, ReadSignal, ServerFnError};
-use leptos_reactive::Signal;
+use leptos::{provide_context, use_context, ReadSignal, ServerFnError, Signal};
 use shared::models::{events::Event, game_id::GameID};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -12,7 +11,7 @@ pub enum Connection {
     Closed,
 }
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 async fn sleep(ms: i32) {
     use js_sys::{Function, Promise};
     use wasm_bindgen::{closure::Closure, JsCast, JsValue};
@@ -35,11 +34,11 @@ async fn sleep(ms: i32) {
     JsFuture::from(promise).await.unwrap();
 }
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(feature = "hydrate")]
 pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
     use futures_util::StreamExt;
     use gloo_net::websocket::{futures::WebSocket, Message};
-    use leptos::*;
+    use leptos::{server_fn::error::NoCustomError, *};
     use wasm_bindgen_futures::spawn_local;
 
     let url = {
@@ -60,7 +59,7 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
                 let event = match msg {
                     Ok(Message::Text(text)) => {
                         serde_json::from_str::<Event>(&text).map_err(|err: serde_json::Error| {
-                            ServerFnError::Deserialization(err.to_string())
+                            ServerFnError::<NoCustomError>::Deserialization(err.to_string())
                         })
                     }
                     Ok(Message::Bytes(_)) => Err(ServerFnError::Deserialization(

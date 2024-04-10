@@ -1,7 +1,7 @@
 mod use_game_id;
 mod use_websocket;
 use cookie::Cookie;
-use leptos_reactive::{provide_context, use_context};
+use leptos::{provide_context, use_context};
 pub use use_game_id::*;
 pub use use_websocket::*;
 use uuid::Uuid;
@@ -32,3 +32,4 @@ pub fn provide_session_id(session_id: Uuid) {
 pub fn use_session_id() -> Uuid {
     use_context::<SessionID>().unwrap().0
 }
+
