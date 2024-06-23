@@ -17,6 +17,11 @@ h1 {
   font-weight: 400;
 }
 
+canvas {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
 .headroom {
   height: 3rem;
   width: 100%;

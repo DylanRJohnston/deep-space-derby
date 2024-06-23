@@ -4,10 +4,6 @@ resolver = "2"
 
 [workspace.dependencies]
 shared = { path = "./shared", version = "0.1.0" }
-
-[patch.crates-io]
-# leptos-cloudflare = { path = "/Users/dylanj/Workspace/github/leptos-cloudflare/leptos-cloudflare" }
-statig = { git = "ssh://git@github.com/DylanRJohnston/statig.git" }
 # worker = { version = "*", path = "/Users/dylanj/Workspace/github/workers-rs/worker" }
 # worker-sys = { path = "/Users/dylanj/Workspace/github/workers-rs/worker-sys" }
 

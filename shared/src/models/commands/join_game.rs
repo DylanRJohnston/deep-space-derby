@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use im::Vector;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::models::{events::Event, game_id::GameID, projections};
@@ -34,6 +35,7 @@ impl Command for JoinGame {
         Some(format!("/play/{}", game_id))
     }
 
+    #[instrument(skip_all, fields(input), err)]
     fn handle(
         session_id: Uuid,
         events: &Vector<Event>,

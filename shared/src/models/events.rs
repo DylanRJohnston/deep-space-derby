@@ -11,7 +11,8 @@ pub struct PlacedBet {
     pub amount: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Hash)]
+#[serde_wasm_bindgen]
 pub enum Event {
     GameCreated { session_id: Uuid, game_id: GameID },
     PlayerJoined { session_id: Uuid, name: String },
@@ -26,13 +27,4 @@ pub enum Event {
     RaceStarted,
     RaceFinished(Results),
     GameFinished,
-}
-
-#[derive(Debug, Clone, PartialEq, Hash)]
-#[serde_wasm_bindgen]
-pub enum SceneEvent {
-    Lobby { seed: u32 },
-    PreGame { seed: u32 },
-    Race { seed: u32 },
-    Results { seed: u32 },
 }

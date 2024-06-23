@@ -1,34 +1,29 @@
-use std::process::Command;
-
 use bevy::prelude::*;
-use bevy_gltf_components::GltfComponentsSet;
 use bevy_tweening::TweeningPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 
 use crate::plugins::{
-    event_stream::EventStreamPlugin, monster::MonsterPlugin, planets::PlanetsPlugin,
-    scenes::SceneState, scenes::ScenesPlugin, spectators::SpectatorPlugin,
+    event_stream::EventStreamPlugin,
+    monster::MonsterPlugin,
+    planets::PlanetsPlugin,
+    scenes::{SceneState, ScenesPlugin},
+    skinned_mesh::SkinnedMeshPlugin,
+    spectators::SpectatorPlugin,
 };
+
+#[cfg(target_arch = "wasm32")]
+const FILE_PATH: &str = "/assets";
+
+#[cfg(not(target_arch = "wasm32"))]
+const FILE_PATH: &str = "assets";
 
 pub fn start(f: impl FnOnce(&mut App)) {
     let mut app = App::new();
 
-    app.add_plugins(
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(Window { ..default() }),
-                ..default()
-            })
-            .set(AssetPlugin {
-                #[cfg(target_arch = "wasm32")]
-                file_path: "/assets".into(),
-
-                #[cfg(not(target_arch = "wasm32"))]
-                file_path: "assets".into(),
-
-                ..Default::default()
-            }),
-    )
+    app.add_plugins(DefaultPlugins.set(AssetPlugin {
+        file_path: FILE_PATH.into(),
+        ..Default::default()
+    }))
     .add_plugins(bevy_gltf_blueprints::BlueprintsPlugin {
         library_folder: "library".into(),
         material_library: false,
@@ -40,6 +35,7 @@ pub fn start(f: impl FnOnce(&mut App)) {
     .add_plugins(TweeningPlugin)
     .add_plugins(SpectatorPlugin)
     .add_plugins(PlanetsPlugin)
+    .add_plugins(SkinnedMeshPlugin)
     .add_plugins(
         ProgressPlugin::new(SceneState::Loading)
             .continue_to(SceneState::Spawning)
@@ -49,7 +45,12 @@ pub fn start(f: impl FnOnce(&mut App)) {
         Update,
         ui_progress_bar
             .after(TrackedProgressSet)
-            .run_if(in_state(SceneState::Loading)),
+            .run_if(|state: Res<State<SceneState>>| {
+                matches!(
+                    state.get(),
+                    SceneState::Connecting | SceneState::Loading | SceneState::Spawning
+                )
+            }),
     )
     .add_systems(OnEnter(SceneState::Loading), spawn_progress_bar)
     .add_systems(OnEnter(SceneState::Lobby), remove_progress_bar)
@@ -57,7 +58,7 @@ pub fn start(f: impl FnOnce(&mut App)) {
     .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
     .insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 0.075,
+        brightness: 0.0,
     });
 
     f(&mut app);
@@ -144,12 +145,10 @@ fn remove_progress_bar(progress_bar: Query<Entity, With<ProgressBarRoot>>, mut c
 fn ui_progress_bar(
     mut progress_bar: Query<&mut Style, With<ProgressBar>>,
     mut progress_message: Query<&mut Text, With<ProgressMessage>>,
-    counter: Res<ProgressCounter>,
+    counter: Option<Res<ProgressCounter>>,
 ) {
-    let progress = counter.progress();
+    let progress = counter.map(|it| it.progress().into()).unwrap_or(1.0);
     let mut progress_bar = progress_bar.get_single_mut().unwrap();
-
-    let progress = Into::<f32>::into(progress);
 
     progress_bar.width = Val::Percent(100. * progress);
 

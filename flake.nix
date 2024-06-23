@@ -90,6 +90,8 @@
             cp -r assets/* site/
             ln -s ../simulation/assets site/assets
 
+            export RUST_LOG=info,axum::rejection=trace
+
             SERVER_TARGET="./target/wasm32-unknown-unknown/debug/server.wasm"
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
             SIMULATION_TARGET="./target/wasm32-unknown-unknown/release/simulation.wasm"

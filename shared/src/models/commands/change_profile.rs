@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use im::Vector;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::models::{events::Event, projections};
@@ -26,6 +27,7 @@ impl Command for ChangeProfile {
         )
     }
 
+    #[instrument(skip_all, fields(input), err)]
     fn handle(
         session_id: Uuid,
         events: &Vector<Event>,

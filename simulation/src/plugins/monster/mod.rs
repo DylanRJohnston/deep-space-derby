@@ -2,7 +2,7 @@
 use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, EaseFunction, Tween};
 use std::time::Duration;
 
-use bevy::{pbr::wireframe::WireframeConfig, prelude::*, utils::hashbrown::HashMap};
+use bevy::{prelude::*, utils::hashbrown::HashMap};
 use bevy_gltf_blueprints::{AnimationPlayerLink, Animations};
 
 pub struct MonsterPlugin;
@@ -11,13 +11,7 @@ impl Plugin for MonsterPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Monster>()
             .add_systems(Update, init_animation)
-            .add_systems(Update, run_timers)
-            .add_systems(Startup, |mut commands: Commands| {
-                commands.insert_resource(WireframeConfig {
-                    global: true,
-                    default_color: Color::WHITE,
-                })
-            });
+            .add_systems(Update, run_timers);
     }
 }
 
@@ -103,11 +97,10 @@ pub enum Monster {
 
 pub fn init_animation(
     mut commands: Commands,
-    query: Query<(Entity, &AnimationPlayerLink, &Animations, &Monster), With<Start>>,
-    mut anim_players: Query<&mut AnimationPlayer>,
+    query: Query<(Entity, &Animations, &Monster), With<Start>>,
     clips: Res<Assets<AnimationClip>>,
 ) {
-    for (entity, anim_link, animations, monster) in &query {
+    for (entity, animations, monster) in &query {
         let named_animations = extract_animations(&animations.named_animations, &clips);
 
         commands

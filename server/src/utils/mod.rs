@@ -1,12 +1,16 @@
-mod use_game_id;
-mod use_websocket;
 use cookie::Cookie;
 use leptos::{provide_context, use_context};
-use shared::models::events::SceneEvent;
-pub use use_game_id::*;
-pub use use_websocket::*;
+use shared::models::events::Event;
 use uuid::Uuid;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast};
+
+#[cfg(feature = "ssr")]
+pub mod err_wrapper;
+pub mod use_game_id;
+pub mod use_websocket;
+
+pub use use_game_id::*;
+pub use use_websocket::*;
 
 pub fn get_session_id() -> Option<Uuid> {
     let cookie_str = web_sys::window()?
@@ -37,5 +41,5 @@ pub fn use_session_id() -> Uuid {
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_name = "sendGameEvent")]
-    pub fn send_game_event(event: SceneEvent);
+    pub fn send_game_event(event: Event);
 }

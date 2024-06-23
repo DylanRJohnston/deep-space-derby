@@ -2695,6 +2695,30 @@
       "type": "object",
       "typeInfo": "Value"
     },
+    "bevy_egui::EguiSettings": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "properties": {
+        "default_open_url_target": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<alloc::string::String>"
+          }
+        },
+        "scale_factor": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        }
+      },
+      "required": [
+        "scale_factor"
+      ],
+      "short_name": "EguiSettings",
+      "title": "bevy_egui::EguiSettings",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "bevy_gizmos::aabb::AabbGizmoConfigGroup": {
       "additionalProperties": false,
       "isComponent": false,
@@ -8292,6 +8316,43 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "bevy_time::virt::Virtual": {
+      "additionalProperties": false,
+      "isComponent": false,
+      "isResource": false,
+      "properties": {
+        "effective_speed": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        },
+        "max_delta": {
+          "type": {
+            "$ref": "#/$defs/bevy_utils::Duration"
+          }
+        },
+        "paused": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "relative_speed": {
+          "type": {
+            "$ref": "#/$defs/f64"
+          }
+        }
+      },
+      "required": [
+        "max_delta",
+        "paused",
+        "relative_speed",
+        "effective_speed"
+      ],
+      "short_name": "Virtual",
+      "title": "bevy_time::virt::Virtual",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "bevy_transform::components::global_transform::GlobalTransform": {
       "isComponent": true,
       "isResource": false,
@@ -10397,6 +10458,14 @@
       "isResource": false,
       "short_name": "Range<f32>",
       "title": "core::ops::Range<f32>",
+      "type": "object",
+      "typeInfo": "Value"
+    },
+    "core::ops::Range<f64>": {
+      "isComponent": false,
+      "isResource": false,
+      "short_name": "Range<f64>",
+      "title": "core::ops::Range<f64>",
       "type": "object",
       "typeInfo": "Value"
     },

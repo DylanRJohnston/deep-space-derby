@@ -1,9 +1,9 @@
 use bevy::{
-    core_pipeline::Skybox,
+    core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping, Skybox},
     gltf::Gltf,
-    pbr::CascadeShadowConfigBuilder,
+    pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
     prelude::*,
-    render::render_resource::{TextureViewDescriptor, TextureViewDimension},
+    render::camera::Exposure,
     utils::HashMap,
 };
 use bevy_asset_loader::prelude::*;
@@ -19,6 +19,7 @@ pub enum SceneState {
     #[default]
     Loading,
     Spawning,
+    Connecting,
     Lobby,
     PreGame,
     Race,
@@ -58,27 +59,21 @@ struct Scene {
     // materials: Vec<Handle<Gltf>>,
     #[asset(key = "skybox")]
     skybox: Handle<Image>,
+
+    #[asset(key = "envmap_diffuse")]
+    envmap_diffuse: Handle<Image>,
+
+    #[asset(key = "envmap_specular")]
+    envmap_specular: Handle<Image>,
 }
 
 fn scene_setup(
     mut commands: Commands,
     game_assets: Res<Scene>,
     models: Res<Assets<Gltf>>,
-    mut images: ResMut<Assets<Image>>,
     mut next_state: ResMut<NextState<SceneState>>,
     cameras: Query<Entity, With<Camera>>,
 ) {
-    let skybox = images.get_mut(&game_assets.skybox).unwrap();
-    skybox.reinterpret_stacked_2d_as_array(6);
-    skybox.texture_view_descriptor = Some(TextureViewDescriptor {
-        dimension: Some(TextureViewDimension::Cube),
-        ..default()
-    });
-
-    for camera in &cameras {
-        commands.entity(camera).despawn_recursive();
-    }
-
     commands.spawn(SceneBundle {
         scene: models
             .get(game_assets.world.id())
@@ -88,18 +83,63 @@ fn scene_setup(
         ..default()
     });
 
-    next_state.set(SceneState::Lobby);
+    for camera in &cameras {
+        commands.entity(camera).despawn_recursive();
+    }
+
+    next_state.set(SceneState::Connecting);
 }
 
 fn setup_skybox(
     mut commands: Commands,
     game_assets: Res<Scene>,
-    mut camera: Query<Entity, Added<Camera>>,
+    mut camera: Query<(Entity, &mut Camera), Added<Camera>>,
+    mut shadows: Query<&mut CascadeShadowConfig>,
+    mut exposure: Query<&mut Exposure>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if let Ok(camera) = camera.get_single_mut() {
-        commands.entity(camera).insert(Skybox {
-            image: game_assets.skybox.clone(),
-            brightness: 1000.0,
-        });
+    if let Ok((id, mut camera)) = camera.get_single_mut() {
+        let mut bloom = BloomSettings::OLD_SCHOOL.clone();
+
+        bloom.intensity = 0.1;
+        bloom.prefilter_settings.threshold = 1.5;
+
+        commands.entity(id).insert((
+            Skybox {
+                image: game_assets.skybox.clone(),
+                brightness: 1000.0,
+            },
+            EnvironmentMapLight {
+                diffuse_map: game_assets.envmap_diffuse.clone(),
+                specular_map: game_assets.envmap_specular.clone(),
+                intensity: 1000.0,
+            },
+            bloom,
+            Tonemapping::AcesFitted,
+            // Tonemapping::BlenderFilmic,
+        ));
+
+        camera.hdr = true;
+    }
+
+    if let Ok(mut shadow_config) = shadows.get_single_mut() {
+        *shadow_config = CascadeShadowConfigBuilder {
+            num_cascades: 4,
+            minimum_distance: 0.1,
+            maximum_distance: 1000.0,
+            first_cascade_far_bound: 10.0,
+            ..default()
+        }
+        .build()
+    }
+
+    if let Ok(mut exposure) = exposure.get_single_mut() {
+        exposure.ev100 = 9.0;
+    }
+
+    for (_, material) in materials.iter_mut() {
+        if material.emissive_texture.is_some() {
+            material.emissive = Color::rgb_linear(2000.0, 2000.0, 2000.0);
+        }
     }
 }

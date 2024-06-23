@@ -4,7 +4,7 @@ use shared::models::projections;
 use wasm_bindgen::JsValue;
 
 use crate::plugins::{
-    event_stream::Seed,
+    event_stream::{Events, Seed},
     monster::{self, Monster, MonsterBundle},
 };
 
@@ -15,7 +15,10 @@ pub struct LobbyPlugin;
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(SceneState::Lobby), init_camera)
-            .add_systems(Update, spawn_monsters.after(GltfBlueprintsSet::AfterSpawn))
+            .add_systems(
+                OnEnter(SceneState::Lobby),
+                spawn_monsters.after(GltfBlueprintsSet::AfterSpawn),
+            )
             .add_systems(Update, orbit_camera.run_if(in_state(SceneState::Lobby)));
     }
 }
@@ -42,15 +45,12 @@ pub fn orbit_camera(mut query: Query<&mut Transform, With<Camera>>, time: Res<Ti
 
 pub fn spawn_monsters(
     mut commands: Commands,
-    seed: Option<Res<Seed>>,
-    spawn_points: Query<(&PreGameSpawnPoint, &Transform), Added<PreGameSpawnPoint>>,
+    events: Res<Events>,
+    spawn_points: Query<(&PreGameSpawnPoint, &Transform)>,
 ) {
-    if seed.is_none() {
-        return;
-    }
+    let seed = projections::race_seed(&events.as_ref().0);
 
-    let seed = seed.unwrap();
-    let monsters = projections::monsters(seed.0);
+    let monsters = projections::monsters(seed);
 
     for (PreGameSpawnPoint { id }, transform) in &spawn_points {
         #[cfg(target = "wasm32")]

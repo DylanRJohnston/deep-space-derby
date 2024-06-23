@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.13" }
+bevy = { version = "0.13", features = ["webgpu"] }
 bevy-inspector-egui = "0.23.3"
 bevy_asset_loader = { version = "0.20", features = [
   "progress_tracking",
@@ -25,7 +25,8 @@ rand = "0.8.5"
 wasm-bindgen = "0.2"
 web-sys = "0.3"
 shared = { workspace = true }
-# bevy_editor_pls = "0.7.0"
+bevy_editor_pls = "0.8.1"
+im = "15.1.0"
 
 
 [features]

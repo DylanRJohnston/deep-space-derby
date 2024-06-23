@@ -1,9 +1,8 @@
 use leptos::*;
 use leptos_use::UseIntervalReturn;
-use wasm_bindgen::prelude::*;
 
-use crate::utils::{send_game_event, use_events};
-use shared::models::{events::SceneEvent, monsters, projections};
+use crate::utils::use_events;
+use shared::models::{monsters, projections};
 
 #[component]
 pub fn race() -> impl IntoView {
@@ -15,8 +14,6 @@ pub fn race() -> impl IntoView {
     let _race = monsters::race(&monsters, seed);
 
     let UseIntervalReturn { .. } = leptos_use::use_interval(1000);
-
-    send_game_event(SceneEvent::Race { seed });
 
     view! {
         <div class="race-container">

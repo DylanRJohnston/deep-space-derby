@@ -3,9 +3,20 @@ use leptos_router::{Route, Router as LeptosRouter, Routes};
 
 use crate::{
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
-    utils::use_events,
+    utils::{send_game_event, use_events},
 };
 use shared::models::events::Event;
+
+#[component]
+pub fn send_events_to_bevy() -> impl IntoView {
+    let events = use_events();
+
+    move || {
+        events.get().last().map(|event| {
+            send_game_event(event.clone());
+        })
+    }
+}
 
 #[component]
 pub fn router() -> impl IntoView {
@@ -32,6 +43,7 @@ pub fn router() -> impl IntoView {
                                 "
                             </script>
                             <GameConnectionWrapper>
+                                <SendEventsToBevy />
                                 <GameStateRouter
                                     lobby=host::Lobby
                                     pre_game=host::PreGame
@@ -113,4 +125,3 @@ where
         GameState::FinalScreen => todo!(),
     }
 }
-

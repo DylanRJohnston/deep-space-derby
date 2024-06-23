@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["color", "despawn", "Gltf", "leptos"],
+  "cSpell.words": ["color", "despawn", "Gltf", "leptos", "opentelemetry"],
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
