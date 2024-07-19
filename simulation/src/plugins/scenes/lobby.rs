@@ -1,24 +1,12 @@
 use bevy::prelude::*;
-use bevy_gltf_blueprints::{BlueprintName, GltfBlueprintsSet, SpawnHere};
-use shared::models::projections;
-use wasm_bindgen::JsValue;
 
-use crate::plugins::{
-    event_stream::{Events, Seed},
-    monster::{self, Monster, MonsterBundle},
-};
-
-use super::{pregame::PreGameSpawnPoint, SceneState};
+use super::SceneState;
 
 pub struct LobbyPlugin;
 
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(SceneState::Lobby), init_camera)
-            .add_systems(
-                OnEnter(SceneState::Lobby),
-                spawn_monsters.after(GltfBlueprintsSet::AfterSpawn),
-            )
             .add_systems(Update, orbit_camera.run_if(in_state(SceneState::Lobby)));
     }
 }
@@ -40,36 +28,5 @@ pub fn orbit_camera(mut query: Query<&mut Transform, With<Camera>>, time: Res<Ti
         transform.translation =
             ((rot * Vec3::new(1.0, 0.5, 1.0)) + Vec3::new(1.0, 0.0, 0.0)) * 15.0;
         transform.look_at(Vec3::new(1.0, 3.0, 0.0), Vec3::Y);
-    }
-}
-
-pub fn spawn_monsters(
-    mut commands: Commands,
-    events: Res<Events>,
-    spawn_points: Query<(&PreGameSpawnPoint, &Transform)>,
-) {
-    let seed = projections::race_seed(&events.as_ref().0);
-
-    let monsters = projections::monsters(seed);
-
-    for (PreGameSpawnPoint { id }, transform) in &spawn_points {
-        #[cfg(target = "wasm32")]
-        web_sys::console::log_1(&JsValue::from_str(&format!("Found spawn point {:#?}", id)));
-
-        let monster = monsters[*id as usize - 1];
-
-        commands.spawn((
-            MonsterBundle {
-                monster: Monster::Idle,
-                speed: monster::Speed(5.0),
-                stats: monster::Stats {
-                    ..Default::default()
-                },
-                ..default()
-            },
-            *transform,
-            BlueprintName(monster.blueprint_name.to_owned()),
-            SpawnHere,
-        ));
     }
 }

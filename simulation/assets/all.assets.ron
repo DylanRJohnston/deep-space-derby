@@ -1,7 +1,7 @@
 ({
   "world": File (path: "Scene.glb"),
   "models": Files (paths: [
-    "library/Marker.glb",
+    /* "library/Marker.glb",
     "library/Monster_Alien.glb",
     "library/Monster_Cactoro.glb",
     "library/Monster_Chicken.glb",
@@ -17,8 +17,8 @@
     "library/Platform_2x2.glb",
     "library/Platform_4x1.glb",
     "library/Platform_4x2.glb",
-    "library/Platform_4x4.glb",
-    "library/Spectator.glb",
+    "library/Platform_4x4.glb", */
+    "library/spectator.glb",
   ]),
   "skybox": File(path: "cubemap_01/skybox.ktx2"),
   "envmap_diffuse": File(path: "cubemap_01/diffuse_map.ktx2"),

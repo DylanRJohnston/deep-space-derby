@@ -1,12 +1,16 @@
+use std::error::Error;
+
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping, Skybox},
-    gltf::Gltf,
+    gltf::{Gltf, GltfMaterialExtras, GltfMesh, GltfMeshExtras, GltfSceneExtras},
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
     prelude::*,
     render::camera::Exposure,
     utils::HashMap,
 };
 use bevy_asset_loader::prelude::*;
+
+use crate::plugins::spectators::{Spectator, SpectatorBundle};
 
 use self::{lobby::LobbyPlugin, pregame::PreGamePlugin, race::RacePlugin};
 
@@ -19,7 +23,6 @@ pub enum SceneState {
     #[default]
     Loading,
     Spawning,
-    Connecting,
     Lobby,
     PreGame,
     Race,
@@ -28,6 +31,9 @@ pub enum SceneState {
 
 pub struct ScenesPlugin;
 
+#[derive(Component)]
+pub struct SceneMetadata(pub serde_json::Map<String, serde_json::Value>);
+
 impl Plugin for ScenesPlugin {
     fn build(&self, app: &mut App) {
         app
@@ -35,41 +41,74 @@ impl Plugin for ScenesPlugin {
             .add_plugins(LobbyPlugin)
             .add_plugins(RacePlugin)
             .add_plugins(PreGamePlugin)
+            .register_type::<GltfExtras>()
             .init_state::<SceneState>()
             .add_loading_state(
                 LoadingState::new(SceneState::Loading)
                     .continue_to_state(SceneState::Spawning)
                     .with_dynamic_assets_file::<StandardDynamicAssetCollection>("all.assets.ron")
-                    .load_collection::<Scene>(),
+                    .load_collection::<GameAssets>(),
             )
             .add_systems(OnEnter(SceneState::Spawning), scene_setup)
-            .add_systems(OnEnter(SceneState::Lobby), setup_skybox);
+            .add_systems(OnEnter(SceneState::Lobby), setup_skybox)
+            .add_systems(
+                Update,
+                |query: Query<(Entity, &Name, &GltfExtras), Added<GltfExtras>>,
+                 mut commands: Commands| {
+                    query.into_iter().for_each(|(entity, name, extras)| {
+                        println!("{}: {}", name, extras.value);
+
+                        match serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(
+                            &extras.value,
+                        ) {
+                            Ok(metadata) => {
+                                commands.entity(entity).insert(SceneMetadata(metadata));
+                            }
+                            Err(e) => {
+                                println!(
+                                    "warning failed to deserialise gtlf metadata, {}: {}",
+                                    name, extras.value
+                                );
+                            }
+                        }
+
+                        // if let Some(value) = metadata.get("RaceSpawnPoint") {
+                        //     match value {
+                        //         serde_json::Value::Number(n) if n.is_u64() => {}
+                        //         other => {
+                        //             Err(format!("unsupported RaceSpawnPoint value: {other:?}"))?
+                        //         }
+                        //     }
+                        // }
+                    });
+                },
+            );
     }
 }
 
 #[derive(AssetCollection, Resource)]
-struct Scene {
+pub struct GameAssets {
     #[asset(key = "world")]
-    world: Handle<Gltf>,
+    pub world: Handle<Gltf>,
 
     #[asset(key = "models", collection(typed, mapped))]
     #[allow(dead_code)]
-    models: HashMap<String, Handle<Gltf>>,
+    pub models: HashMap<String, Handle<Gltf>>,
     // #[asset(path = "materials", collection(typed))]
     // materials: Vec<Handle<Gltf>>,
     #[asset(key = "skybox")]
-    skybox: Handle<Image>,
+    pub skybox: Handle<Image>,
 
     #[asset(key = "envmap_diffuse")]
-    envmap_diffuse: Handle<Image>,
+    pub envmap_diffuse: Handle<Image>,
 
     #[asset(key = "envmap_specular")]
-    envmap_specular: Handle<Image>,
+    pub envmap_specular: Handle<Image>,
 }
 
 fn scene_setup(
     mut commands: Commands,
-    game_assets: Res<Scene>,
+    game_assets: Res<GameAssets>,
     models: Res<Assets<Gltf>>,
     mut next_state: ResMut<NextState<SceneState>>,
     cameras: Query<Entity, With<Camera>>,
@@ -87,14 +126,15 @@ fn scene_setup(
         commands.entity(camera).despawn_recursive();
     }
 
-    next_state.set(SceneState::Connecting);
+    next_state.set(SceneState::Lobby);
 }
 
 fn setup_skybox(
     mut commands: Commands,
-    game_assets: Res<Scene>,
+    game_assets: Res<GameAssets>,
     mut camera: Query<(Entity, &mut Camera), Added<Camera>>,
     mut shadows: Query<&mut CascadeShadowConfig>,
+    mut sun: Query<&mut DirectionalLight>,
     mut exposure: Query<&mut Exposure>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -122,6 +162,10 @@ fn setup_skybox(
         camera.hdr = true;
     }
 
+    if let Ok(mut sun) = sun.get_single_mut() {
+        sun.shadows_enabled = true;
+    }
+
     if let Ok(mut shadow_config) = shadows.get_single_mut() {
         *shadow_config = CascadeShadowConfigBuilder {
             num_cascades: 4,
@@ -139,7 +183,7 @@ fn setup_skybox(
 
     for (_, material) in materials.iter_mut() {
         if material.emissive_texture.is_some() {
-            material.emissive = Color::rgb_linear(2000.0, 2000.0, 2000.0);
+            material.emissive = Color::linear_rgb(2.0, 2.0, 2.0).into();
         }
     }
 }

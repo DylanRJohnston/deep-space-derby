@@ -47,7 +47,7 @@ impl Command for CreateGame {
         Ok((
             vec![Event::GameCreated {
                 game_id: input.code,
-                session_id,
+                // session_id,
             }],
             None,
         ))

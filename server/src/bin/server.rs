@@ -4,6 +4,7 @@
 #![feature(impl_trait_in_fn_trait_return)]
 #![feature(more_qualified_paths)]
 
+use std::io;
 use std::{net::SocketAddr, str::FromStr};
 
 use axum::http;
@@ -17,8 +18,25 @@ use leptos::{leptos_config, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use tower::Service;
 use tracing::instrument;
-use tracing_subscriber_wasm::MakeConsoleWriter;
-use worker::{event, Env};
+use worker::{console_log, event, Env};
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ConsoleWriter(Vec<u8>);
+
+impl io::Write for ConsoleWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let data = std::str::from_utf8(&self.0)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "data not UTF-8"))?;
+
+        console_log!("{}", data);
+
+        Ok(())
+    }
+}
 
 #[event(start)]
 pub fn start() {
@@ -26,7 +44,7 @@ pub fn start() {
 
     tracing_subscriber::fmt()
         .pretty()
-        .with_writer(MakeConsoleWriter::default())
+        .with_writer(ConsoleWriter::default)
         .without_time()
         .init()
 }

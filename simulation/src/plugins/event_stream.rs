@@ -1,10 +1,11 @@
+use std::sync::LazyLock;
+
 use bevy::prelude::*;
 
+use crossbeam_channel::{Receiver, Sender};
 use im::Vector;
 use shared::models::events::Event;
 use wasm_bindgen::prelude::*;
-
-use lazy_static::lazy_static;
 
 use super::scenes::SceneState;
 
@@ -24,19 +25,22 @@ impl Plugin for EventStreamPlugin {
     }
 }
 
-lazy_static! {
-    static ref EVENT_CHANNEL: (
-        crossbeam_channel::Sender<Event>,
-        crossbeam_channel::Receiver<Event>
-    ) = crossbeam_channel::unbounded::<Event>();
+struct EventChannel {
+    sender: Sender<Event>,
+    receiver: Receiver<Event>,
 }
 
+static EVENT_CHANNEL: LazyLock<EventChannel> = LazyLock::new(|| {
+    let (sender, receiver) = crossbeam_channel::unbounded::<Event>();
+
+    EventChannel { sender, receiver }
+});
+
 #[derive(Resource)]
-pub struct Channel(crossbeam_channel::Receiver<Event>);
+pub struct Channel(Receiver<Event>);
 
 fn register_event_stream(mut commands: Commands) {
-    lazy_static::initialize(&EVENT_CHANNEL);
-    commands.insert_resource(Channel(EVENT_CHANNEL.1.clone()));
+    commands.insert_resource(Channel(EVENT_CHANNEL.receiver.clone()));
 }
 
 #[derive(Resource)]
@@ -62,10 +66,7 @@ fn scene_manager(events: Res<Events>, mut next_state: ResMut<NextState<SceneStat
 
     for event in events.0.iter() {
         match event {
-            Event::GameCreated {
-                session_id,
-                game_id,
-            } => next_state.set(SceneState::Lobby),
+            Event::GameCreated { game_id } => next_state.set(SceneState::Lobby),
             Event::GameStarted => next_state.set(SceneState::Lobby),
             Event::RaceStarted => next_state.set(SceneState::Lobby),
             Event::RaceFinished(_) => next_state.set(SceneState::Lobby),
@@ -77,5 +78,5 @@ fn scene_manager(events: Res<Events>, mut next_state: ResMut<NextState<SceneStat
 
 #[wasm_bindgen(js_name = "sendGameEvent")]
 pub fn send_game_event(event: Event) -> Result<(), JsError> {
-    EVENT_CHANNEL.0.send(event).map_err(Into::into)
+    EVENT_CHANNEL.sender.send(event).map_err(Into::into)
 }

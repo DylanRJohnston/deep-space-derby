@@ -180,9 +180,9 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
 }
 
 pub fn game_id(events: &Vector<Event>) -> GameID {
-    match &events[0] {
-        Event::GameCreated { game_id, .. } => *game_id,
-        _ => "123456".try_into().unwrap(),
+    match events.get(0) {
+        Some(Event::GameCreated { game_id, .. }) => *game_id,
+        _ => "ABCDEF".try_into().unwrap(),
     }
 }
 
@@ -250,7 +250,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -280,7 +280,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -313,7 +313,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -351,7 +351,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -396,7 +396,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -440,7 +440,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -490,7 +490,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,
@@ -572,7 +572,7 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                session_id: Uuid::new_v4()
+                // session_id: Uuid::new_v4()
             },
             Event::PlayerJoined {
                 session_id: bob,

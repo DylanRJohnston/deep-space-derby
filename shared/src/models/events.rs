@@ -14,7 +14,7 @@ pub struct PlacedBet {
 #[derive(Debug, Clone, PartialEq, Hash)]
 #[serde_wasm_bindgen]
 pub enum Event {
-    GameCreated { session_id: Uuid, game_id: GameID },
+    GameCreated { game_id: GameID },
     PlayerJoined { session_id: Uuid, name: String },
     ChangedProfile { session_id: Uuid, name: String },
     PlayerReady { session_id: Uuid },

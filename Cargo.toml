@@ -4,8 +4,6 @@ resolver = "2"
 
 [workspace.dependencies]
 shared = { path = "./shared", version = "0.1.0" }
-# worker = { version = "*", path = "/Users/dylanj/Workspace/github/workers-rs/worker" }
-# worker-sys = { path = "/Users/dylanj/Workspace/github/workers-rs/worker-sys" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -36,3 +34,6 @@ assets-dir = "assets"
 
 site-addr = "127.0.0.1:8788"
 reload-port = 3001
+
+[patch.crates-io]
+bevy_editor_pls = { git = "https://github.com/zhaop/bevy_editor_pls.git", branch = "bevy-0.14" }

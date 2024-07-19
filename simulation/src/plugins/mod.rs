@@ -1,3 +1,4 @@
+pub mod animation_link;
 pub mod event_stream;
 pub mod monster;
 pub mod pallet;

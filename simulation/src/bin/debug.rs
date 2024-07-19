@@ -1,48 +1,35 @@
-use bevy::input::common_conditions::input_just_pressed;
-use bevy::prelude::*;
+use std::ops::{Add, DerefMut};
+
+use bevy::prelude::ResMut;
 use bevy::render::camera::Exposure;
-use bevy::render::mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
-use bevy::render::primitives::Aabb;
-use bevy::{
-    app::Startup,
-    ecs::system::{Commands, ResMut},
-    gizmos::{
-        aabb::{AabbGizmoConfigGroup, AabbGizmoPlugin},
-        config::GizmoConfigStore,
-    },
-};
-use bevy_editor_pls::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_inspector_egui::DefaultInspectorConfigPlugin;
-use bevy_registry_export::*;
+use bevy::state::state::OnEnter;
+use bevy::{app::Startup, ecs::system::Commands};
+use shared::models::events::Event;
+use shared::models::game_id::GameID;
+use simulation::plugins::event_stream::Events;
+use simulation::plugins::scenes::SceneState;
 use simulation::{plugins::event_stream::Seed, start};
+
+#[cfg(feature = "debug")]
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+#[cfg(feature = "debug")]
+use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 
 fn main() {
     start(|app| {
-        app.add_plugins(ExportRegistryPlugin::default())
-            .add_plugins(DefaultInspectorConfigPlugin)
+        #[cfg(feature = "debug")]
+        app.add_plugins(DefaultInspectorConfigPlugin)
             .add_plugins(WorldInspectorPlugin::default());
-        // .add_plugins(AabbGizmoPlugin)
-        // .add_plugins(EditorPlugin::default());
 
-        app
-            // dont format me
-            // .add_systems(Startup, |mut config_store: ResMut<GizmoConfigStore>| {
-            //     config_store.config_mut::<AabbGizmoConfigGroup>().1.draw_all = true;
-            // })
-            .register_type::<Exposure>()
+        app.register_type::<Exposure>()
             .add_systems(Startup, |mut commands: Commands| {
                 commands.insert_resource(Seed(2))
             });
-        // .add_systems(
-        //     Update,
-        //     (|mut cmds: Commands, q_aabb: Query<Entity, With<Aabb>>| {
-        //         println!("Removing bounding boxes");
-        //         for e in &q_aabb {
-        //             cmds.entity(e).remove::<Aabb>();
-        //         }
-        //     })
-        //     .run_if(input_just_pressed(KeyCode::KeyL)),
-        // )
+
+        app.add_systems(OnEnter(SceneState::Lobby), |mut events: ResMut<Events>| {
+            events.deref_mut().0.push_back(Event::GameCreated {
+                game_id: GameID::try_from("ABCDEF").unwrap(),
+            });
+        });
     });
 }

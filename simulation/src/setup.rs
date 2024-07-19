@@ -3,6 +3,7 @@ use bevy_tweening::TweeningPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 
 use crate::plugins::{
+    animation_link::AnimationLinkPlugin,
     event_stream::EventStreamPlugin,
     monster::MonsterPlugin,
     planets::PlanetsPlugin,
@@ -24,38 +25,26 @@ pub fn start(f: impl FnOnce(&mut App)) {
         file_path: FILE_PATH.into(),
         ..Default::default()
     }))
-    .add_plugins(bevy_gltf_blueprints::BlueprintsPlugin {
-        library_folder: "library".into(),
-        material_library: false,
-        legacy_mode: false,
-        ..Default::default()
-    })
+    .add_plugins(AnimationLinkPlugin)
     .add_plugins(ScenesPlugin)
     .add_plugins(EventStreamPlugin)
     .add_plugins(TweeningPlugin)
     .add_plugins(SpectatorPlugin)
     .add_plugins(PlanetsPlugin)
     .add_plugins(SkinnedMeshPlugin)
-    .add_plugins(
-        ProgressPlugin::new(SceneState::Loading)
-            .continue_to(SceneState::Spawning)
-            .track_assets(),
-    )
+    .add_plugins(ProgressPlugin::new(SceneState::Loading).track_assets())
     .add_systems(
         Update,
         ui_progress_bar
             .after(TrackedProgressSet)
             .run_if(|state: Res<State<SceneState>>| {
-                matches!(
-                    state.get(),
-                    SceneState::Connecting | SceneState::Loading | SceneState::Spawning
-                )
+                matches!(state.get(), SceneState::Loading | SceneState::Spawning)
             }),
     )
     .add_systems(OnEnter(SceneState::Loading), spawn_progress_bar)
     .add_systems(OnEnter(SceneState::Lobby), remove_progress_bar)
     .add_plugins(MonsterPlugin)
-    .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
+    .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
     .insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 0.0,
@@ -111,7 +100,7 @@ fn spawn_progress_bar(mut commands: Commands) {
 
             parent
                 .spawn(NodeBundle {
-                    background_color: Color::GRAY.into(),
+                    background_color: bevy::color::palettes::basic::GRAY.into(),
                     style: Style {
                         height: Val::Px(50.0),
                         width: Val::Percent(80.0),
@@ -123,7 +112,7 @@ fn spawn_progress_bar(mut commands: Commands) {
                     parent.spawn((
                         ProgressBar,
                         NodeBundle {
-                            background_color: Color::GREEN.into(),
+                            background_color: bevy::color::palettes::basic::GREEN.into(),
                             style: Style {
                                 height: Val::Px(50.0),
                                 width: Val::Percent(0.0),

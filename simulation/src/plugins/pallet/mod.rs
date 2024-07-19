@@ -2,238 +2,238 @@
 use bevy::prelude::*;
 
 // https://lospec.com/palette-list/apollo
-pub const BLUE_1: Color = Color::rgb(
+pub const BLUE_1: Color = Color::srgb(
     (1.0 * 16.0 + 7.0) / 255.0,
     (2.0 * 16.0 + 0.0) / 255.0,
     (3.0 * 16.0 + 8.0) / 255.0,
 );
-pub const BLUE_2: Color = Color::rgb(
+pub const BLUE_2: Color = Color::srgb(
     (2.0 * 16.0 + 5.0) / 255.0,
     (3.0 * 16.0 + 10.0) / 255.0,
     (5.0 * 16.0 + 14.0) / 255.0,
 );
-pub const BLUE_3: Color = Color::rgb(
+pub const BLUE_3: Color = Color::srgb(
     (3.0 * 16.0 + 12.0) / 255.0,
     (5.0 * 16.0 + 14.0) / 255.0,
     (8.0 * 16.0 + 11.0) / 255.0,
 );
-pub const BLUE_4: Color = Color::rgb(
+pub const BLUE_4: Color = Color::srgb(
     (4.0 * 16.0 + 15.0) / 255.0,
     (8.0 * 16.0 + 15.0) / 255.0,
     (11.0 * 16.0 + 10.0) / 255.0,
 );
-pub const BLUE_5: Color = Color::rgb(
+pub const BLUE_5: Color = Color::srgb(
     (7.0 * 16.0 + 3.0) / 255.0,
     (11.0 * 16.0 + 14.0) / 255.0,
     (13.0 * 16.0 + 3.0) / 255.0,
 );
-pub const BLUE_6: Color = Color::rgb(
+pub const BLUE_6: Color = Color::srgb(
     (10.0 * 16.0 + 4.0) / 255.0,
     (13.0 * 16.0 + 13.0) / 255.0,
     (13.0 * 16.0 + 11.0) / 255.0,
 );
 
-pub const GREEN_1: Color = Color::rgb(
+pub const GREEN_1: Color = Color::srgb(
     (1.0 * 16.0 + 9.0) / 255.0,
     (3.0 * 16.0 + 3.0) / 255.0,
     (2.0 * 16.0 + 13.0) / 255.0,
 );
-pub const GREEN_2: Color = Color::rgb(
+pub const GREEN_2: Color = Color::srgb(
     (2.0 * 16.0 + 5.0) / 255.0,
     (5.0 * 16.0 + 6.0) / 255.0,
     (2.0 * 16.0 + 14.0) / 255.0,
 );
-pub const GREEN_3: Color = Color::rgb(
+pub const GREEN_3: Color = Color::srgb(
     (4.0 * 16.0 + 6.0) / 255.0,
     (8.0 * 16.0 + 2.0) / 255.0,
     (3.0 * 16.0 + 2.0) / 255.0,
 );
-pub const GREEN_4: Color = Color::rgb(
+pub const GREEN_4: Color = Color::srgb(
     (7.0 * 16.0 + 5.0) / 255.0,
     (10.0 * 16.0 + 7.0) / 255.0,
     (4.0 * 16.0 + 3.0) / 255.0,
 );
-pub const GREEN_5: Color = Color::rgb(
+pub const GREEN_5: Color = Color::srgb(
     (10.0 * 16.0 + 8.0) / 255.0,
     (12.0 * 16.0 + 10.0) / 255.0,
     (5.0 * 16.0 + 8.0) / 255.0,
 );
-pub const GREEN_6: Color = Color::rgb(
+pub const GREEN_6: Color = Color::srgb(
     (13.0 * 16.0 + 0.0) / 255.0,
     (13.0 * 16.0 + 10.0) / 255.0,
     (9.0 * 16.0 + 1.0) / 255.0,
 );
 
-pub const BROWN_1: Color = Color::rgb(
+pub const BROWN_1: Color = Color::srgb(
     (4.0 * 16.0 + 13.0) / 255.0,
     (2.0 * 16.0 + 11.0) / 255.0,
     (3.0 * 16.0 + 2.0) / 255.0,
 );
-pub const BROWN_2: Color = Color::rgb(
+pub const BROWN_2: Color = Color::srgb(
     (7.0 * 16.0 + 10.0) / 255.0,
     (4.0 * 16.0 + 8.0) / 255.0,
     (4.0 * 16.0 + 1.0) / 255.0,
 );
-pub const BROWN_3: Color = Color::rgb(
+pub const BROWN_3: Color = Color::srgb(
     (10.0 * 16.0 + 13.0) / 255.0,
     (7.0 * 16.0 + 7.0) / 255.0,
     (5.0 * 16.0 + 7.0) / 255.0,
 );
-pub const BROWN_4: Color = Color::rgb(
+pub const BROWN_4: Color = Color::srgb(
     (12.0 * 16.0 + 0.0) / 255.0,
     (9.0 * 16.0 + 4.0) / 255.0,
     (7.0 * 16.0 + 3.0) / 255.0,
 );
-pub const BROWN_5: Color = Color::rgb(
+pub const BROWN_5: Color = Color::srgb(
     (13.0 * 16.0 + 7.0) / 255.0,
     (11.0 * 16.0 + 5.0) / 255.0,
     (9.0 * 16.0 + 4.0) / 255.0,
 );
-pub const BROWN_6: Color = Color::rgb(
+pub const BROWN_6: Color = Color::srgb(
     (14.0 * 16.0 + 7.0) / 255.0,
     (13.0 * 16.0 + 5.0) / 255.0,
     (11.0 * 16.0 + 3.0) / 255.0,
 );
 
-pub const YELLOW_1: Color = Color::rgb(
+pub const YELLOW_1: Color = Color::srgb(
     (3.0 * 16.0 + 4.0) / 255.0,
     (1.0 * 16.0 + 12.0) / 255.0,
     (2.0 * 16.0 + 7.0) / 255.0,
 );
-pub const YELLOW_2: Color = Color::rgb(
+pub const YELLOW_2: Color = Color::srgb(
     (6.0 * 16.0 + 0.0) / 255.0,
     (2.0 * 16.0 + 12.0) / 255.0,
     (2.0 * 16.0 + 12.0) / 255.0,
 );
-pub const YELLOW_3: Color = Color::rgb(
+pub const YELLOW_3: Color = Color::srgb(
     (8.0 * 16.0 + 8.0) / 255.0,
     (4.0 * 16.0 + 11.0) / 255.0,
     (2.0 * 16.0 + 11.0) / 255.0,
 );
-pub const YELLOW_4: Color = Color::rgb(
+pub const YELLOW_4: Color = Color::srgb(
     (11.0 * 16.0 + 14.0) / 255.0,
     (7.0 * 16.0 + 7.0) / 255.0,
     (2.0 * 16.0 + 11.0) / 255.0,
 );
-pub const YELLOW_5: Color = Color::rgb(
+pub const YELLOW_5: Color = Color::srgb(
     (13.0 * 16.0 + 14.0) / 255.0,
     (9.0 * 16.0 + 14.0) / 255.0,
     (4.0 * 16.0 + 1.0) / 255.0,
 );
-pub const YELLOW_6: Color = Color::rgb(
+pub const YELLOW_6: Color = Color::srgb(
     (14.0 * 16.0 + 8.0) / 255.0,
     (12.0 * 16.0 + 1.0) / 255.0,
     (7.0 * 16.0 + 0.0) / 255.0,
 );
 
-pub const ORANGE_1: Color = Color::rgb(
+pub const ORANGE_1: Color = Color::srgb(
     (2.0 * 16.0 + 4.0) / 255.0,
     (1.0 * 16.0 + 5.0) / 255.0,
     (2.0 * 16.0 + 7.0) / 255.0,
 );
-pub const ORANGE_2: Color = Color::rgb(
+pub const ORANGE_2: Color = Color::srgb(
     (4.0 * 16.0 + 1.0) / 255.0,
     (1.0 * 16.0 + 13.0) / 255.0,
     (3.0 * 16.0 + 1.0) / 255.0,
 );
-pub const ORANGE_3: Color = Color::rgb(
+pub const ORANGE_3: Color = Color::srgb(
     (7.0 * 16.0 + 5.0) / 255.0,
     (2.0 * 16.0 + 4.0) / 255.0,
     (3.0 * 16.0 + 8.0) / 255.0,
 );
-pub const ORANGE_4: Color = Color::rgb(
+pub const ORANGE_4: Color = Color::srgb(
     (10.0 * 16.0 + 5.0) / 255.0,
     (3.0 * 16.0 + 0.0) / 255.0,
     (3.0 * 16.0 + 0.0) / 255.0,
 );
-pub const ORANGE_5: Color = Color::rgb(
+pub const ORANGE_5: Color = Color::srgb(
     (12.0 * 16.0 + 15.0) / 255.0,
     (5.0 * 16.0 + 7.0) / 255.0,
     (3.0 * 16.0 + 12.0) / 255.0,
 );
-pub const ORANGE_6: Color = Color::rgb(
+pub const ORANGE_6: Color = Color::srgb(
     (13.0 * 16.0 + 10.0) / 255.0,
     (8.0 * 16.0 + 6.0) / 255.0,
     (3.0 * 16.0 + 14.0) / 255.0,
 );
 
-pub const PINK_1: Color = Color::rgb(
+pub const PINK_1: Color = Color::srgb(
     (1.0 * 16.0 + 14.0) / 255.0,
     (1.0 * 16.0 + 13.0) / 255.0,
     (3.0 * 16.0 + 9.0) / 255.0,
 );
-pub const PINK_2: Color = Color::rgb(
+pub const PINK_2: Color = Color::srgb(
     (4.0 * 16.0 + 0.0) / 255.0,
     (2.0 * 16.0 + 7.0) / 255.0,
     (5.0 * 16.0 + 1.0) / 255.0,
 );
-pub const PINK_3: Color = Color::rgb(
+pub const PINK_3: Color = Color::srgb(
     (7.0 * 16.0 + 10.0) / 255.0,
     (3.0 * 16.0 + 6.0) / 255.0,
     (7.0 * 16.0 + 11.0) / 255.0,
 );
-pub const PINK_4: Color = Color::rgb(
+pub const PINK_4: Color = Color::srgb(
     (10.0 * 16.0 + 2.0) / 255.0,
     (3.0 * 16.0 + 14.0) / 255.0,
     (8.0 * 16.0 + 12.0) / 255.0,
 );
-pub const PINK_5: Color = Color::rgb(
+pub const PINK_5: Color = Color::srgb(
     (12.0 * 16.0 + 6.0) / 255.0,
     (5.0 * 16.0 + 1.0) / 255.0,
     (9.0 * 16.0 + 7.0) / 255.0,
 );
-pub const PINK_6: Color = Color::rgb(
+pub const PINK_6: Color = Color::srgb(
     (13.0 * 16.0 + 15.0) / 255.0,
     (8.0 * 16.0 + 4.0) / 255.0,
     (10.0 * 16.0 + 5.0) / 255.0,
 );
 
-pub const GREY_1: Color = Color::rgb(
+pub const GREY_1: Color = Color::srgb(
     (0.0 * 16.0 + 9.0) / 255.0,
     (0.0 * 16.0 + 10.0) / 255.0,
     (1.0 * 16.0 + 4.0) / 255.0,
 );
-pub const GREY_2: Color = Color::rgb(
+pub const GREY_2: Color = Color::srgb(
     (1.0 * 16.0 + 0.0) / 255.0,
     (1.0 * 16.0 + 4.0) / 255.0,
     (1.0 * 16.0 + 15.0) / 255.0,
 );
-pub const GREY_3: Color = Color::rgb(
+pub const GREY_3: Color = Color::srgb(
     (1.0 * 16.0 + 5.0) / 255.0,
     (1.0 * 16.0 + 13.0) / 255.0,
     (2.0 * 16.0 + 8.0) / 255.0,
 );
-pub const GREY_4: Color = Color::rgb(
+pub const GREY_4: Color = Color::srgb(
     (2.0 * 16.0 + 0.0) / 255.0,
     (2.0 * 16.0 + 14.0) / 255.0,
     (3.0 * 16.0 + 7.0) / 255.0,
 );
-pub const GREY_5: Color = Color::rgb(
+pub const GREY_5: Color = Color::srgb(
     (3.0 * 16.0 + 9.0) / 255.0,
     (4.0 * 16.0 + 10.0) / 255.0,
     (5.0 * 16.0 + 0.0) / 255.0,
 );
-pub const GREY_6: Color = Color::rgb(
+pub const GREY_6: Color = Color::srgb(
     (5.0 * 16.0 + 7.0) / 255.0,
     (7.0 * 16.0 + 2.0) / 255.0,
     (7.0 * 16.0 + 7.0) / 255.0,
 );
-pub const GREY_7: Color = Color::rgb(
+pub const GREY_7: Color = Color::srgb(
     (8.0 * 16.0 + 1.0) / 255.0,
     (9.0 * 16.0 + 7.0) / 255.0,
     (9.0 * 16.0 + 6.0) / 255.0,
 );
-pub const GREY_8: Color = Color::rgb(
+pub const GREY_8: Color = Color::srgb(
     (10.0 * 16.0 + 8.0) / 255.0,
     (11.0 * 16.0 + 5.0) / 255.0,
     (11.0 * 16.0 + 2.0) / 255.0,
 );
-pub const GREY_9: Color = Color::rgb(
+pub const GREY_9: Color = Color::srgb(
     (12.0 * 16.0 + 7.0) / 255.0,
     (12.0 * 16.0 + 15.0) / 255.0,
     (12.0 * 16.0 + 12.0) / 255.0,
 );
-pub const GREY_10: Color = Color::rgb(
+pub const GREY_10: Color = Color::srgb(
     (14.0 * 16.0 + 11.0) / 255.0,
     (14.0 * 16.0 + 13.0) / 255.0,
     (14.0 * 16.0 + 9.0) / 255.0,
