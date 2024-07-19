@@ -66,7 +66,7 @@ fn scene_manager(events: Res<Events>, mut next_state: ResMut<NextState<SceneStat
 
     for event in events.0.iter() {
         match event {
-            Event::GameCreated { game_id } => next_state.set(SceneState::Lobby),
+            Event::GameCreated { .. } => next_state.set(SceneState::Lobby),
             Event::GameStarted => next_state.set(SceneState::Lobby),
             Event::RaceStarted => next_state.set(SceneState::Lobby),
             Event::RaceFinished(_) => next_state.set(SceneState::Lobby),

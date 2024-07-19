@@ -1,4 +1,4 @@
-use std::{hash::Hash, ops::Deref};
+use std::ops::Deref;
 
 use bevy::{prelude::*, utils::HashMap};
 

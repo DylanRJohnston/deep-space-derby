@@ -7,7 +7,9 @@ use crate::plugins::{
     event_stream::EventStreamPlugin,
     monster::MonsterPlugin,
     planets::PlanetsPlugin,
-    scenes::{SceneState, ScenesPlugin},
+    scenes::{
+        SceneState, ScenesPlugin,
+    },
     skinned_mesh::SkinnedMeshPlugin,
     spectators::SpectatorPlugin,
 };

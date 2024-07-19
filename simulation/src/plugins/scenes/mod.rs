@@ -1,16 +1,12 @@
-use std::error::Error;
-
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping, Skybox},
-    gltf::{Gltf, GltfMaterialExtras, GltfMesh, GltfMeshExtras, GltfSceneExtras},
+    gltf::Gltf,
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
     prelude::*,
     render::camera::Exposure,
     utils::HashMap,
 };
 use bevy_asset_loader::prelude::*;
-
-use crate::plugins::spectators::{Spectator, SpectatorBundle};
 
 use self::{lobby::LobbyPlugin, pregame::PreGamePlugin, race::RacePlugin};
 
@@ -51,38 +47,7 @@ impl Plugin for ScenesPlugin {
             )
             .add_systems(OnEnter(SceneState::Spawning), scene_setup)
             .add_systems(OnEnter(SceneState::Lobby), setup_skybox)
-            .add_systems(
-                Update,
-                |query: Query<(Entity, &Name, &GltfExtras), Added<GltfExtras>>,
-                 mut commands: Commands| {
-                    query.into_iter().for_each(|(entity, name, extras)| {
-                        println!("{}: {}", name, extras.value);
-
-                        match serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(
-                            &extras.value,
-                        ) {
-                            Ok(metadata) => {
-                                commands.entity(entity).insert(SceneMetadata(metadata));
-                            }
-                            Err(e) => {
-                                println!(
-                                    "warning failed to deserialise gtlf metadata, {}: {}",
-                                    name, extras.value
-                                );
-                            }
-                        }
-
-                        // if let Some(value) = metadata.get("RaceSpawnPoint") {
-                        //     match value {
-                        //         serde_json::Value::Number(n) if n.is_u64() => {}
-                        //         other => {
-                        //             Err(format!("unsupported RaceSpawnPoint value: {other:?}"))?
-                        //         }
-                        //     }
-                        // }
-                    });
-                },
-            );
+            .add_systems(Update, deserialize_gltf_extras);
     }
 }
 
@@ -147,12 +112,12 @@ fn setup_skybox(
         commands.entity(id).insert((
             Skybox {
                 image: game_assets.skybox.clone(),
-                brightness: 1000.0,
+                brightness: 2000.0,
             },
             EnvironmentMapLight {
                 diffuse_map: game_assets.envmap_diffuse.clone(),
                 specular_map: game_assets.envmap_specular.clone(),
-                intensity: 1000.0,
+                intensity: 1500.0,
             },
             bloom,
             Tonemapping::AcesFitted,
@@ -186,4 +151,25 @@ fn setup_skybox(
             material.emissive = Color::linear_rgb(2.0, 2.0, 2.0).into();
         }
     }
+}
+
+fn deserialize_gltf_extras(
+    query: Query<(Entity, &Name, &GltfExtras), Added<GltfExtras>>,
+    mut commands: Commands,
+) {
+    query.into_iter().for_each(|(entity, name, extras)| {
+        println!("{}: {}", name, extras.value);
+
+        match serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&extras.value) {
+            Ok(metadata) => {
+                commands.entity(entity).insert(SceneMetadata(metadata));
+            }
+            Err(_) => {
+                println!(
+                    "warning failed to deserialise gtlf metadata, {}: {}",
+                    name, extras.value
+                );
+            }
+        }
+    });
 }
