@@ -19,7 +19,7 @@ impl Plugin for AnimationLinkPlugin {
 #[derive(Component, Debug, Reflect, Clone, Copy)]
 pub struct AnimationLink(pub Entity);
 
-#[derive(Component, Debug, Reflect, Clone, Copy)]
+#[derive(Component, Debug, Reflect, Clone, Copy, Default)]
 pub struct AnimationRoot;
 
 #[derive(Component, Debug, Clone)]

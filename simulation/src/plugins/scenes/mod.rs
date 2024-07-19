@@ -78,14 +78,17 @@ fn scene_setup(
     mut next_state: ResMut<NextState<SceneState>>,
     cameras: Query<Entity, With<Camera>>,
 ) {
-    commands.spawn(SceneBundle {
-        scene: models
-            .get(game_assets.world.id())
-            .expect("main level should have been loaded")
-            .scenes[0]
-            .clone(),
-        ..default()
-    });
+    commands.spawn((
+        Name::from("Scene"),
+        SceneBundle {
+            scene: models
+                .get(game_assets.world.id())
+                .expect("main level should have been loaded")
+                .scenes[0]
+                .clone(),
+            ..default()
+        },
+    ));
 
     for camera in &cameras {
         commands.entity(camera).despawn_recursive();

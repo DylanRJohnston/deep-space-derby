@@ -1,6 +1,8 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 
-use super::SceneMetadata;
+use super::{SceneMetadata, SceneState};
 
 pub struct PreGamePlugin;
 
@@ -8,6 +10,7 @@ impl Plugin for PreGamePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<PreGameSpawnPoint>()
             .register_type::<PreGameCamera>()
+            .add_systems(OnEnter(SceneState::PreGame), init_pregame)
             .add_systems(Update, spawn_pregame_spawn_point_on_scene_load);
     }
 }
@@ -42,4 +45,16 @@ pub fn spawn_pregame_spawn_point_on_scene_load(
             commands.entity(entity).insert(PreGameCamera);
         }
     }
+}
+
+fn init_pregame(
+    mut camera: Query<&mut Transform, With<Camera>>,
+    position: Query<&Transform, (With<PreGameCamera>, Without<Camera>)>,
+) {
+    let position = position.get_single().unwrap();
+    let mut camera = camera.get_single_mut().unwrap();
+
+    camera.translation = position.translation;
+    // Don't know why the rotation coming from blender is fucked up
+    camera.rotation = Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI / 2.0 + 0.18, -PI / 2.0);
 }

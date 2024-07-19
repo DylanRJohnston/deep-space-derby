@@ -13,7 +13,7 @@ pub struct EventStreamPlugin;
 
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Events(Vector::new()))
+        app.insert_resource(GameEvents(Vector::new()))
             .add_systems(OnEnter(SceneState::Loading), register_event_stream)
             .add_systems(
                 Update,
@@ -21,7 +21,8 @@ impl Plugin for EventStreamPlugin {
                     !matches!(state.get(), SceneState::Loading | SceneState::Spawning)
                 }),
             )
-            .add_systems(Update, scene_manager.run_if(resource_changed::<Events>));
+            .add_systems(Update, scene_manager.run_if(resource_changed::<GameEvents>))
+            .add_systems(Update, transition_debug);
     }
 }
 
@@ -47,11 +48,19 @@ fn register_event_stream(mut commands: Commands) {
 pub struct Seed(pub u32);
 
 #[derive(Resource)]
-pub struct Events(pub Vector<Event>);
+pub struct GameEvents(pub Vector<Event>);
+
+impl std::ops::Deref for GameEvents {
+    type Target = Vector<Event>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 fn read_event_stream(
     // mut next_state: ResMut<NextState<SceneState>>,
-    mut events: ResMut<Events>,
+    mut events: ResMut<GameEvents>,
     channel: Res<Channel>,
 ) {
     while let Ok(event) = channel.0.try_recv() {
@@ -59,7 +68,7 @@ fn read_event_stream(
     }
 }
 
-fn scene_manager(events: Res<Events>, mut next_state: ResMut<NextState<SceneState>>) {
+fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<SceneState>>) {
     if !events.is_changed() {
         return;
     }
@@ -73,6 +82,21 @@ fn scene_manager(events: Res<Events>, mut next_state: ResMut<NextState<SceneStat
             Event::GameFinished => next_state.set(SceneState::Lobby),
             _ => {}
         }
+    }
+}
+
+// #[cfg(feature = debug)]
+fn transition_debug(
+    keys: Res<ButtonInput<KeyCode>>,
+    state: Res<State<SceneState>>,
+    mut next_state: ResMut<NextState<SceneState>>,
+) {
+    if keys.just_pressed(KeyCode::Space) {
+        next_state.set(match state.get() {
+            SceneState::Lobby => SceneState::PreGame,
+            SceneState::PreGame => SceneState::Lobby,
+            other => *other,
+        })
     }
 }
 

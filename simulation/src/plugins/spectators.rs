@@ -44,7 +44,7 @@ pub fn spawn_spectators_on_scene_load(
             .ok_or("game_assets not yet loaded")
             .unwrap()
             .models
-            .get("library/spectator.glb")
+            .get("library/Spectator.glb")
             .ok_or("missing spectator model")
             .unwrap();
 

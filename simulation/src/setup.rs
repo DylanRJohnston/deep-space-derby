@@ -7,9 +7,7 @@ use crate::plugins::{
     event_stream::EventStreamPlugin,
     monster::MonsterPlugin,
     planets::PlanetsPlugin,
-    scenes::{
-        SceneState, ScenesPlugin,
-    },
+    scenes::{SceneState, ScenesPlugin},
     skinned_mesh::SkinnedMeshPlugin,
     spectators::SpectatorPlugin,
 };
@@ -44,7 +42,7 @@ pub fn start(f: impl FnOnce(&mut App)) {
             }),
     )
     .add_systems(OnEnter(SceneState::Loading), spawn_progress_bar)
-    .add_systems(OnEnter(SceneState::Lobby), remove_progress_bar)
+    .add_systems(OnExit(SceneState::Spawning), remove_progress_bar)
     .add_plugins(MonsterPlugin)
     .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
     .insert_resource(AmbientLight {
