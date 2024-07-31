@@ -11,7 +11,15 @@ impl Plugin for PreGamePlugin {
         app.register_type::<PreGameSpawnPoint>()
             .register_type::<PreGameCamera>()
             .add_systems(OnEnter(SceneState::PreGame), init_pregame)
-            .add_systems(Update, spawn_pregame_spawn_point_on_scene_load);
+            .add_systems(Update, spawn_pregame_spawn_point_on_scene_load)
+            .add_systems(
+                OnEnter(SceneState::PreGame),
+                |mut query: Query<&mut Visibility, With<SpotLight>>| {
+                    for mut visibility in query.iter_mut() {
+                        *visibility = Visibility::Inherited;
+                    }
+                },
+            );
     }
 }
 
@@ -55,6 +63,6 @@ fn init_pregame(
     let mut camera = camera.get_single_mut().unwrap();
 
     camera.translation = position.translation;
+    camera.rotation = Quat::from_rotation_z(std::f32::consts::FRAC_PI_2) * position.rotation;
     // Don't know why the rotation coming from blender is fucked up
-    camera.rotation = Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI / 2.0 + 0.18, -PI / 2.0);
 }

@@ -11,17 +11,22 @@ pub trait CommandHandler {
 }
 
 #[worker::send]
-#[tracing::instrument(skip_all, fields(session_id, input), err)]
+#[tracing::instrument(skip_all, fields(session_id, input, command = type_name::<C>()), err)]
 pub async fn command_handler<C: Command>(
     SessionID(session_id): SessionID,
     State(mut game): State<GameWrapper>,
     Json(input): Json<C::Input>,
 ) -> Result<(), ErrWrapper> {
+    tracing::info!("handling command");
+
     let (new_events, effect) = C::handle(session_id, game.events().vector().await?, input)?;
+    tracing::info!("processed command");
 
     for event in new_events {
         game.add_event(event).await?;
     }
+
+    tracing::info!("events added");
 
     match effect {
         Some(Effect::Alarm(time)) => {
@@ -42,6 +47,8 @@ pub async fn command_handler<C: Command>(
         }
         None => {}
     }
+
+    tracing::info!("effects processed");
 
     Ok(())
 }

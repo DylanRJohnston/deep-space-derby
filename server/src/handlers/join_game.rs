@@ -3,18 +3,19 @@ use std::ops::Deref;
 use crate::utils::err_wrapper::ErrWrapper;
 use axum::{
     extract::{Request, State},
-    http::header::HeaderMap,
+    http::{header::HeaderMap, Uri},
     Form,
 };
 use shared::models::commands::{self, Command, JoinGame};
 use worker::{Env, HttpResponse};
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, err)]
 #[axum::debug_handler]
 #[worker::send]
 pub async fn join_game(
     State(env): State<Env>,
     headers: HeaderMap,
+    uri: Uri,
     Form(join_game): Form<<JoinGame as Command>::Input>,
 ) -> Result<HttpResponse, ErrWrapper> {
     let mut req = Request::post(format!(
@@ -40,8 +41,16 @@ pub async fn join_game(
         return Ok(response.try_into()?);
     }
 
-    let url = commands::JoinGame::redirect(join_game.code).unwrap();
-    let response = web_sys::Response::redirect_with_status(&url, 303)?;
+    let url = format!(
+        "https://{host}{path}",
+        host = uri.authority().unwrap(),
+        path = commands::JoinGame::redirect(join_game.code).unwrap()
+    );
+
+    let response = web_sys::Response::redirect_with_status(&url, 303).map_err(|err| {
+        tracing::error!(?err, url, "failed to redirect to construct redirect");
+        err
+    })?;
 
     Ok(worker::response_from_wasm(response)?)
 }

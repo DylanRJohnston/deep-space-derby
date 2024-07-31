@@ -12,6 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "wrangler": "^3.29.0"
+    "wrangler": "^3.67.1"
   }
 }

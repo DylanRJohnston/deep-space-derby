@@ -18,6 +18,7 @@ use leptos::{leptos_config, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use tower::Service;
 use tracing::instrument;
+use tracing_subscriber::util::SubscriberInitExt;
 use worker::{console_log, event, Env};
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -25,15 +26,12 @@ pub struct ConsoleWriter(Vec<u8>);
 
 impl io::Write for ConsoleWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.write(buf)
+        console_log!("{}", std::str::from_utf8(buf).unwrap());
+
+        Ok(buf.len())
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        let data = std::str::from_utf8(&self.0)
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "data not UTF-8"))?;
-
-        console_log!("{}", data);
-
         Ok(())
     }
 }
@@ -46,7 +44,9 @@ pub fn start() {
         .pretty()
         .with_writer(ConsoleWriter::default)
         .without_time()
-        .init()
+        .init();
+
+    tracing::info!("wasm module initialised");
 }
 
 #[event(fetch)]
@@ -56,6 +56,8 @@ pub async fn fetch(
     env: Env,
     _ctx: worker::Context,
 ) -> worker::Result<http::Response<axum::body::Body>> {
+    tracing::info!("received request");
+
     let leptos_options = LeptosOptions::builder()
         .output_name("index")
         .site_pkg_dir("pkg")

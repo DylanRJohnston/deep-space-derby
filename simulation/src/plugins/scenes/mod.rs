@@ -120,7 +120,7 @@ fn setup_skybox(
             EnvironmentMapLight {
                 diffuse_map: game_assets.envmap_diffuse.clone(),
                 specular_map: game_assets.envmap_specular.clone(),
-                intensity: 1500.0,
+                intensity: 1000.0,
             },
             bloom,
             Tonemapping::AcesFitted,

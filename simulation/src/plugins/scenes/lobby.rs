@@ -13,6 +13,14 @@ pub struct LobbyPlugin;
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(SceneState::Lobby), init_camera)
+            .add_systems(
+                OnEnter(SceneState::Lobby),
+                |mut query: Query<&mut Visibility, With<SpotLight>>| {
+                    for mut visibility in query.iter_mut() {
+                        *visibility = Visibility::Hidden;
+                    }
+                },
+            )
             .add_systems(Update, spawn_racers)
             .add_systems(Update, orbit_camera.run_if(in_state(SceneState::Lobby)));
     }

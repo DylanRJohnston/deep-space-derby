@@ -32,9 +32,9 @@ impl DurableObject for Game {
         }
     }
 
-    #[instrument(name = "Game::fetch", skip(self))]
+    #[instrument(name = "Game::fetch", skip_all)]
     pub async fn fetch(&mut self, req: worker::Request) -> worker::Result<worker::Response> {
-        tracing::info!("fetch");
+        tracing::info!("request made it to durable object");
 
         axum::Router::new()
             .route("/api/object/game/by_code/:code/connect", get(on_connect))
