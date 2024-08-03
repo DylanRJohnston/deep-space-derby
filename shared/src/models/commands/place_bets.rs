@@ -3,6 +3,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
+use anyhow::{bail, Result};
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -39,13 +40,13 @@ impl Command for PlaceBets {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>), String> {
+    ) -> Result<(Vec<Event>, Option<Effect>)> {
         if !projections::game_has_started(events) {
-            return Err("cannot place a bet if the game hasn't started".to_owned());
+            bail!("cannot place a bet if the game hasn't started");
         }
 
         if input.bets.iter().any(|it| it.amount < 0) {
-            return Err("cannot place a bet with a value less than 0".into());
+            bail!("cannot place a bet with a value less than 0");
         }
 
         let account_balance = projections::account_balance(events)
@@ -56,7 +57,7 @@ impl Command for PlaceBets {
         let total = input.bets.iter().map(|it| it.amount).sum::<i32>();
 
         if total > account_balance {
-            return Err("cannot place a bet with a total value greater than your balance".into());
+            bail!("cannot place a bet with a total value greater than your balance");
         }
 
         let events = input

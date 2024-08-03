@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use anyhow::{bail, Result};
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -40,17 +41,17 @@ impl Command for JoinGame {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>), String> {
+    ) -> Result<(Vec<Event>, Option<Effect>)> {
         if projections::player_exists(events, session_id) {
             return Ok((vec![], None));
         }
 
         if projections::game_has_started(events) {
-            return Err("cannot join after game has already started".to_owned());
+            bail!("cannot join after game has already started");
         }
 
         if projections::player_count(events) >= 15 {
-            return Err("maximum number of players reached".to_owned());
+            bail!("maximum number of players reached");
         }
 
         Ok((

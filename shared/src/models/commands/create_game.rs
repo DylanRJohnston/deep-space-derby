@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use anyhow::{bail, Result};
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -39,11 +40,9 @@ impl Command for CreateGame {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>), String> {
+    ) -> Result<(Vec<Event>, Option<Effect>)> {
         if !events.is_empty() {
-            return Err(
-                "create game cannot be called after the game has already been created".to_owned(),
-            );
+            bail!("create game cannot be called after the game has already been created");
         }
 
         Ok((

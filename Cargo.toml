@@ -1,5 +1,5 @@
 [workspace]
-members = ["simulation", "server", "shared", "macros"]
+members = ["game", "app", "shared", "macros"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -17,23 +17,3 @@ opt-level = 3
 # lto = true
 opt-level = 's'
 # strip = true
-
-[[workspace.metadata.leptos]]
-name = "deep-space-derby"
-
-bin-package = "server"
-bin-target-tripple = "wasm32-unknown-unknown"
-bin-exe-name = "server.wasm"
-bin-features = ["ssr"]
-
-lib-package = "server"
-lib-features = ["hydrate"]
-
-site-root = "site"
-assets-dir = "assets"
-
-site-addr = "127.0.0.1:8788"
-reload-port = 3001
-
-[patch.crates-io]
-bevy_editor_pls = { git = "https://github.com/zhaop/bevy_editor_pls.git", branch = "bevy-0.14" }

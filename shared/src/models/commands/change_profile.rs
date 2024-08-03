@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use anyhow::{bail, Result};
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -32,13 +33,13 @@ impl Command for ChangeProfile {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>), String> {
+    ) -> Result<(Vec<Event>, Option<Effect>)> {
         if !projections::player_exists(events, session_id) {
-            return Err("cannot modify player that doesn't exist".to_owned());
+            bail!("cannot modify player that doesn't exist");
         }
 
         if projections::game_has_started(events) {
-            return Err("cannot modify profile after game has started".to_owned());
+            bail!("cannot modify profile after game has started");
         }
 
         Ok((

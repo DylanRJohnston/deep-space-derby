@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::fmt::Display;
 
 use im::Vector;
@@ -30,7 +31,7 @@ pub trait Command {
         session_id: Uuid,
         events: &Vector<Event>,
         input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>), String>
+    ) -> Result<(Vec<Event>, Option<Effect>)>
     where
         Self: Sized;
 }
