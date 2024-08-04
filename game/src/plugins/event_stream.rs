@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::tracing};
 
 use crossbeam_channel::{Receiver, Sender};
 use im::Vector;
@@ -21,7 +21,6 @@ impl Plugin for EventStreamPlugin {
                     !matches!(state.get(), SceneState::Loading | SceneState::Spawning)
                 }),
             )
-            .add_systems(Update, scene_manager.run_if(resource_changed::<GameEvents>))
             .add_systems(Update, transition_debug);
     }
 }
@@ -64,24 +63,8 @@ fn read_event_stream(
     channel: Res<Channel>,
 ) {
     while let Ok(event) = channel.0.try_recv() {
+        tracing::info!(?event, "Pushing event into bevy");
         events.as_mut().0.push_back(event);
-    }
-}
-
-fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<SceneState>>) {
-    if !events.is_changed() {
-        return;
-    }
-
-    for event in events.0.iter() {
-        match event {
-            Event::GameCreated { .. } => next_state.set(SceneState::Lobby),
-            Event::GameStarted => next_state.set(SceneState::Lobby),
-            Event::RaceStarted => next_state.set(SceneState::Lobby),
-            Event::RaceFinished(_) => next_state.set(SceneState::Lobby),
-            Event::GameFinished => next_state.set(SceneState::Lobby),
-            _ => {}
-        }
     }
 }
 

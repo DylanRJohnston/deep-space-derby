@@ -93,7 +93,7 @@
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --out-name game  --target web     --out-dir ./site/pkg
           '';
 
-          dev = pkgs.writeShellScriptBin "dev" ''
+          dev-wrangler = pkgs.writeShellScriptBin "dev" ''
             set -x
             set -o nounset
             set -o errexit
@@ -165,6 +165,66 @@
             find site | grep -Ev '(pkg|_worker.js)' | ${pkgs.entr}/bin/entr touch site/_worker.js &
 
             wrangler pages dev site --local-protocol https --compatibility-date=2023-10-30 &
+
+            wait
+          '';
+
+          dev = pkgs.writeShellScriptBin "dev" ''
+            set -x
+            set -o nounset
+            set -o errexit
+            set -o pipefail
+
+            rm -rf site/*
+            cp -r assets/* site/
+            ln -s ../game/assets site/assets
+
+            export RUST_LOG=info
+
+            CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
+            GAME_TARGET="./target/wasm32-unknown-unknown/release/game.wasm"
+
+            #entr can't execute bash functions, so we do a little bash metaprogramming
+            function build() {
+              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin $1 --features app/$2"
+            }
+
+            function build_client() {
+              echo "$(build client hydrate)"
+            }
+
+            function build_game() {
+              echo "cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game"
+            }
+
+            function bindgen() {
+              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --keep-debug --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
+            }
+
+            function bindgen_client() {
+                echo "$(bindgen $CLIENT_TARGET index web ./site/pkg)"
+            }
+
+            function bindgen_game() {
+              echo "$(bindgen $GAME_TARGET game web ./site/pkg)"
+            }
+
+            # Need to build things synchronously first so they're available for wangler
+            $(build_client)
+            $(bindgen_client)
+
+            $(build_game)
+            $(bindgen_game)
+
+            find app | ${pkgs.entr}/bin/entr -n $(build_client) &
+            find game | ${pkgs.entr}/bin/entr -n $(build_game) &
+
+            echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
+            echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
+
+            find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
+
+            cargo watch -- cargo run --package app --bin server &
 
             wait
           '';

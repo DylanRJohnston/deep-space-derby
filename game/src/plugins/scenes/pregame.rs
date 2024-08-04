@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::tracing};
 
 use super::{SceneMetadata, SceneState};
 
@@ -10,7 +10,10 @@ impl Plugin for PreGamePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<PreGameSpawnPoint>()
             .register_type::<PreGameCamera>()
-            .add_systems(OnEnter(SceneState::PreGame), init_pregame)
+            .add_systems(
+                OnEnter(SceneState::PreGame),
+                init_pregame.after(spawn_pregame_spawn_point_on_scene_load),
+            )
             .add_systems(Update, spawn_pregame_spawn_point_on_scene_load)
             .add_systems(
                 OnEnter(SceneState::PreGame),
@@ -39,6 +42,7 @@ pub fn spawn_pregame_spawn_point_on_scene_load(
 ) {
     for (entity, metadata) in &query {
         if let Some(value) = metadata.0.get("PreGameSpawnPoint") {
+            tracing::info!("Spawning pregame spawn points");
             match value {
                 serde_json::Value::Number(n) if n.is_u64() => {
                     commands.entity(entity).insert(PreGameSpawnPoint {

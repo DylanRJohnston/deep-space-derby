@@ -1,6 +1,11 @@
 use std::{net::SocketAddr, str::FromStr};
 
-use axum::routing::{any, get, post};
+use axum::{
+    extract::Request,
+    middleware::Next,
+    routing::{any, get, post},
+};
+use http::Uri;
 use leptos::{leptos_config, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use shared::models::commands;
@@ -49,6 +54,11 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
 }
 
 pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
+    tracing::info!(
+        game_state = std::any::type_name::<G>(),
+        "constructing game router"
+    );
+
     axum::Router::new()
         .route(
             "/api/object/game/by_code/:code/connect",
@@ -59,9 +69,16 @@ pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
         .register_command::<commands::ChangeProfile>()
         .register_command::<commands::ReadyPlayer>()
         .register_command::<commands::PlaceBets>()
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        )
+        .layer(axum::middleware::from_fn(
+            |uri: Uri, request: Request, next: Next| async move {
+                tracing::info!(?uri, method = ?request.method(), "game router received request");
+
+                let response = next.run(request).await;
+
+                tracing::info!(?response, "game router response");
+
+                response
+            },
+        ))
         .with_state(game)
 }

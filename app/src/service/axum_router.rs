@@ -2,6 +2,7 @@ use std::{future::Future, task::Poll};
 
 use axum::{extract::Request, response::Response, Router};
 use tower::Service;
+use tracing::instrument;
 
 use super::InternalServerError;
 
@@ -22,6 +23,8 @@ impl Service<(String, Request)> for AxumGameService {
     }
 
     fn call(&mut self, (_game_id, req): (String, Request)) -> Self::Future {
+        tracing::info!(uri = ?req.uri(), game_id = ?_game_id, "game service received request");
+
         let router = self.router.clone();
 
         async move { Ok(router.clone().call(req).await?) }

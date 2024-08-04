@@ -36,11 +36,14 @@ pub async fn on_connect<G: GameState>(
 pub async fn on_connect<G: GameState>(
     ws: axum::extract::WebSocketUpgrade,
     State(game_state): State<G>,
-    SessionID(_session_id): SessionID,
     GameCode { code }: GameCode,
 ) -> Result<Response, InternalServerError> {
+    tracing::info!("connecting websocket");
+
     Ok(ws
         .on_upgrade(move |mut ws| async move {
+            tracing::info!("websocket upgraded");
+
             let result: anyhow::Result<()> = try {
                 for event in game_state.events(code).await?.into_iter() {
                     let message = serde_json::to_string(&event)?;

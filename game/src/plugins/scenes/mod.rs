@@ -4,11 +4,14 @@ use bevy::{
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
     prelude::*,
     render::camera::Exposure,
-    utils::HashMap,
+    utils::{tracing, HashMap},
 };
 use bevy_asset_loader::prelude::*;
 
 use self::{lobby::LobbyPlugin, pregame::PreGamePlugin, race::RacePlugin};
+
+use super::event_stream::GameEvents;
+use shared::models::events::Event as GameEvent;
 
 pub mod lobby;
 pub mod pregame;
@@ -45,10 +48,29 @@ impl Plugin for ScenesPlugin {
                     .with_dynamic_assets_file::<StandardDynamicAssetCollection>("all.assets.ron")
                     .load_collection::<GameAssets>(),
             )
+            .add_systems(Update, spawned.run_if(in_state(SceneState::Spawning)))
             .add_systems(OnEnter(SceneState::Spawning), scene_setup)
             .add_systems(OnEnter(SceneState::Lobby), setup_skybox)
-            .add_systems(Update, deserialize_gltf_extras);
+            .add_systems(Update, deserialize_gltf_extras)
+            .add_systems(Update, scene_manager);
     }
+}
+
+fn spawned(
+    scene_metadata: Query<&SceneMetadata>,
+    mut scene_state: ResMut<NextState<SceneState>>,
+    mut spawned: Local<bool>,
+) {
+    if *spawned {
+        return;
+    }
+
+    if scene_metadata.iter().next().is_none() {
+        return;
+    }
+
+    *spawned = true;
+    scene_state.set(SceneState::Lobby);
 }
 
 #[derive(AssetCollection, Resource)]
@@ -93,8 +115,6 @@ fn scene_setup(
     for camera in &cameras {
         commands.entity(camera).despawn_recursive();
     }
-
-    next_state.set(SceneState::Lobby);
 }
 
 fn setup_skybox(
@@ -175,4 +195,23 @@ fn deserialize_gltf_extras(
             }
         }
     });
+}
+
+fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<SceneState>>) {
+    if !events.is_changed() {
+        return;
+    }
+
+    for event in events.0.iter() {
+        match event {
+            GameEvent::GameCreated { .. } => next_state.set(SceneState::Lobby),
+            GameEvent::GameStarted => next_state.set(SceneState::PreGame),
+            GameEvent::RaceStarted => next_state.set(SceneState::Race),
+            GameEvent::RaceFinished(_) => next_state.set(SceneState::Results),
+            GameEvent::GameFinished => next_state.set(SceneState::Lobby),
+            _ => {}
+        }
+    }
+
+    tracing::info!(?next_state, "Next SceneState");
 }
