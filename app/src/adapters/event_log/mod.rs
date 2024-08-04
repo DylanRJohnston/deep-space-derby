@@ -3,3 +3,6 @@ pub mod durable_object;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod in_memory;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod file;

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use app::{
-    adapters::game_state::in_memory::InMemoryGameState,
+    adapters::game_state::file::FileGameState,
     router::{into_game_router, into_outer_router},
     service::axum_router::AxumGameService,
 };
@@ -13,7 +13,7 @@ pub async fn main() {
     tracing_subscriber::fmt().pretty().init();
 
     let app = into_outer_router(AxumGameService {
-        router: into_game_router(InMemoryGameState::default()),
+        router: into_game_router(FileGameState::default()),
     })
     .layer(
         TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true)),
