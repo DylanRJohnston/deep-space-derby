@@ -4,6 +4,7 @@ use axum::routing::{any, get, post};
 use leptos::{leptos_config, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use shared::models::commands;
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 
 use crate::{
     handlers::{
@@ -58,5 +59,9 @@ pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
         .register_command::<commands::ChangeProfile>()
         .register_command::<commands::ReadyPlayer>()
         .register_command::<commands::PlaceBets>()
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+        )
         .with_state(game)
 }

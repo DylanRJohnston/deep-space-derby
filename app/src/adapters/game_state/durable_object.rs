@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use shared::models::events::Event;
+use shared::models::game_id::GameID;
 use tower::Service;
 use tracing::instrument;
 use worker::send::SendFuture;
@@ -42,12 +43,13 @@ impl DurableObject for Game {
     }
 }
 
+// DurableObject Game State Can Ignore the GameID parameter as there is one per game
 impl GameState for Game {
-    async fn events(&self) -> anyhow::Result<im::Vector<Event>> {
+    async fn events(&self, _: GameID) -> anyhow::Result<im::Vector<Event>> {
         SendFuture::new(async { Ok(self.events.vector().await?) }).await
     }
 
-    async fn push_event(&self, event: Event) -> anyhow::Result<()> {
+    async fn push_event(&self, _: GameID, event: Event) -> anyhow::Result<()> {
         SendFuture::new(async {
             self.events.push(event.clone()).await;
 
@@ -60,7 +62,7 @@ impl GameState for Game {
         .await
     }
 
-    fn accept_web_socket(&self) -> anyhow::Result<WebSocketPair> {
+    fn accept_web_socket(&self, _: GameID) -> anyhow::Result<WebSocketPair> {
         let pair = WebSocketPair::new()?;
         self.state.accept_web_socket(&pair.server);
 

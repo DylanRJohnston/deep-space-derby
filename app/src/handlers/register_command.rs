@@ -1,6 +1,10 @@
 use std::any::type_name;
 
-use crate::{ports::game_state::GameState, service::InternalServerError, session_id::SessionID};
+use crate::{
+    extractors::{GameCode, SessionID},
+    ports::game_state::GameState,
+    service::InternalServerError,
+};
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -17,17 +21,20 @@ pub trait CommandHandler {
 pub async fn command_handler<C: Command, G: GameState>(
     SessionID(session_id): SessionID,
     State(game): State<G>,
+    GameCode { code }: GameCode,
     Json(input): Json<C::Input>,
 ) -> Result<Response, InternalServerError> {
-    let (new_events, effect) = C::handle(session_id, &game.events().await?, input)?;
+    tracing::info!("inside command handler");
+
+    let (new_events, effect) = C::handle(session_id, &game.events(code).await?, input)?;
     for event in new_events {
-        game.push_event(event).await?;
+        game.push_event(code, event).await?;
     }
 
     match effect {
         Some(Effect::SoftCommand(f)) => {
-            if let Some(event) = f(&game.events().await?) {
-                game.push_event(event).await?
+            if let Some(event) = f(&game.events(code).await?) {
+                game.push_event(code, event).await?
             }
         }
         None => {}

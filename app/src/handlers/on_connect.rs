@@ -4,17 +4,22 @@ use axum::{
 };
 use tracing::instrument;
 
-use crate::{ports::game_state::GameState, service::InternalServerError, session_id::SessionID};
+use crate::{
+    extractors::{GameCode, SessionID},
+    ports::game_state::GameState,
+    service::InternalServerError,
+};
 
 #[cfg(target_arch = "wasm32")]
 #[instrument(skip_all, err)]
 pub async fn on_connect<G: GameState>(
     State(game_state): State<G>,
     SessionID(_session_id): SessionID,
+    GameCode { code }: GameCode,
 ) -> Result<Response, InternalServerError> {
-    let pair = game_state.accept_web_socket()?;
+    let pair = game_state.accept_web_socket(code)?;
 
-    for event in game_state.events().await?.into_iter() {
+    for event in game_state.events(code).await?.into_iter() {
         pair.server.send(&event)?;
     }
 
@@ -32,16 +37,17 @@ pub async fn on_connect<G: GameState>(
     ws: axum::extract::WebSocketUpgrade,
     State(game_state): State<G>,
     SessionID(_session_id): SessionID,
+    GameCode { code }: GameCode,
 ) -> Result<Response, InternalServerError> {
     Ok(ws
-        .on_upgrade(|mut ws| async move {
+        .on_upgrade(move |mut ws| async move {
             let result: anyhow::Result<()> = try {
-                for event in game_state.events().await?.into_iter() {
+                for event in game_state.events(code).await?.into_iter() {
                     let message = serde_json::to_string(&event)?;
                     ws.send(message.into()).await?;
                 }
 
-                game_state.accept_web_socket(ws).await?;
+                game_state.accept_web_socket(code, ws).await?;
             };
 
             if let Err(err) = result {

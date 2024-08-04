@@ -1,7 +1,7 @@
 use crate::service::{GameService, InternalServerError};
 use axum::{
     extract::{Request, State},
-    http::{header::HeaderMap, Uri},
+    http::header::HeaderMap,
     response::Response,
     Form,
 };

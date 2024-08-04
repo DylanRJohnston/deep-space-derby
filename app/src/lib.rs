@@ -14,6 +14,8 @@ pub mod utils;
 #[cfg(feature = "ssr")]
 pub mod adapters;
 #[cfg(feature = "ssr")]
+pub mod extractors;
+#[cfg(feature = "ssr")]
 pub mod handlers;
 #[cfg(feature = "ssr")]
 pub mod middleware;
@@ -25,5 +27,3 @@ pub mod router;
 pub mod serve_files;
 #[cfg(feature = "ssr")]
 pub mod service;
-#[cfg(feature = "ssr")]
-pub mod session_id;

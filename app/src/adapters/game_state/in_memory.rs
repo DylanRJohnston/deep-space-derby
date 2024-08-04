@@ -1,9 +1,9 @@
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::{Mutex, RwLock};
 
 use anyhow::Result;
 use axum::extract::ws::WebSocket;
-use shared::models::events::Event;
+use shared::models::{events::Event, game_id::GameID};
 
 use crate::{
     adapters::event_log::in_memory::InMemoryKV,
@@ -11,20 +11,36 @@ use crate::{
 };
 
 #[derive(Clone, Default)]
-pub struct InMemoryGameState {
+struct Game {
     events: InMemoryKV,
     sockets: Arc<Mutex<Vec<WebSocket>>>,
 }
 
+#[derive(Clone, Default)]
+pub struct InMemoryGameState {
+    inner: Arc<RwLock<HashMap<GameID, Game>>>,
+}
+
 impl GameState for InMemoryGameState {
-    async fn events(&self) -> Result<im::Vector<Event>> {
-        self.events.vector().await
+    async fn events(&self, game_id: GameID) -> Result<im::Vector<Event>> {
+        self.inner
+            .read()
+            .await
+            .get(&game_id)
+            .cloned()
+            .unwrap_or_default()
+            .events
+            .vector()
+            .await
     }
 
-    async fn push_event(&self, event: Event) -> Result<()> {
-        self.events.push(event.clone()).await?;
+    async fn push_event(&self, game_id: GameID, event: Event) -> Result<()> {
+        let mut lock_guard = self.inner.write().await;
+        let game = lock_guard.entry(game_id).or_default();
 
-        for socket in self.sockets.lock().await.iter_mut() {
+        game.events.push(event.clone()).await?;
+
+        for socket in game.sockets.lock().await.iter_mut() {
             let message = serde_json::to_string(&event)?;
 
             if let Err(err) = socket.send(message.into()).await {
@@ -35,8 +51,11 @@ impl GameState for InMemoryGameState {
         Ok(())
     }
 
-    async fn accept_web_socket(&self, ws: WebSocket) -> Result<()> {
-        self.sockets.lock().await.push(ws);
+    async fn accept_web_socket(&self, game_id: GameID, ws: WebSocket) -> Result<()> {
+        let mut lock_guard = self.inner.write().await;
+        let game = lock_guard.entry(game_id).or_default();
+
+        game.sockets.lock().await.push(ws);
 
         Ok(())
     }

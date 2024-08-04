@@ -2,7 +2,6 @@ use std::{future::Future, task::Poll};
 
 use axum::{extract::Request, response::Response, Router};
 use tower::Service;
-use tracing_subscriber::field::debug;
 
 use super::InternalServerError;
 

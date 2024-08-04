@@ -1,5 +1,5 @@
 use axum::{
-    extract::{OriginalUri, Request, State},
+    extract::{Request, State},
     http::header::HeaderMap,
     response::Response,
 };

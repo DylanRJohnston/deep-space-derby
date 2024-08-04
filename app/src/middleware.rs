@@ -3,7 +3,7 @@ use axum_extra::extract::CookieJar;
 use cookie::CookieBuilder;
 use uuid::Uuid;
 
-use crate::session_id::SessionID;
+use crate::extractors::SessionID;
 
 #[tracing::instrument(skip_all)]
 pub async fn session_middleware(

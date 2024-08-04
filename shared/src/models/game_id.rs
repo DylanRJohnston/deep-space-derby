@@ -3,6 +3,7 @@ use std::{
     ops::Deref,
 };
 
+use anyhow::bail;
 use rand::{
     distributions::{Distribution, Uniform},
     thread_rng,
@@ -12,7 +13,7 @@ use serde::{
     Deserialize, Serialize,
 };
 
-#[derive(Copy, Clone, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct GameID([u8; 6]);
 
 pub fn generate_game_code() -> GameID {
@@ -42,11 +43,11 @@ impl Display for GameID {
 }
 
 impl TryFrom<&str> for GameID {
-    type Error = &'static str;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if value.len() != 6 {
-            return Err("failed to convert from String to GameID, incorrect length");
+            bail!("failed to convert from String to GameID, incorrect length");
         }
 
         Ok(GameID(
