@@ -9,3 +9,4 @@ site/*
 /blob-report/
 /playwright/.cache/
 *.blend1
+*.DS_Store
