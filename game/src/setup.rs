@@ -1,10 +1,11 @@
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_tweening::TweeningPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
+use shared::models::game_id::GameID;
 
 use crate::plugins::{
     animation_link::AnimationLinkPlugin,
-    event_stream::EventStreamPlugin,
+    event_stream::{EventStreamPlugin, GameCode},
     monster::MonsterPlugin,
     planets::PlanetsPlugin,
     scenes::{SceneState, ScenesPlugin},
@@ -20,6 +21,12 @@ const FILE_PATH: &str = "assets";
 
 pub fn start(f: impl FnOnce(&mut App)) {
     let mut app = App::new();
+
+    #[cfg(not(target_arch = "wasm32"))]
+    if let Some(game_id) = std::env::args().nth(1) {
+        let game_id = GameID::try_from(game_id.as_str()).expect("failed to parse game_id");
+        app.insert_resource(GameCode(game_id));
+    }
 
     app.add_plugins(DefaultPlugins.set(AssetPlugin {
         meta_check: AssetMetaCheck::Never,

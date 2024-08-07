@@ -83,8 +83,6 @@ pub fn init_animation(
     mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
     for (dance, animation_link) in &mut query {
-        println!("found spectator");
-
         let mut player = players.get_mut(animation_link.0).unwrap();
 
         let (graph, animation_index) = AnimationGraph::from_clip(dance.clone());

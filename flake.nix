@@ -216,6 +216,7 @@
             $(build_game)
             $(bindgen_game)
 
+            find app | ${pkgs.entr}/bin/entr -n cargo run --package app --bin server &
             find app | ${pkgs.entr}/bin/entr -n $(build_client) &
             find game | ${pkgs.entr}/bin/entr -n $(build_game) &
 
@@ -224,7 +225,6 @@
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 
-            cargo watch -- cargo run --package app --bin server &
 
             wait
           '';

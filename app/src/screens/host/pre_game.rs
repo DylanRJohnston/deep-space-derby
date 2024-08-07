@@ -50,16 +50,16 @@ pub fn pre_game() -> impl IntoView {
     let monsters = move || projections::monsters(projections::race_seed(&events()));
 
     view! {
-        <div class="vertical-stack full-width full-height container">
-            <h1>"Race Overview"</h1>
-            <div class="monster-grid">
-                <For
-                    each=monsters
-                    key=|it| (*it).clone()
-                    children=|monster| view! { <MonsterCard monster/> }
-                />
-            </div>
-            <span>"Race will start once all bets are placed"</span>
-        </div>
+        // <div class="vertical-stack full-width full-height container">
+        //     <h1>"Race Overview"</h1>
+        //     <div class="monster-grid">
+        //         <For
+        //             each=monsters
+        //             key=|it| (*it).clone()
+        //             children=|monster| view! { <MonsterCard monster/> }
+        //         />
+        //     </div>
+        //     <span>"Race will start once all bets are placed"</span>
+        // </div>
     }
 }

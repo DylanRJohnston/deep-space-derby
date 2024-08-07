@@ -49,12 +49,19 @@ impl GameState for FileGameState {
 
         game.events.push(event.clone()).await?;
 
-        for socket in game.sockets.iter_mut() {
+        for mut socket in std::mem::take(&mut game.sockets) {
             let message = serde_json::to_string(&event)?;
 
             if let Err(err) = socket.send(message.into()).await {
-                tracing::error!(?err, "error forwarding event to client sockets")
+                tracing::warn!(
+                    ?err,
+                    "error forwarding event to client sockets, removing socket"
+                );
+
+                continue;
             }
+
+            game.sockets.push(socket);
         }
 
         Ok(())

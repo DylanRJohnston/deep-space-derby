@@ -5,7 +5,7 @@ use crate::models::monsters::MONSTERS;
 use super::{
     events::{Event, PlacedBet},
     game_id::GameID,
-    monsters::{Monster, Results},
+    monsters::{Monster, RaceResults},
 };
 use im::{HashMap, Vector};
 use rand::SeedableRng;
@@ -161,7 +161,7 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
             }
-            Event::RaceFinished(Results { first, .. }) => {
+            Event::RaceFinished(RaceResults { first, .. }) => {
                 for bet in bets.iter() {
                     accounts.entry(bet.session_id).and_modify(|account| {
                         if bet.monster_id == *first {
@@ -228,7 +228,7 @@ mod tests {
 
     use crate::models::{
         events::{Event, PlacedBet},
-        monsters::Results,
+        monsters::RaceResults,
     };
 
     use super::account_balance;
@@ -460,7 +460,7 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_a,
                 second: monster_b,
                 third: monster_c,
@@ -510,7 +510,7 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_a,
                 second: monster_b,
                 third: monster_c,
@@ -526,7 +526,7 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_b,
                 second: monster_a,
                 third: monster_c,
@@ -542,7 +542,7 @@ mod tests {
                 monster_id: monster_c,
                 amount: 300
             }),
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_c,
                 second: monster_b,
                 third: monster_a,
@@ -593,7 +593,7 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_a,
                 second: monster_b,
                 third: monster_c,
@@ -618,7 +618,7 @@ mod tests {
                 session_id: alice,
                 amount: 100
             },
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_b,
                 second: monster_a,
                 third: monster_c,
@@ -634,7 +634,7 @@ mod tests {
                 monster_id: monster_c,
                 amount: 300
             }),
-            Event::RaceFinished(Results {
+            Event::RaceFinished(RaceResults {
                 first: monster_c,
                 second: monster_b,
                 third: monster_a,

@@ -181,16 +181,14 @@ fn deserialize_gltf_extras(
     mut commands: Commands,
 ) {
     query.into_iter().for_each(|(entity, name, extras)| {
-        println!("{}: {}", name, extras.value);
-
         match serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&extras.value) {
             Ok(metadata) => {
                 commands.entity(entity).insert(SceneMetadata(metadata));
             }
             Err(_) => {
-                println!(
-                    "warning failed to deserialise gtlf metadata, {}: {}",
-                    name, extras.value
+                tracing::warn!(
+                    ?name, extras = ?extras.value,
+                    "warning failed to deserialise gtlf metadata",
                 );
             }
         }

@@ -1,19 +1,25 @@
 #![allow(clippy::type_complexity)]
 use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, EaseFunction, Tween};
 use rand::{distributions::Uniform, thread_rng, Rng};
+use shared::models::monsters::Monster;
 use std::time::Duration;
 
 use bevy::prelude::*;
 
-use super::animation_link::{AnimationLink, AnimationRoot};
+use super::{
+    animation_link::{AnimationLink, AnimationRoot},
+    scenes::{race::RaceTimer, GameAssets},
+};
 
 pub struct MonsterPlugin;
 
 impl Plugin for MonsterPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Monster>()
+        app.register_type::<MonsterBehaviour>()
             .add_systems(Update, init_animation)
-            .add_systems(Update, run_timers);
+            .add_systems(Update, run_timers)
+            .observe(spawn_monster)
+            .observe(despawn_all_monsters);
     }
 }
 
@@ -22,9 +28,9 @@ pub struct Start;
 
 #[derive(Bundle, Default)]
 pub struct MonsterBundle {
-    pub monster: Monster,
+    pub id: MonsterID,
+    pub monster: MonsterBehaviour,
     // pub scene: SceneBundle,
-    pub speed: Speed,
     pub stats: Stats,
     // pub animations: NamedAnimations,
     // pub behaviour: StateMachine<Behaviour>,
@@ -57,24 +63,15 @@ pub struct Stats {
 
 #[derive(Component, Debug, Reflect, Default)]
 pub struct BehaviourTimer {
-    timer: Timer,
-    next_state: Monster,
-}
-
-#[derive(Component, Debug, Reflect, Default)]
-pub struct Speed(pub f32);
-
-impl From<i32> for Speed {
-    fn from(value: i32) -> Self {
-        Self(value as f32)
-    }
+    pub timer: Timer,
+    pub next_state: MonsterBehaviour,
 }
 
 #[derive(Debug, Clone, Default, Copy, Component, Reflect, PartialEq)]
-pub enum Monster {
+pub enum MonsterBehaviour {
     #[default]
     Idle,
-    Jumping,
+    Jumping(f32),
     Recovering,
     Dancing,
     Dead,
@@ -84,10 +81,13 @@ pub fn init_animation(
     mut commands: Commands,
     mut graphs: ResMut<Assets<AnimationGraph>>,
     clips: Res<Assets<AnimationClip>>,
-    new_monsters: Query<(Entity, &Monster, &AnimationLink, &Handle<Gltf>), With<Start>>,
+    new_monsters: Query<
+        (Entity, &AnimationLink, &Handle<Gltf>),
+        (With<MonsterBehaviour>, With<Start>),
+    >,
     gltfs: Res<Assets<Gltf>>,
 ) {
-    for (entity, monster, animation_player_link, gltf_handle) in &new_monsters {
+    for (entity, animation_player_link, gltf_handle) in &new_monsters {
         let gltf = gltfs.get(gltf_handle).unwrap();
 
         let mut graph = AnimationGraph::new();
@@ -118,7 +118,7 @@ pub fn init_animation(
             .remove::<Start>()
             .insert(BehaviourTimer {
                 timer: Timer::from_seconds(1.0, TimerMode::Once),
-                next_state: Monster::Idle,
+                next_state: MonsterBehaviour::Idle,
             });
 
         let graph_handle = graphs.add(graph);
@@ -143,7 +143,7 @@ pub fn run_timers(
         Entity,
         &AnimationLink,
         &NamedAnimations,
-        &mut Monster,
+        &mut MonsterBehaviour,
         &mut BehaviourTimer,
         &Transform,
     )>,
@@ -164,7 +164,7 @@ pub fn run_timers(
 
         *monster = timer.next_state;
         match *monster {
-            Monster::Idle => {
+            MonsterBehaviour::Idle => {
                 transition
                     .play(
                         &mut player,
@@ -174,12 +174,17 @@ pub fn run_timers(
                     .set_speed(thread_rng().sample(Uniform::new(0.9, 1.1)))
                     .repeat();
             }
-            Monster::Jumping => {
-                let target = transform.translation + transform.back() * 0.7;
+            MonsterBehaviour::Jumping(amount) => {
+                let jump_delay = 0.2;
+                let animation_speed = 0.75;
+                let duration = animations.jump.duration * (1.0 / animation_speed) - jump_delay;
+                let stage_distance = 0.75;
 
-                let tween = Delay::new(Duration::from_secs_f32(0.25)).then(Tween::new(
-                    EaseFunction::QuadraticInOut,
-                    Duration::from_secs_f32(animations.jump.duration * 2.0 - 0.25),
+                let target = transform.translation + transform.back() * stage_distance * amount;
+
+                let tween = Delay::new(Duration::from_secs_f32(jump_delay)).then(Tween::new(
+                    EaseFunction::QuadraticOut,
+                    Duration::from_secs_f32(duration),
                     TransformPositionLens {
                         start: transform.translation,
                         end: target,
@@ -188,45 +193,39 @@ pub fn run_timers(
 
                 commands.entity(entity).insert(Animator::new(tween));
 
-                transition.play(
-                    &mut player,
-                    animations.jump.index,
-                    Duration::from_secs_f32(0.1),
-                );
+                transition
+                    .play(
+                        &mut player,
+                        animations.jump.index,
+                        Duration::from_secs_f32(0.2),
+                    )
+                    .set_speed(animation_speed);
 
                 *timer = BehaviourTimer {
-                    timer: Timer::from_seconds(
-                        animations.jump.duration * 2.0 - 0.2,
-                        TimerMode::Once,
-                    ),
-                    next_state: Monster::Recovering,
+                    timer: Timer::from_seconds(duration, TimerMode::Once),
+                    next_state: MonsterBehaviour::Recovering,
                 };
             }
-            Monster::Recovering => {
-                transition.play(
-                    &mut player,
-                    animations.idle.index,
-                    Duration::from_secs_f32(0.2),
-                );
-
-                let recovery = 0.2 + (0.8333 - animations.jump.duration);
-
-                *timer = BehaviourTimer {
-                    timer: Timer::from_seconds(recovery, TimerMode::Once),
-                    next_state: Monster::Jumping,
-                };
+            MonsterBehaviour::Recovering => {
+                transition
+                    .play(
+                        &mut player,
+                        animations.idle.index,
+                        Duration::from_secs_f32(0.2),
+                    )
+                    .repeat();
             }
-            Monster::Dancing => {
+            MonsterBehaviour::Dancing => {
                 transition
                     .play(
                         &mut player,
                         animations.dance.index,
-                        Duration::from_secs_f32(0.1),
+                        Duration::from_secs_f32(0.3),
                     )
                     .set_speed(thread_rng().sample(Uniform::new(0.9, 1.1)))
                     .repeat();
             }
-            Monster::Dead => {
+            MonsterBehaviour::Dead => {
                 transition.play(
                     &mut player,
                     animations.death.index,
@@ -235,4 +234,88 @@ pub fn run_timers(
             }
         }
     }
+}
+
+#[derive(Debug, Event)]
+pub struct DespawnAllMonsters;
+
+fn despawn_all_monsters(
+    _trigger: Trigger<DespawnAllMonsters>,
+    mut commands: Commands,
+    monsters: Query<Entity, With<MonsterBehaviour>>,
+) {
+    for monster in &monsters {
+        commands.entity(monster).despawn_recursive();
+    }
+}
+
+#[derive(Debug, Event)]
+pub struct SpawnMonster {
+    pub transform: Transform,
+    pub monster: &'static Monster,
+    pub id: usize,
+}
+
+#[derive(Debug, Component, Default, Deref)]
+pub struct MonsterID(usize);
+
+fn spawn_monster(
+    trigger: Trigger<SpawnMonster>,
+    mut commands: Commands,
+    gltfs: Res<Assets<Gltf>>,
+    game_assets: Option<Res<GameAssets>>,
+) {
+    let SpawnMonster {
+        transform,
+        monster,
+        id,
+    } = trigger.event();
+
+    let handle = game_assets
+        .as_ref()
+        .ok_or("game assets haven't loaded yet")
+        .unwrap()
+        .models
+        .get(monster.blueprint_name)
+        .ok_or_else(|| {
+            format!(
+                "failed to find asset for monster: {}, available models: {:?}",
+                monster.blueprint_name,
+                game_assets.as_ref().unwrap().models.keys()
+            )
+        })
+        .unwrap();
+
+    let scene = gltfs
+        .get(handle)
+        .ok_or_else(|| {
+            format!(
+                "failed to retrieve asset for monster: {}",
+                monster.blueprint_name
+            )
+        })
+        .unwrap();
+
+    let mut transform = *transform;
+    transform.scale = Vec3::splat(0.25);
+
+    commands.spawn((
+        Name::from(monster.name),
+        MonsterBundle {
+            id: MonsterID(*id),
+            monster: MonsterBehaviour::default(),
+            behaviour_timer: BehaviourTimer {
+                timer: Timer::from_seconds(0.1, TimerMode::Once),
+                next_state: MonsterBehaviour::Idle,
+            },
+            ..default()
+        },
+        RaceTimer::default(),
+        handle.clone(),
+        SceneBundle {
+            scene: scene.scenes[0].clone(),
+            transform,
+            ..default()
+        },
+    ));
 }

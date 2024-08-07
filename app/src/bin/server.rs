@@ -24,10 +24,13 @@ pub async fn main() {
             .await
             .unwrap();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
+    let ssl_fut = axum_server::bind_rustls(SocketAddr::from(([0, 0, 0, 0], 8788)), config)
+        .serve(app.clone().into_make_service());
 
-    axum_server::bind_rustls(addr, config)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let fut = axum::serve(
+        tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap(),
+        app,
+    );
+
+    tokio::try_join!(ssl_fut, fut).unwrap();
 }

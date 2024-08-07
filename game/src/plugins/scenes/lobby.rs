@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 use shared::models::projections;
 
-use crate::plugins::{
-    event_stream::GameEvents,
-    monster::{Monster, MonsterBundle},
-};
+use crate::plugins::{event_stream::GameEvents, monster::SpawnMonster};
 
-use super::{pregame::PreGameSpawnPoint, GameAssets, SceneState};
+use super::{pregame::PreGameSpawnPoint, SceneState};
 
 pub struct LobbyPlugin;
 
@@ -28,7 +25,6 @@ impl Plugin for LobbyPlugin {
 
 pub fn init_camera(mut query: Query<&mut Transform, Added<Camera>>) {
     if let Ok(mut transform) = query.get_single_mut() {
-        println!("Setting initial camera position");
         transform.translation = Vec3::new(10.0, 10.0, 10.0);
         *transform = transform.looking_at(Vec3::ZERO, Vec3::Y);
 
@@ -50,8 +46,6 @@ pub fn spawn_racers(
     events: Res<GameEvents>,
     mut commands: Commands,
     spawn_points: Query<(&PreGameSpawnPoint, &Transform), Added<PreGameSpawnPoint>>,
-    gltfs: Res<Assets<Gltf>>,
-    game_assets: Option<Res<GameAssets>>,
 ) {
     let monsters = projections::monsters(projections::race_seed(&events));
 
@@ -59,51 +53,14 @@ pub fn spawn_racers(
         .into_iter()
         .for_each(|(spawn_point, transform)| {
             let monster = monsters
-                .get((spawn_point.id - 1) as usize)
+                .get(spawn_point.id - 1)
                 .ok_or_else(|| format!("failed to find spawn point for monster: {spawn_point:?}"))
                 .unwrap();
 
-            let handle = game_assets
-                .as_ref()
-                .ok_or("game assets haven't loaded yet")
-                .unwrap()
-                .models
-                .get(monster.blueprint_name)
-                .ok_or_else(|| {
-                    format!(
-                        "failed to find asset for monster: {}, available models: {:?}",
-                        monster.blueprint_name,
-                        game_assets.as_ref().unwrap().models.keys()
-                    )
-                })
-                .unwrap();
-
-            let scene = gltfs
-                .get(handle)
-                .ok_or_else(|| {
-                    format!(
-                        "failed to retrieve asset for monster: {}",
-                        monster.blueprint_name
-                    )
-                })
-                .unwrap();
-
-            let mut transform = *transform;
-            transform.scale = Vec3::splat(0.25);
-
-            commands.spawn((
-                Name::from(monster.name),
-                MonsterBundle {
-                    monster: Monster::default(),
-                    speed: monster.speed.into(),
-                    ..default()
-                },
-                handle.clone(),
-                SceneBundle {
-                    scene: scene.scenes[0].clone(),
-                    transform: transform,
-                    ..default()
-                },
-            ));
+            commands.trigger(SpawnMonster {
+                id: spawn_point.id,
+                transform: *transform,
+                monster,
+            })
         });
 }

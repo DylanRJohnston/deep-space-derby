@@ -29,7 +29,7 @@ impl Plugin for PreGamePlugin {
 #[derive(Debug, Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct PreGameSpawnPoint {
-    pub id: u32,
+    pub id: usize,
 }
 
 #[derive(Debug, Default, Reflect, Component)]
@@ -46,7 +46,7 @@ pub fn spawn_pregame_spawn_point_on_scene_load(
             match value {
                 serde_json::Value::Number(n) if n.is_u64() => {
                     commands.entity(entity).insert(PreGameSpawnPoint {
-                        id: n.as_u64().unwrap() as u32,
+                        id: n.as_u64().unwrap() as usize,
                     });
                 }
                 other => panic!("PreGameSpawnPoint must be a number, got {:?}", other),
@@ -67,6 +67,6 @@ fn init_pregame(
     let mut camera = camera.get_single_mut().unwrap();
 
     camera.translation = position.translation;
-    camera.rotation = Quat::from_rotation_z(std::f32::consts::FRAC_PI_2) * position.rotation;
     // Don't know why the rotation coming from blender is fucked up
+    camera.rotation = Quat::from_rotation_z(std::f32::consts::FRAC_PI_2) * position.rotation;
 }

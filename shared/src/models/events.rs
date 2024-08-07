@@ -2,7 +2,7 @@ use macros::serde_wasm_bindgen;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{game_id::GameID, monsters::Results};
+use super::{game_id::GameID, monsters::RaceResults};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Hash)]
 pub struct PlacedBet {
@@ -11,7 +11,7 @@ pub struct PlacedBet {
     pub amount: i32,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 #[serde_wasm_bindgen]
 pub enum Event {
     GameCreated { game_id: GameID },
@@ -25,6 +25,6 @@ pub enum Event {
     PaidBackMoney { session_id: Uuid, amount: i32 },
     PlacedBet(PlacedBet),
     RaceStarted,
-    RaceFinished(Results),
+    RaceFinished(RaceResults),
     GameFinished,
 }

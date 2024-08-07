@@ -4,7 +4,7 @@ use bevy::prelude::ResMut;
 use bevy::render::camera::Exposure;
 use bevy::state::state::OnEnter;
 use bevy::{app::Startup, ecs::system::Commands};
-use game::plugins::event_stream::GameEvents;
+use game::plugins::event_stream::{GameCode, GameEvents};
 use game::plugins::scenes::SceneState;
 use game::{plugins::event_stream::Seed, start};
 use shared::models::events::Event;

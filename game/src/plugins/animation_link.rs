@@ -1,6 +1,10 @@
 use std::ops::Deref;
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{
+    prelude::*,
+    scene::SceneInstance,
+    utils::{tracing, HashMap},
+};
 
 /// AnimationLinkPlugin solves an awkward ergonimics problem in bevy
 /// with the way it's AnimationPlayer works when loading scenes.
@@ -35,15 +39,16 @@ impl Deref for AnimationLink {
 
 fn get_player_entity(
     parent: Entity,
-    all_children: &Query<(Entity, &Children, Option<&AnimationPlayer>)>,
+    all_children: &Query<&Children>,
+    animation_players: &Query<Entity, With<AnimationPlayer>>,
 ) -> Option<Entity> {
-    if let Ok((entity, children, player)) = all_children.get(parent) {
-        if player.is_some() {
-            return Some(entity);
-        }
+    if let Ok(entity) = animation_players.get(parent) {
+        return Some(entity);
+    }
 
-        for child in children.iter() {
-            if let Some(player) = get_player_entity(*child, all_children) {
+    if let Ok(children) = all_children.get(parent) {
+        for child in children {
+            if let Some(player) = get_player_entity(*child, all_children, animation_players) {
                 return Some(player);
             }
         }
@@ -55,14 +60,20 @@ fn get_player_entity(
 // Recursive descent is slower than ascent, but there appears to be a timing problem with the animation root component
 fn animation_link(
     mut commands: Commands,
-    all_entities_with_children: Query<(Entity, &Children, Option<&AnimationPlayer>)>,
-    animation_roots: Query<Entity, Added<AnimationRoot>>,
+    all_children: Query<&Children>,
+    animation_players: Query<Entity, With<AnimationPlayer>>,
+    animation_roots: Query<Entity, (With<AnimationRoot>, Added<SceneInstance>)>,
 ) {
     for animation_root in &animation_roots {
-        if let Some(player) = get_player_entity(animation_root, &all_entities_with_children) {
+        if let Some(player) = get_player_entity(animation_root, &all_children, &animation_players) {
             commands
                 .entity(animation_root)
                 .insert(AnimationLink(player));
+        } else {
+            tracing::warn!(
+                "Failed to find animation player for entity {}",
+                animation_root
+            );
         }
     }
 }

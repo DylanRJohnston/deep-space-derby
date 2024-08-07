@@ -4,8 +4,7 @@ use bevy::{prelude::*, utils::tracing};
 
 use crossbeam_channel::{Receiver, Sender};
 use im::Vector;
-use shared::models::events::Event;
-use wasm_bindgen::prelude::*;
+use shared::models::{events::Event, game_id::GameID};
 
 use super::scenes::SceneState;
 
@@ -14,7 +13,6 @@ pub struct EventStreamPlugin;
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
-            .add_systems(OnEnter(SceneState::Loading), register_event_stream)
             .add_systems(
                 Update,
                 read_event_stream.run_if(|state: Res<State<SceneState>>| {
@@ -22,6 +20,9 @@ impl Plugin for EventStreamPlugin {
                 }),
             )
             .add_systems(Update, transition_debug);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(Startup, connect_to_server);
     }
 }
 
@@ -35,13 +36,6 @@ static EVENT_CHANNEL: LazyLock<EventChannel> = LazyLock::new(|| {
 
     EventChannel { sender, receiver }
 });
-
-#[derive(Resource)]
-pub struct Channel(Receiver<Event>);
-
-fn register_event_stream(mut commands: Commands) {
-    commands.insert_resource(Channel(EVENT_CHANNEL.receiver.clone()));
-}
 
 #[derive(Resource)]
 pub struct Seed(pub u32);
@@ -60,9 +54,8 @@ impl std::ops::Deref for GameEvents {
 fn read_event_stream(
     // mut next_state: ResMut<NextState<SceneState>>,
     mut events: ResMut<GameEvents>,
-    channel: Res<Channel>,
 ) {
-    while let Ok(event) = channel.0.try_recv() {
+    while let Ok(event) = EVENT_CHANNEL.receiver.try_recv() {
         tracing::info!(?event, "Pushing event into bevy");
         events.as_mut().0.push_back(event);
     }
@@ -83,7 +76,52 @@ fn transition_debug(
     }
 }
 
-#[wasm_bindgen(js_name = "sendGameEvent")]
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen::prelude::wasm_bindgen(js_name = "sendGameEvent")]
 pub fn send_game_event(event: Event) -> Result<(), JsError> {
     EVENT_CHANNEL.sender.send(event).map_err(Into::into)
+}
+
+#[derive(Debug, Resource, Deref)]
+pub struct GameCode(pub GameID);
+
+#[cfg(not(target_arch = "wasm32"))]
+fn connect_to_server(game_code: Res<GameCode>) {
+    use anyhow::Context;
+    use bevy::tasks::IoTaskPool;
+    use tungstenite::Message;
+
+    let (mut socket, _) = tungstenite::connect(format!(
+        "ws://localhost:8000/api/object/game/by_code/{code}/connect",
+        code = **game_code
+    ))
+    .context("failed to connect to web socket")
+    .unwrap();
+
+    tracing::info!("Connected to server");
+
+    IoTaskPool::get()
+        .spawn(async move {
+            while let Ok(message) = socket.read() {
+                match message {
+                    Message::Text(text) => match serde_json::from_str::<Event>(&text) {
+                        Ok(event) => {
+                            EVENT_CHANNEL
+                                .sender
+                                .send(event)
+                                .expect("error sending event to event channel");
+                        }
+                        Err(err) => {
+                            tracing::warn!(?err, "error parsing event from websocket");
+                            break;
+                        }
+                    },
+                    other => {
+                        tracing::warn!(?other, "unsupported message type received");
+                        break;
+                    }
+                }
+            }
+        })
+        .detach();
 }
