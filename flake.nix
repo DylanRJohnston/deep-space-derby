@@ -27,8 +27,7 @@
 
         pkgs = import nixpkgs { inherit system overlays; };
 
-        toolchain = pkgs.rust-bin.nightly.latest.default.override {
-          extensions = [ "rust-src" ];
+        toolchain = pkgs.rust-bin.nightly.latest.complete.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
 
