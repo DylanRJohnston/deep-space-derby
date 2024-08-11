@@ -195,6 +195,7 @@ pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
             Event::PaidBackMoney { session_id, amount } if *session_id == player_id => {
                 debt -= amount
             }
+            Event::RaceFinished(_) => debt = ((debt as f32) * 1.051) as u32,
             _ => {}
         };
     }

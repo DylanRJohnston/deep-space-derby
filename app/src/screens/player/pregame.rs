@@ -171,21 +171,23 @@ pub fn pre_game() -> impl IntoView {
             <div class="profile-image">"Profile Image"</div>
             <div class="player-info">
                 <h2>{player_name}</h2>
-                <p>"Funds = $"{available_money}</p>
-                <p>"Debt = $"{debt}</p>
+                <div class="finance">
+                    <span style="justify-self: end">"Funds:"</span>
+                    <span>"💎 "{available_money}</span>
+                    <span style="justify-self: end">"Debt:"</span>
+                    <span>"💎 "{debt}</span>
+                </div>
             </div>
             <div class="action-grid">
                 <div class="placeholder-image">
-                    <p>"Image"</p>
                     <p class="emoji">"🃏"</p>
                 </div>
                 <div class="placeholder-image">
-                    <p>"Image"</p>
                     <p class="emoji">"🦈"</p>
                 </div>
                 <div class="action">
                     <p>"Buy a card"</p>
-                    <p>"$(100)"</p>
+                    <p>"(💎 100)"</p>
                 </div>
                 <div class="action" on:click=move |_| toggle_loan_modal()>"Loan Shark"</div>
                 <div class="action double-width" on:click=move |_| toggle_bets_modal()>"Place Bet"</div>
@@ -197,10 +199,10 @@ pub fn pre_game() -> impl IntoView {
             </div>
         </div>
         <Show when=bets_modal fallback=||view!{}>
-            <div class="pre-game-container">
+            <div class="pre-game-container blurred">
                 <div class="back-button" on:click=move |_| toggle_bets_modal()>"←"</div>
                 <h2>"Place your Bets"</h2>
-                <p>"Available = $"{available_money}</p>
+                <p>"Available: 💎 "{available_money}</p>
                 <For
                     each=move || bets
                     key=|it| *it
@@ -260,14 +262,14 @@ fn loan_modal(
     });
 
     view! {
-        <div class="pre-game-container">
+        <div class="pre-game-container blurred">
             <div class="back-button" on:click=move |_| close()>"←"</div>
             <h1>"Loan shark"</h1>
-            <div class="loan-shark"><p class="emoji">"🦈"</p></div>
+            <div class="loan-shark">"🦈"</div>
             <p class="bio">"\"I'm a shark, How much do you want to borrow?\""</p>
-            <p>"Interest rate = 5.1%"</p>
+            <p>"Interest Rate: 5.1%/pr"</p>
             <div class="creature-container">
-                <p style="text-align: center;">"Current debt = $"{debt}{move || (debt() == 1000).then(|| view! { "(max)"})}</p>
+                <p style="text-align: center;">"Current debt:  💎 "{debt}{move || (debt() == 1000).then(|| view! { "(max)"})}</p>
                 <div class="betting-row">
                     <button
                         on:click=decrement
