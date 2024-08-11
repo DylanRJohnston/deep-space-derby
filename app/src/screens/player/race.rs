@@ -2,5 +2,10 @@ use leptos::*;
 
 #[component]
 pub fn race() -> impl IntoView {
-    view! { <h1>"Race! Eyes Up"</h1>}
+    view! {
+        <div class="race-container">
+            <h1>"Time to race"</h1>
+            <p style="font-size: 25px;">"Eyes up"</p>
+        </div>
+    }
 }

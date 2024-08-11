@@ -11,7 +11,7 @@ pub fn leaderboard() -> impl IntoView {
         let events = events();
         let players = projections::players(&events);
 
-        let mut accounts = projections::account_balance(&events)
+        let mut accounts = projections::all_account_balances(&events)
             .into_iter()
             .filter_map(|(id, balance)| Some((players.get(&id).cloned()?.name, balance)))
             .collect::<Vec<_>>();

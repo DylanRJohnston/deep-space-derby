@@ -63,6 +63,10 @@ pub fn players(events: &Vector<Event>) -> HashMap<Uuid, PlayerInfo> {
     map
 }
 
+pub fn player_info(events: &Vector<Event>, player: Uuid) -> Option<PlayerInfo> {
+    players(events).get(&player).cloned()
+}
+
 pub fn game_has_started(events: &Vector<Event>) -> bool {
     for event in events {
         if let Event::GameStarted { .. } = event {
@@ -132,7 +136,7 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     true
 }
 
-pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
+pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     let mut accounts = HashMap::<Uuid, i32>::new();
     let mut bets = Vector::new();
 
@@ -149,12 +153,12 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
             Event::BorrowedMoney { session_id, amount } => {
                 accounts
                     .entry(*session_id)
-                    .and_modify(|balance| *balance += amount);
+                    .and_modify(|balance| *balance += *amount as i32);
             }
             Event::PaidBackMoney { session_id, amount } => {
                 accounts
                     .entry(*session_id)
-                    .and_modify(|balance| *balance -= amount);
+                    .and_modify(|balance| *balance -= *amount as i32);
             }
             Event::PlacedBet(bet) => {
                 bets.push_back(bet);
@@ -178,6 +182,24 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     }
 
     accounts
+}
+
+pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
+    let mut debt = 0;
+
+    for event in events {
+        match event {
+            Event::BorrowedMoney { session_id, amount } if *session_id == player_id => {
+                debt += amount
+            }
+            Event::PaidBackMoney { session_id, amount } if *session_id == player_id => {
+                debt -= amount
+            }
+            _ => {}
+        };
+    }
+
+    debt
 }
 
 #[instrument(skip_all)]
@@ -254,13 +276,13 @@ mod tests {
         monsters::RaceResults,
     };
 
-    use super::account_balance;
+    use super::all_account_balances;
 
     #[test]
     fn empty() {
         let events = Vector::new();
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(accounts, [].into_iter().collect::<HashMap<Uuid, i32>>())
     }
@@ -285,7 +307,7 @@ mod tests {
             }
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -318,7 +340,7 @@ mod tests {
             Event::BoughtCard { session_id: bob }
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -356,7 +378,7 @@ mod tests {
             },
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -398,7 +420,7 @@ mod tests {
             }
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -441,7 +463,7 @@ mod tests {
             })
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -490,7 +512,7 @@ mod tests {
             })
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -569,7 +591,7 @@ mod tests {
             })
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,
@@ -662,7 +684,7 @@ mod tests {
             }
         ];
 
-        let accounts = account_balance(&events);
+        let accounts = all_account_balances(&events);
 
         assert_eq!(
             accounts,

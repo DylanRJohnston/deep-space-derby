@@ -59,6 +59,9 @@ pub use start_race::StartRace;
 pub mod finish_race;
 pub use finish_race::FinishRace;
 
+pub mod borrow_money;
+pub use borrow_money::BorrowMoney;
+
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub enum Command {
     CreateGame(create_game::Input),

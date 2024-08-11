@@ -46,7 +46,7 @@ impl CommandHandler for PlaceBets {
             bail!("cannot place a bet with a value less than 0");
         }
 
-        let account_balance = projections::account_balance(events)
+        let account_balance = projections::all_account_balances(events)
             .get(&session_id)
             .cloned()
             .unwrap_or_default();

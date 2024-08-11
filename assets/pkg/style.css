@@ -17,6 +17,10 @@ h1 {
   font-weight: 400;
 }
 
+h1, h2, h3 {
+  margin: 0px;
+}
+
 canvas {
   width: 100vw !important;
   height: 100vh !important;
@@ -165,4 +169,212 @@ canvas {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 3em;
+}
+
+.pre-game-container {
+  position: absolute;
+  width: 100%;
+  height: 100vh;
+  background-color: #BBB;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1em;
+  gap: 1em;
+}
+
+p {
+  margin: 0px;
+}
+
+h2 {
+  margin: 0px;
+}
+
+.profile-image {
+  width: 150px;
+  height: 150px;
+  background-color: white;
+  border-radius: 75px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; 
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em; 
+}
+
+.placeholder-image {
+  width: 150px;
+  height: 150px;
+
+  background-color: white;
+  border-radius: 8px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.action {
+  min-height: 4em;
+  background-color: white;
+  border-radius: 8px;
+  padding: 1em;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.double-width {
+  grid-column: span 2;
+}
+
+.card-line {
+  transform-origin: 75px 300px;
+}
+
+.card-one {
+  transform: rotate(-40deg);
+}
+
+.card-two {
+  transform: rotate(-20deg);
+}
+
+.card-three {
+  transform: rotate(0deg);
+}
+
+.card-four {
+  transform: rotate(20deg);
+}
+
+.card-five {
+  transform: rotate(40deg);
+}
+
+.card {
+  position: absolute;
+  width: 150px;
+  height: 300px;
+  background-color: white;
+  left: 0; 
+  right: 0; 
+  margin-left: auto; 
+  margin-right: auto;
+  box-shadow: 0px 3px 15px rgba(0,0,0,0.2);
+  transform-origin: 75px 300px;
+}
+
+.back-button {
+  align-self: flex-start;
+  
+  width: 50px;
+  height: 50px;
+  
+  border-radius: 25px;
+  background-color: white;
+  
+  font-size: 2em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.creature-container {
+  width: 100%;
+  background-color: white;
+  border-radius: 1em;
+  padding: 1em;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
+
+.betting-row {
+  width: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
+
+.betting-row > button {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  border: 4px solid #555;
+  color: #555;
+}
+
+.betting-row > button:disabled {
+  border: 4px solid #eee;
+  color: #eee;
+}
+
+.betting-row > input {
+  border: none;
+  text-align: center;
+  font-size: 40px;
+  width: 150px;
+  border-radius: 8px;
+}
+
+.confirm-bets {
+  width: 100%;
+}
+
+.emoji {
+  font-size: 60px;
+}
+
+.loan-shark {
+  width: 250px;
+  height: 205px;
+
+  background-color: white;
+
+  border-radius: 1em;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bio {
+  font-style: italic;
+  text-align: center;
+}
+
+.race-container {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }

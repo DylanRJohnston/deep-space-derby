@@ -40,6 +40,10 @@ impl CommandHandler for JoinGame {
 
     #[instrument(skip_all, fields(input), err)]
     fn handle(session_id: Uuid, events: &Vector<Event>, input: Self::Input) -> Result<Vec<Event>> {
+        if events.len() == 0 {
+            bail!("cannot join game that doesn't exist");
+        }
+
         if projections::player_exists(events, session_id) {
             return Ok(vec![]);
         }

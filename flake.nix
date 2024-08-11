@@ -216,7 +216,7 @@
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 
-            find {app,shared} | ${pkgs.entr}/bin/entr -n cargo run --package app --bin server &
+            find {app,shared} | ${pkgs.entr}/bin/entr -rn cargo run --package app --bin server &
 
             wait
           '';
@@ -228,7 +228,6 @@
               toolchain
               iconv
               darwin.apple_sdk.frameworks.AppKit
-              wrangler
               nodejs
               wasm-bindgen-cli
               entr

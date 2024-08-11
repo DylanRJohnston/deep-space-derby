@@ -65,5 +65,6 @@ pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
         .register_command_handler::<commands::ChangeProfile>()
         .register_command_handler::<commands::ReadyPlayer>()
         .register_command_handler::<commands::PlaceBets>()
+        .register_command_handler::<commands::BorrowMoney>()
         .with_state(game)
 }
