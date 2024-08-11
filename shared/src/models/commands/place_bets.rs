@@ -1,27 +1,25 @@
-use std::{
-    fmt::Display,
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::fmt::Display;
 
 use anyhow::{bail, Result};
 use im::Vector;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::models::{
     events::{Event, PlacedBet},
-    projections,
+    projections::{self},
 };
 
-use super::{Command, Effect};
+use super::{CommandHandler, API};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Bet {
     pub monster_id: Uuid,
     pub amount: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Input {
     pub bets: Vec<Bet>,
 }
@@ -29,18 +27,17 @@ pub struct Input {
 #[derive(Default)]
 pub struct PlaceBets;
 
-impl Command for PlaceBets {
-    type Input = Input;
-
+impl API for PlaceBets {
     fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/command/place_bet", game_id)
     }
+}
 
-    fn handle(
-        session_id: Uuid,
-        events: &Vector<Event>,
-        input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>)> {
+impl CommandHandler for PlaceBets {
+    type Input = Input;
+
+    #[instrument(skip(events), err)]
+    fn handle(session_id: Uuid, events: &Vector<Event>, input: Self::Input) -> Result<Vec<Event>> {
         if !projections::game_has_started(events) {
             bail!("cannot place a bet if the game hasn't started");
         }
@@ -60,9 +57,27 @@ impl Command for PlaceBets {
             bail!("cannot place a bet with a total value greater than your balance");
         }
 
+        // if total < projections::minimum_bet(events) {
+        //     bail!("bet cannot be less than the minimum bet");
+        // }
+
+        let race_seed = projections::race_seed(events);
+        let monsters = projections::monsters(race_seed);
+        tracing::info!(?race_seed, ?monsters);
+
+        for bet in input.bets.iter() {
+            if !monsters
+                .iter()
+                .any(|monster| bet.monster_id == monster.uuid)
+            {
+                bail!("failed to find monster corresponding to bet");
+            }
+        }
+
         let events = input
             .bets
             .iter()
+            .filter(|bet| bet.amount > 0)
             .map(|bet| {
                 Event::PlacedBet(PlacedBet {
                     session_id,
@@ -72,10 +87,6 @@ impl Command for PlaceBets {
             })
             .collect();
 
-        let maybe_start_race = |events: &Vector<Event>| {
-            projections::all_players_have_bet(events).then_some(Event::RaceStarted {})
-        };
-
-        Ok((events, Some(Effect::SoftCommand(maybe_start_race))))
+        Ok(events)
     }
 }

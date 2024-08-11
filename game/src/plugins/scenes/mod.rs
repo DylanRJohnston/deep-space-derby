@@ -52,7 +52,12 @@ impl Plugin for ScenesPlugin {
             .add_systems(OnEnter(SceneState::Spawning), scene_setup)
             .add_systems(OnEnter(SceneState::Lobby), setup_skybox)
             .add_systems(Update, deserialize_gltf_extras)
-            .add_systems(Update, scene_manager);
+            .add_systems(
+                Update,
+                scene_manager.run_if(|state: Res<State<SceneState>>| {
+                    !matches!(state.get(), SceneState::Loading | SceneState::Spawning)
+                }),
+            );
     }
 }
 
@@ -97,7 +102,6 @@ fn scene_setup(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
     models: Res<Assets<Gltf>>,
-    mut next_state: ResMut<NextState<SceneState>>,
     cameras: Query<Entity, With<Camera>>,
 ) {
     commands.spawn((
@@ -203,9 +207,9 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
     for event in events.0.iter() {
         match event {
             GameEvent::GameCreated { .. } => next_state.set(SceneState::Lobby),
-            GameEvent::GameStarted => next_state.set(SceneState::PreGame),
-            GameEvent::RaceStarted => next_state.set(SceneState::Race),
-            GameEvent::RaceFinished(_) => next_state.set(SceneState::Results),
+            GameEvent::GameStarted { .. } => next_state.set(SceneState::PreGame),
+            GameEvent::RaceStarted { .. } => next_state.set(SceneState::Race),
+            GameEvent::RaceFinished(_) => next_state.set(SceneState::PreGame),
             GameEvent::GameFinished => next_state.set(SceneState::Lobby),
             _ => {}
         }

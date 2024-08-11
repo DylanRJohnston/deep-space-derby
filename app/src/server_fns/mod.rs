@@ -1,10 +1,10 @@
 use leptos::ServerFnError;
-use shared::models::commands::Command;
+use shared::models::commands::{CommandHandler, API};
 use shared::models::game_id::GameID;
 use std::future::Future;
 
 // #[cfg(not(feature = "ssr"))]
-pub fn server_fn<C: Command>(
+pub fn server_fn<C: CommandHandler + API>(
     game_id: GameID,
     input: &C::Input,
 ) -> impl Future<Output = Result<(), ServerFnError>> {

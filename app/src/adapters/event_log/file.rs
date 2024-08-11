@@ -1,8 +1,6 @@
 use std::result::Result::Ok;
-use std::sync::{Arc, RwLock};
 
-use anyhow::{anyhow, Result};
-use im::Vector;
+use anyhow::Result;
 use shared::models::{events::Event, game_id::GameID};
 use tokio::io::AsyncWriteExt;
 use tracing::instrument;

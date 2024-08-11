@@ -4,7 +4,7 @@ use axum::{
     response::Response,
 };
 use shared::models::{
-    commands::{self, Command},
+    commands::{self, API},
     game_id::generate_game_code,
 };
 

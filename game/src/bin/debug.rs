@@ -1,14 +1,7 @@
-use std::ops::{Add, DerefMut};
 
-use bevy::prelude::ResMut;
 use bevy::render::camera::Exposure;
-use bevy::state::state::OnEnter;
 use bevy::{app::Startup, ecs::system::Commands};
-use game::plugins::event_stream::{GameCode, GameEvents};
-use game::plugins::scenes::SceneState;
 use game::{plugins::event_stream::Seed, start};
-use shared::models::events::Event;
-use shared::models::game_id::GameID;
 
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -26,13 +19,13 @@ fn main() {
                 commands.insert_resource(Seed(2))
             });
 
-        app.add_systems(
-            OnEnter(SceneState::Lobby),
-            |mut events: ResMut<GameEvents>| {
-                events.deref_mut().0.push_back(Event::GameCreated {
-                    game_id: GameID::try_from("ABCDEF").unwrap(),
-                });
-            },
-        );
+        // app.add_systems(
+        //     OnEnter(SceneState::Lobby),
+        //     |mut events: ResMut<GameEvents>| {
+        //         events.deref_mut().0.push_back(Event::GameCreated {
+        //             game_id: GameID::try_from("ABCDEF").unwrap(),
+        //         });
+        //     },
+        // );
     });
 }

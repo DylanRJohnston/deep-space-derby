@@ -1,6 +1,6 @@
-use bevy::{prelude::*, transform::commands, utils::tracing};
+use bevy::prelude::*;
 use shared::models::{
-    monsters::{self, RaceResults},
+    monsters::{self, Jump},
     projections,
 };
 
@@ -20,6 +20,7 @@ impl Plugin for RacePlugin {
             .add_systems(Update, spawn_race_spawn_point_on_scene_load)
             .add_systems(OnEnter(SceneState::Race), init_race)
             .add_systems(Update, run_race.run_if(in_state(SceneState::Race)))
+            .add_systems(Update, race_camera.run_if(in_state(SceneState::Race)))
             .observe(reset_race);
 
         #[cfg(feature = "debug")]
@@ -59,8 +60,6 @@ pub fn spawn_race_spawn_point_on_scene_load(
     }
 }
 
-// error[B0001]: Query<(&game::plugins::scenes::race::RaceSpawnPoint, &bevy_transform::components::transform::Transform), ()> in system game::plugins::scenes::race::init_race accesses component(s) bevy_transform::components::transform::Transform in a way that conflicts with a previous system parameter. Consider using `Without<T>` to create disjoint Queries or merging conflicting Queries into a `ParamSet`. See: https://bevyengine.org/learn/errors/#b0001
-
 #[derive(Debug, Event)]
 struct InitRace;
 
@@ -94,9 +93,9 @@ fn reset_race(
 
     let seed = projections::race_seed(&game_events);
     let monsters = projections::monsters(seed);
-    let result = monsters::race(&monsters, seed);
+    let (_, jump) = monsters::race(&monsters, seed);
 
-    commands.insert_resource(Race(result));
+    commands.insert_resource(Race(jump));
 
     race_points
         .into_iter()
@@ -121,9 +120,7 @@ pub struct RaceTimer {
 }
 
 #[derive(Debug, Resource, Deref, DerefMut)]
-struct Race(RaceResults);
-
-const RACE_SPEED: f32 = 0.58;
+struct Race(Vec<Jump>);
 
 impl Default for RaceTimer {
     fn default() -> Self {
@@ -144,24 +141,12 @@ fn run_race(
             continue;
         }
 
-        let Some(round) = race.rounds.get(race_timer.index) else {
-            continue;
-        };
-
-        *race_timer = RaceTimer {
-            index: race_timer.index + 1,
-            timer: Timer::from_seconds(
-                0.0 * (rand::random::<f32>() - 0.5) + RACE_SPEED,
-                TimerMode::Once,
-            ),
-        };
-
-        let Some(moves) = round.get(**id - 1) else {
-            tracing::warn!(?id, "no moves for monster");
-            continue;
-        };
-
-        if *moves <= 0.01 {
+        let Some(jump) = race
+            .0
+            .iter()
+            .filter(|jump| jump.monster_id == (**id - 1))
+            .nth(race_timer.index)
+        else {
             if behaviour_timer.next_state != MonsterBehaviour::Dancing {
                 *behaviour_timer = BehaviourTimer {
                     timer: Timer::from_seconds(0., TimerMode::Once),
@@ -170,11 +155,61 @@ fn run_race(
             }
 
             continue;
-        }
+        };
+
+        let timer = jump.end - jump.start;
+
+        *race_timer = RaceTimer {
+            index: race_timer.index + 1,
+            timer: Timer::from_seconds(f32::max(timer, 0.0), TimerMode::Once),
+        };
 
         *behaviour_timer = BehaviourTimer {
             timer: Timer::from_seconds(0., TimerMode::Once),
-            next_state: MonsterBehaviour::Jumping(*moves),
+            next_state: MonsterBehaviour::Jumping(*jump),
         };
     }
+}
+
+fn race_camera(
+    monsters: Query<(Entity, &Transform), (With<RaceTimer>, Without<Camera>)>,
+    time: Res<Time>,
+    mut camera: Query<(&mut Transform, &mut Projection), With<Camera>>,
+    mut tracking_timer: Local<Timer>,
+    mut leader_id: Local<Option<Entity>>,
+) {
+    let first = || {
+        monsters
+            .iter()
+            .max_by(|(_, a), (_, b)| a.translation.x.total_cmp(&b.translation.x))
+            .unwrap()
+    };
+
+    if tracking_timer.tick(time.delta()).finished() {
+        let monster = first().0;
+
+        *leader_id = Some(monster);
+        *tracking_timer = Timer::from_seconds(1.0, TimerMode::Once);
+    }
+
+    let transform = match leader_id.and_then(|id| monsters.get(id).ok()) {
+        Some((_, transform)) => transform,
+        None => first().1,
+    };
+
+    let (mut camera, mut projection) = camera.get_single_mut().unwrap();
+
+    let Projection::Perspective(ref mut projection) = *projection else {
+        panic!("Camera is not a PerspectiveProjection");
+    };
+
+    projection.fov = projection.fov.lerp(
+        0.05 + (transform.translation.x - 4.0) / 12. * 0.3,
+        time.delta_seconds(),
+    );
+
+    camera.rotation = camera.rotation.lerp(
+        camera.looking_at(transform.translation, Vec3::Y).rotation,
+        time.delta_seconds(),
+    );
 }

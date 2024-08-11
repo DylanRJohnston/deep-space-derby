@@ -82,6 +82,7 @@ enum GameState {
     Lobby,
     PreGame,
     Race,
+    #[allow(dead_code)]
     Summary,
     FinalScreen,
 }
@@ -108,9 +109,9 @@ where
             .rev()
             .find_map(|event| match event {
                 Event::GameCreated { .. } => Some(GameState::Lobby),
-                Event::GameStarted => Some(GameState::PreGame),
+                Event::GameStarted { .. } => Some(GameState::PreGame),
                 Event::RaceStarted { .. } => Some(GameState::Race),
-                Event::RaceFinished { .. } => Some(GameState::Summary),
+                Event::RaceFinished { .. } => Some(GameState::PreGame),
                 Event::GameFinished => Some(GameState::FinalScreen),
                 _ => None,
             })

@@ -5,7 +5,7 @@ use axum::{
 use tracing::instrument;
 
 use crate::{
-    extractors::{GameCode, SessionID},
+    extractors::GameCode,
     ports::game_state::GameState,
     service::InternalServerError,
 };
@@ -38,12 +38,8 @@ pub async fn on_connect<G: GameState>(
     State(game_state): State<G>,
     GameCode { code }: GameCode,
 ) -> Result<Response, InternalServerError> {
-    tracing::info!("connecting websocket");
-
     Ok(ws
         .on_upgrade(move |mut ws| async move {
-            tracing::info!("websocket upgraded");
-
             let result: anyhow::Result<()> = try {
                 for event in game_state.events(code).await?.into_iter() {
                     let message = serde_json::to_string(&event)?;

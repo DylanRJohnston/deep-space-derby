@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use leptos::{leptos_dom::logging::console_log, *};
+use leptos::*;
 use uuid::Uuid;
 
 use crate::{
@@ -80,7 +80,7 @@ pub fn creature_card(
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Bet {
     name: &'static str,
     monster_id: Uuid,
@@ -93,36 +93,32 @@ pub fn pre_game() -> impl IntoView {
     let player_id = use_session_id();
     let events = use_events();
 
-    let minimum_bet = move || projections::minimum_bet(events());
+    let untracked_events = events.get_untracked();
+
+    let minimum_bet = projections::minimum_bet(&untracked_events);
+    let monsters = projections::monsters(projections::race_seed(&untracked_events));
 
     let account_balance = (move || {
         projections::account_balance(&events())
             .get(&player_id)
-            .cloned()
+            .copied()
             .unwrap_or_default()
     })
     .into_signal();
 
-    let monsters = projections::monsters(projections::race_seed(&events.get_untracked()));
-
-    let bets = monsters
-        .iter()
-        .map(|Monster { name, uuid, .. }| Bet {
+    let bets = {
+        monsters.map(|Monster { name, uuid, .. }| Bet {
             name,
             monster_id: *uuid,
             amount: create_rw_signal(0),
         })
-        .collect::<Vec<_>>();
+    };
 
-    let sum_of_bets = Signal::derive({
-        let bets = bets.clone();
-        move || bets.iter().map(|bet| (bet.amount)()).sum::<i32>()
-    });
+    let sum_of_bets = Signal::derive(move || bets.iter().map(|bet| (bet.amount)()).sum::<i32>());
 
     let available_money = Signal::derive(move || max(account_balance() - sum_of_bets(), 0));
 
     let place_bets = create_action({
-        let bets = bets.clone();
         move |_: &()| {
             server_fn::<PlaceBets>(
                 game_id,
@@ -130,12 +126,12 @@ pub fn pre_game() -> impl IntoView {
                     bets: {
                         let bets = bets
                             .iter()
+                            .filter(|bet| bet.amount.get() > 0)
                             .map(|bet| place_bets::Bet {
                                 monster_id: bet.monster_id,
                                 amount: (bet.amount)(),
                             })
                             .collect();
-                        console_log(&format!("{:#?}", bets));
                         bets
                     },
                 },
@@ -151,7 +147,6 @@ pub fn pre_game() -> impl IntoView {
     });
 
     create_effect({
-        let bets = bets.clone();
         move |_| {
             let placed_bets = placed_bets();
 
@@ -160,7 +155,7 @@ pub fn pre_game() -> impl IntoView {
             }
 
             for placed_bet in placed_bets {
-                for bet in bets.iter() {
+                for bet in bets {
                     if bet.monster_id == placed_bet.monster_id {
                         bet.amount.set(placed_bet.amount);
                     }
@@ -191,8 +186,8 @@ pub fn pre_game() -> impl IntoView {
             </div>
             <div class="creature-line">
                 <For
-                    each=move || bets.clone()
-                    key=|it| it.clone()
+                    each=move || bets
+                    key=|it| *it
                     children=move |Bet { name, amount, .. }| {
                         view! { <CreatureCard name amount available_money disabled=disabled/> }
                     }

@@ -13,12 +13,7 @@ pub struct EventStreamPlugin;
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
-            .add_systems(
-                Update,
-                read_event_stream.run_if(|state: Res<State<SceneState>>| {
-                    !matches!(state.get(), SceneState::Loading | SceneState::Spawning)
-                }),
-            )
+            .add_systems(Update, read_event_stream)
             .add_systems(Update, transition_debug);
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -78,7 +73,7 @@ fn transition_debug(
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(js_name = "sendGameEvent")]
-pub fn send_game_event(event: Event) -> Result<(), JsError> {
+pub fn send_game_event(event: Event) -> Result<(), wasm_bindgen::JsError> {
     EVENT_CHANNEL.sender.send(event).map_err(Into::into)
 }
 

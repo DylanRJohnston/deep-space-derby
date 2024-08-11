@@ -1,4 +1,4 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::hash::Hash;
 
 use crate::models::monsters::MONSTERS;
 
@@ -9,6 +9,7 @@ use super::{
 };
 use im::{HashMap, Vector};
 use rand::SeedableRng;
+use tracing::instrument;
 use uuid::Uuid;
 
 pub fn player_count(events: &Vector<Event>) -> usize {
@@ -64,7 +65,7 @@ pub fn players(events: &Vector<Event>) -> HashMap<Uuid, PlayerInfo> {
 
 pub fn game_has_started(events: &Vector<Event>) -> bool {
     for event in events {
-        if let Event::GameStarted = event {
+        if let Event::GameStarted { .. } = event {
             return true;
         }
     }
@@ -92,7 +93,7 @@ pub fn all_players_ready(events: &Vector<Event>) -> bool {
     players(events).values().all(|player| player.ready)
 }
 
-pub fn minimum_bet(events: Vector<Event>) -> i32 {
+pub fn minimum_bet(events: &Vector<Event>) -> i32 {
     let mut starting_bet = 100;
 
     for event in events {
@@ -179,10 +180,14 @@ pub fn account_balance(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     accounts
 }
 
+#[instrument(skip_all)]
 pub fn game_id(events: &Vector<Event>) -> GameID {
     match events.get(0) {
         Some(Event::GameCreated { game_id, .. }) => *game_id,
-        _ => "ABCDEF".try_into().unwrap(),
+        event => {
+            tracing::error!(?event, "first event wasn't game_created");
+            unreachable!()
+        }
     }
 }
 
@@ -201,11 +206,20 @@ pub fn round(events: &Vector<Event>) -> u64 {
 }
 
 // Have to use u32 instead of u64 because JS can't handle u64
+#[instrument(skip_all)]
 pub fn race_seed(events: &Vector<Event>) -> u32 {
-    let mut hasher = DefaultHasher::new();
-    game_id(events).hash(&mut hasher);
+    let fuck = game_id(events).bytes();
+    let fuck = fuck.as_chunks::<4>().0[0];
 
-    (hasher.finish() ^ round(events)) as u32
+    let game_id = u32::from_be_bytes(fuck);
+
+    let round = round(events) as u32;
+
+    let seed = game_id.wrapping_add(round);
+
+    tracing::info!(?seed);
+
+    seed
 }
 
 pub fn monsters(race_seed: u32) -> [&'static Monster; 3] {
@@ -218,6 +232,15 @@ pub fn monsters(race_seed: u32) -> [&'static Monster; 3] {
         .collect::<Vec<_>>()
         .try_into()
         .unwrap()
+}
+
+pub fn race_duration(events: &Vector<Event>) -> f32 {
+    let race_seed = race_seed(events);
+    let monsters = monsters(race_seed);
+
+    let (_, jumps) = crate::models::monsters::race(&monsters, race_seed);
+
+    jumps.last().unwrap().end
 }
 
 #[cfg(test)]
@@ -464,7 +487,6 @@ mod tests {
                 first: monster_a,
                 second: monster_b,
                 third: monster_c,
-                rounds: Vec::new(),
             })
         ];
 
@@ -514,7 +536,6 @@ mod tests {
                 first: monster_a,
                 second: monster_b,
                 third: monster_c,
-                rounds: Vec::new(),
             }),
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -530,7 +551,6 @@ mod tests {
                 first: monster_b,
                 second: monster_a,
                 third: monster_c,
-                rounds: Vec::new(),
             }),
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -546,7 +566,6 @@ mod tests {
                 first: monster_c,
                 second: monster_b,
                 third: monster_a,
-                rounds: Vec::new(),
             })
         ];
 
@@ -597,7 +616,6 @@ mod tests {
                 first: monster_a,
                 second: monster_b,
                 third: monster_c,
-                rounds: Vec::new(),
             }),
             Event::BoughtCard { session_id: bob },
             Event::BorrowedMoney {
@@ -622,7 +640,6 @@ mod tests {
                 first: monster_b,
                 second: monster_a,
                 third: monster_c,
-                rounds: Vec::new(),
             }),
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -638,7 +655,6 @@ mod tests {
                 first: monster_c,
                 second: monster_b,
                 third: monster_a,
-                rounds: Vec::new(),
             }),
             Event::PaidBackMoney {
                 session_id: bob,

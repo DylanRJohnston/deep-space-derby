@@ -5,13 +5,13 @@ use axum::{
     response::Response,
     Form,
 };
-use shared::models::commands::{self, Command, JoinGame};
+use shared::models::commands::{self, CommandHandler, JoinGame, API};
 
 #[tracing::instrument(skip_all, err)]
 pub async fn join_game<G: GameService>(
     State(mut game_service): State<G>,
     headers: HeaderMap,
-    Form(join_game): Form<<JoinGame as Command>::Input>,
+    Form(join_game): Form<<JoinGame as CommandHandler>::Input>,
 ) -> Result<Response, InternalServerError> {
     let mut req = Request::post(format!(
         "https://DURABLE_OBJECT{}",

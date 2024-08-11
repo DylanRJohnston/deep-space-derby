@@ -1,26 +1,26 @@
 use std::fmt::Display;
 
-use super::{Command, Effect};
+use super::{CommandHandler, API};
 use crate::models::{events::Event, projections};
 use anyhow::{bail, Result};
 use im::Vector;
 use uuid::Uuid;
 
+pub type Input = ();
+
 #[derive(Default)]
 pub struct ReadyPlayer;
 
-impl Command for ReadyPlayer {
-    type Input = ();
-
+impl API for ReadyPlayer {
     fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/commands/ready_player", game_id)
     }
+}
 
-    fn handle(
-        session_id: Uuid,
-        events: &Vector<Event>,
-        _input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>)> {
+impl CommandHandler for ReadyPlayer {
+    type Input = ();
+
+    fn handle(session_id: Uuid, events: &Vector<Event>, _input: Self::Input) -> Result<Vec<Event>> {
         if !projections::player_exists(events, session_id) {
             bail!("cannot ready a player that doesn't exist");
         }
@@ -31,10 +31,6 @@ impl Command for ReadyPlayer {
 
         let events = vec![Event::PlayerReady { session_id }];
 
-        let maybe_start_game = |events: &Vector<Event>| {
-            projections::all_players_ready(events).then_some(Event::GameStarted)
-        };
-
-        Ok((events, Some(Effect::SoftCommand(maybe_start_game))))
+        Ok(events)
     }
 }

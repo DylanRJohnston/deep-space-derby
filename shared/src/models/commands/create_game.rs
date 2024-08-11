@@ -8,9 +8,9 @@ use uuid::Uuid;
 
 use crate::models::{events::Event, game_id::GameID};
 
-use super::{Command, Effect, GameCode};
+use super::{CommandHandler, GameCode, API};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Input {
     pub code: GameID,
 }
@@ -24,9 +24,7 @@ impl GameCode for Input {
 #[derive(Default)]
 pub struct CreateGame;
 
-impl Command for CreateGame {
-    type Input = Input;
-
+impl API for CreateGame {
     fn url(game_id: impl Display) -> String {
         format!("/api/object/game/by_code/{}/commands/create_game", game_id)
     }
@@ -34,23 +32,19 @@ impl Command for CreateGame {
     fn redirect(game_id: impl Display) -> Option<String> {
         Some(format!("/host/{}", game_id))
     }
+}
+
+impl CommandHandler for CreateGame {
+    type Input = Input;
 
     #[instrument(name = "CreateGame::handle", err)]
-    fn handle(
-        session_id: Uuid,
-        events: &Vector<Event>,
-        input: Self::Input,
-    ) -> Result<(Vec<Event>, Option<Effect>)> {
+    fn handle(session_id: Uuid, events: &Vector<Event>, input: Self::Input) -> Result<Vec<Event>> {
         if !events.is_empty() {
             bail!("create game cannot be called after the game has already been created");
         }
 
-        Ok((
-            vec![Event::GameCreated {
-                game_id: input.code,
-                // session_id,
-            }],
-            None,
-        ))
+        Ok(vec![Event::GameCreated {
+            game_id: input.code,
+        }])
     }
 }

@@ -46,8 +46,8 @@ pub fn monster_card(monster: &'static Monster) -> impl IntoView {
 
 #[component]
 pub fn pre_game() -> impl IntoView {
-    let events = use_events();
-    let monsters = move || projections::monsters(projections::race_seed(&events()));
+    // let events = use_events();
+    // let monsters = move || projections::monsters(projections::race_seed(&events()));
 
     view! {
         // <div class="vertical-stack full-width full-height container">

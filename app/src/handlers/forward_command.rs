@@ -11,8 +11,6 @@ pub async fn forward_command<G: GameService>(
     Path((code, _)): Path<(String, String)>,
     req: Request,
 ) -> Result<Response, InternalServerError> {
-    tracing::info!("forwarding command to game service");
-
     let response = service.call((code, req)).await?;
 
     Ok(response)

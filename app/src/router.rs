@@ -5,16 +5,14 @@ use axum::{
     middleware::Next,
     routing::{any, get, post},
 };
-use http::Uri;
 use leptos::{leptos_config, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use shared::models::commands;
-use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 
 use crate::{
     handlers::{
         create_game::create_game, forward_command::forward_command, join_game::join_game,
-        on_connect::on_connect, register_command::CommandHandler,
+        on_connect::on_connect, register_command::RegisterCommandExt,
     },
     middleware::session_middleware,
     ports::game_state::GameState,
@@ -47,8 +45,6 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
             screens::App,
         )
         .layer(axum::middleware::from_fn(|req: Request, next: Next| {
-            tracing::info!("received request");
-
             next.run(req)
         }));
 
@@ -59,31 +55,15 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
 }
 
 pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
-    tracing::info!(
-        game_state = std::any::type_name::<G>(),
-        "constructing game router"
-    );
-
     axum::Router::new()
         .route(
             "/api/object/game/by_code/:code/connect",
             get(on_connect::<G>),
         )
-        .register_command::<commands::CreateGame>()
-        .register_command::<commands::JoinGame>()
-        .register_command::<commands::ChangeProfile>()
-        .register_command::<commands::ReadyPlayer>()
-        .register_command::<commands::PlaceBets>()
-        .layer(axum::middleware::from_fn(
-            |uri: Uri, request: Request, next: Next| async move {
-                tracing::info!(?uri, method = ?request.method(), "game router received request");
-
-                let response = next.run(request).await;
-
-                tracing::info!(?response, "game router response");
-
-                response
-            },
-        ))
+        .register_command_handler::<commands::CreateGame>()
+        .register_command_handler::<commands::JoinGame>()
+        .register_command_handler::<commands::ChangeProfile>()
+        .register_command_handler::<commands::ReadyPlayer>()
+        .register_command_handler::<commands::PlaceBets>()
         .with_state(game)
 }

@@ -16,6 +16,16 @@ use serde::{
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct GameID([u8; 6]);
 
+impl GameID {
+    pub fn random() -> Self {
+        generate_game_code()
+    }
+
+    pub fn bytes(&self) -> [u8; 6] {
+        self.0
+    }
+}
+
 pub fn generate_game_code() -> GameID {
     GameID(
         Uniform::from(b'A'..=b'Z')

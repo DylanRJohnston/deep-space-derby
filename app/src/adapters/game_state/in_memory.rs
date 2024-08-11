@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, pin::Pin, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use anyhow::Result;
@@ -58,5 +58,13 @@ impl GameState for InMemoryGameState {
         game.sockets.lock().await.push(ws);
 
         Ok(())
+    }
+
+    fn set_alarm(
+        &self,
+        _: GameID,
+        _: std::time::Duration,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + '_>> {
+        unimplemented!()
     }
 }

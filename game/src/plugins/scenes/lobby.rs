@@ -18,7 +18,7 @@ impl Plugin for LobbyPlugin {
                     }
                 },
             )
-            .add_systems(Update, spawn_racers)
+            .add_systems(OnEnter(SceneState::Lobby), spawn_racers)
             .add_systems(Update, orbit_camera.run_if(in_state(SceneState::Lobby)));
     }
 }

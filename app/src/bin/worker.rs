@@ -6,11 +6,7 @@
 
 use std::io;
 
-use app::router::into_outer_router;
-use axum::response::Response;
-use tower::Service;
-use tracing::instrument;
-use worker::{console_log, event, Env};
+use worker::{console_log, event};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct ConsoleWriter(Vec<u8>);
@@ -42,15 +38,17 @@ pub fn start() {
 
 #[cfg(target_arch = "wasm32")]
 #[event(fetch)]
-#[instrument(skip_all)]
+#[tracing::instrument(skip_all)]
 pub async fn fetch(
     req: worker::HttpRequest,
-    env: Env,
+    env: worker::Env,
     _ctx: worker::Context,
-) -> worker::Result<Response> {
+) -> worker::Result<axum::response::Response> {
+    use tower::Service;
+
     let game = app::service::durable_object::DurableObjectGameService { env };
 
-    Ok(into_outer_router(game).call(req).await?)
+    Ok(app::router::into_outer_router(game).call(req).await?)
 }
 
 pub fn main() {}

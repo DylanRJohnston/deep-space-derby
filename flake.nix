@@ -209,22 +209,15 @@
               echo "$(bindgen $GAME_TARGET game web ./site/pkg)"
             }
 
-            # Need to build things synchronously first so they're available for wangler
-            $(build_client)
-            $(bindgen_client)
-
-            $(build_game)
-            $(bindgen_game)
-
-            find app | ${pkgs.entr}/bin/entr -n cargo run --package app --bin server &
-            find app | ${pkgs.entr}/bin/entr -n $(build_client) &
-            find game | ${pkgs.entr}/bin/entr -n $(build_game) &
-
+            find {app,shared} | ${pkgs.entr}/bin/entr -n $(build_client) &
             echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
+
+            find {game,shared} | ${pkgs.entr}/bin/entr -n $(build_game) &
             echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 
+            find {app,shared} | ${pkgs.entr}/bin/entr -n cargo run --package app --bin server &
 
             wait
           '';
