@@ -547,38 +547,33 @@ input[type="number"] {
   backdrop-filter: blur(8px); 
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
+
+  gap: 2em;
 }
 
 /* HTML: <div class="loader"></div> */
+/* HTML: <div class="loader"></div> */
 .loader {
-  width: 50px;
-  aspect-ratio: 1;
-  display: grid;
-  border: 4px solid #0000;
+  width: 60px;
+  height: 25px;
+  border: 2px solid;
+  box-sizing: border-box;
   border-radius: 50%;
-  border-color: #ccc #0000;
-  animation: l16 1s infinite linear;
+  display: grid;
+  animation: l2 2s infinite linear;
 }
-
-.loader::before,
-.loader::after {    
+.loader:before,
+.loader:after {
   content: "";
   grid-area: 1/1;
-  margin: 2px;
   border: inherit;
   border-radius: 50%;
+  animation: inherit;
+  animation-duration: 3s;
 }
-
-.loader::before {
-  border-color: #a433f0 #0000;
-  animation: inherit; 
-  animation-duration: .5s;
-  animation-direction: reverse;
+.loader:after {
+  --s:-1;
 }
-.loader::after {
-  margin: 8px;
-}
-
-@keyframes l16 { 
-  100%{transform: rotate(1turn)}
+@keyframes l2 {
+   100% {transform:rotate(calc(var(--s,1)*1turn))}
 }

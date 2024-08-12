@@ -18,28 +18,28 @@ pub fn game_connection_wrapper(#[prop(optional)] children: Option<ChildrenFn>) -
     (move || match connection.get() {
         Connection::Connecting => view! {
             <div class="server-status">
-                <h1>"Connecting..."</h1>
+                <h2>"Connecting..."</h2>
                 <div class="loader"></div>
             </div>
         }
         .into_view(),
         Connection::Errored => view! {
             <div class="server-status">
-                <h1>"Error"</h1>
-                <h1>"Refresh the page"</h1>
+                <h2>"Error"</h2>
+                <h2>"Refresh the page"</h2>
             </div>
         }
         .into_view(),
         Connection::Reconnecting => view! {
             <div class="server-status">
-                <h1>"Reconnecting..."</h1>
+                <h2>"Reconnecting..."</h2>
                 <div class="loader"></div>
             </div>
         }
         .into_view(),
         Connection::Closed => view! {
             <div class="server-status">
-                <h1>"Refresh the page"</h1>
+                <h2>"Refresh the page"</h2>
             </div>
         }
         .into_view(),
