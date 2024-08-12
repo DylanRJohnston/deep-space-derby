@@ -10,28 +10,28 @@ use super::CommandHandler;
 
 pub type Input = ();
 
-pub struct StartGame;
+pub struct StartRound;
 
-impl CommandHandler for StartGame {
+impl CommandHandler for StartRound {
     type Input = ();
 
-    #[instrument(name = "StartGame::handle", err)]
+    #[instrument(name = "StartRound::handle", err)]
     fn handle(
         session_id: uuid::Uuid,
         events: &im::Vector<Event>,
         input: Self::Input,
     ) -> anyhow::Result<Vec<Event>> {
         if session_id != Uuid::nil() {
-            bail!("players may not start the race");
+            bail!("players may not start the round");
         }
 
         //TODO: Can server can override??
         if !projections::all_players_ready(events) {
-            bail!("game can only start if all players are ready");
+            bail!("round can only start if all players are ready");
         }
 
-        Ok(vec![Event::GameStarted {
-            start: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as u32,
+        Ok(vec![Event::RoundStarted {
+            time: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as u32,
         }])
     }
 }

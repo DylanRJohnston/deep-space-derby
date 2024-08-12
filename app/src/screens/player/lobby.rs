@@ -33,15 +33,15 @@ pub fn lobby() -> impl IntoView {
     });
 
     view! {
-        <div class="vertical-stack container full-width full-height">
+        <div class="vertical-stack container full-width full-height justify-center">
             <div class="headroom">
-                <div class="header right-aligned">"Lobby = " {game_id.to_string()}</div>
+                <div class="header left-aligned">"Lobby Code: " {game_id.to_string()}</div>
             </div>
             {move || {
                 if !player().ready {
                     view! {
                         <h1>"Profile"</h1>
-                        <div class="avatar-img">"Image"</div>
+                        <div class="profile-image">"Image"</div>
 
                         <div class="vertical-stack container input">
                             <label for="name">"Name:"</label>
@@ -64,7 +64,7 @@ pub fn lobby() -> impl IntoView {
                 } else {
                     view! {
                         <span>"Waiting for other players..."</span>
-                        <div class="avatar-img">"Image"</div>
+                        <div class="profile-image">"Image"</div>
 
                         <h1>{player().name}</h1>
                         <span>"Ready"</span>

@@ -5613,6 +5613,7 @@ dependencies = [
  "tracing",
  "uuid",
  "wasm-bindgen",
+ "web-time",
 ]
 
 [[package]]

@@ -40,28 +40,17 @@ pub fn creature_card(
         <div class="creature-container">
             <h3>{name}</h3>
             <div class="betting-row">
-                <button
-                    on:click=decrement
-                    disabled=move || (amount() <= 0)
-                >
+                <button on:click=decrement disabled=move || (amount() <= 0)>
                     "-"
-                    // {increment_size}
+                // {increment_size}
                 </button>
-                <input
-                    type="number"
-                    prop:value=amount
-                    on:input=arbitrary_amount
-                />
-                <button
-                    on:click=increment
-                    disabled=move || (available_money() <= 0)
-                >
+                <input type="number" prop:value=amount on:input=arbitrary_amount/>
+                <button on:click=increment disabled=move || (available_money() <= 0)>
                     "+"
-                    // {increment_size}
+                // {increment_size}
                 </button>
             </div>
         </div>
-
     }
 }
 
@@ -173,9 +162,9 @@ pub fn pre_game() -> impl IntoView {
                 <h2>{player_name}</h2>
                 <div class="finance">
                     <span style="justify-self: end">"Funds:"</span>
-                    <span>"💎 "{available_money}</span>
+                    <span>"💎 " {available_money}</span>
                     <span style="justify-self: end">"Debt:"</span>
-                    <span>"💎 "{debt}</span>
+                    <span>"💎 " {debt}</span>
                 </div>
             </div>
             <div class="action-grid">
@@ -189,8 +178,12 @@ pub fn pre_game() -> impl IntoView {
                     <p>"Buy a card"</p>
                     <p>"(💎 100)"</p>
                 </div>
-                <div class="action" on:click=move |_| toggle_loan_modal()>"Loan Shark"</div>
-                <div class="action double-width" on:click=move |_| toggle_bets_modal()>"Place Bet"</div>
+                <div class="action" on:click=move |_| toggle_loan_modal()>
+                    "Loan Shark"
+                </div>
+                <div class="action double-width" on:click=move |_| toggle_bets_modal()>
+                    "Place Bet"
+                </div>
             </div>
             <div class="card-line">
                 <div class="card card-two"></div>
@@ -198,27 +191,28 @@ pub fn pre_game() -> impl IntoView {
                 <div class="card card-four"></div>
             </div>
         </div>
-        <Show when=bets_modal fallback=||view!{}>
+        <Show when=bets_modal fallback=|| view! {}>
             <div class="pre-game-container blurred">
-                <div class="back-button" on:click=move |_| toggle_bets_modal()>"←"</div>
+                <div class="back-button" on:click=move |_| toggle_bets_modal()>
+                    "←"
+                </div>
                 <h2>"Place your Bets"</h2>
-                <p>"Available: 💎 "{available_money}</p>
+                <p>"Available: 💎 " {available_money}</p>
                 <For
                     each=move || bets
                     key=|it| *it
                     children=move |Bet { name, amount, .. }| {
-                        view! {
-                            <CreatureCard name amount available_money />
-                        }
+                        view! { <CreatureCard name amount available_money/> }
                     }
                 />
+
                 <div class="action confirm-bets" on:click=move |_| place_bets.dispatch(())>
                     "Confirm bets"
                 </div>
             </div>
         </Show>
-        <Show when=loan_modal fallback=|| view!{}>
-            <LoanModal debt=debt.into_signal() account_balance close=toggle_loan_modal  />
+        <Show when=loan_modal fallback=|| view! {}>
+            <LoanModal debt=debt.into_signal() account_balance close=toggle_loan_modal/>
         </Show>
     }
 }
@@ -263,42 +257,38 @@ fn loan_modal(
 
     view! {
         <div class="pre-game-container blurred">
-            <div class="back-button" on:click=move |_| close()>"←"</div>
+            <div class="back-button" on:click=move |_| close()>
+                "←"
+            </div>
             <h1>"Loan shark"</h1>
             <div class="loan-shark">"🦈"</div>
             <p class="bio">"\"I'm a shark, How much do you want to borrow?\""</p>
             <p>"Interest Rate: 5.1%/pr"</p>
             <div class="creature-container">
-                <p style="text-align: center;">"Current debt:  💎 "{debt}{move || (debt() == 1000).then(|| view! { "(max)"})}</p>
+                <p style="text-align: center;">
+                    "Current debt:  💎 " {debt}
+                    {move || (debt() == 1000).then(|| view! { "(max)" })}
+                </p>
                 <div class="betting-row">
-                    <button
-                        on:click=decrement
-                        disabled=move || (borrow() <= minimum())
-                    >
+                    <button on:click=decrement disabled=move || (borrow() <= minimum())>
                         "-"
                     </button>
-                    <input
-                        type="number"
-                        prop:value=borrow
-                        on:input=set_borrow_from_input
-                    />
-                    <button
-                        on:click=increment
-                        disabled=move || (total_debt() >= 1000)
-                    >
+                    <input type="number" prop:value=borrow on:input=set_borrow_from_input/>
+                    <button on:click=increment disabled=move || (total_debt() >= 1000)>
                         "+"
                     </button>
                 </div>
             </div>
             <div class="action confirm-bets" on:click=move |_| borrow_money.dispatch(borrow())>
-                {
-                    move ||
-                        if borrow() >= 0 {
-                            view!{ "Borrow" }
-                        } else {
-                            view! { "Payback" }
-                        }
-                }
+
+                {move || {
+                    if borrow() >= 0 {
+                        view! { "Borrow" }
+                    } else {
+                        view! { "Payback" }
+                    }
+                }}
+
             </div>
         </div>
     }

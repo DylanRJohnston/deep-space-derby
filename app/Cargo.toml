@@ -76,7 +76,12 @@ native = [
   "tower-http/fs",
   "tower-http/trace",
 ]
-hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+hydrate = [
+  "leptos/hydrate",
+  "leptos_meta/hydrate",
+  "leptos_router/hydrate",
+  "shared/wasm",
+]
 ssr = [
   "dep:axum",
   "dep:axum-extra",

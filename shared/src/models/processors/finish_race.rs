@@ -22,14 +22,16 @@ impl AlarmProcessor for FinishRace {
 
 impl Processor for FinishRace {
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
-        let Some(Event::RaceStarted { start }) = events.last() else {
+        let Some(Event::RaceStarted { time: start }) = events.last() else {
             return None;
         };
 
         let duration = projections::race_duration(events);
 
         if SystemTime::now()
-            >= UNIX_EPOCH + Duration::from_secs(*start as u64) + Duration::from_secs_f32(duration)
+            >= UNIX_EPOCH
+                + Duration::from_secs(*start as u64)
+                + Duration::from_secs_f32(duration - 1.)
         {
             return Some(Command::FinishRace(()));
         }

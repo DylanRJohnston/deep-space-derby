@@ -207,9 +207,9 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
     for event in events.0.iter() {
         match event {
             GameEvent::GameCreated { .. } => next_state.set(SceneState::Lobby),
-            GameEvent::GameStarted { .. } => next_state.set(SceneState::PreGame),
+            GameEvent::RoundStarted { .. } => next_state.set(SceneState::PreGame),
             GameEvent::RaceStarted { .. } => next_state.set(SceneState::Race),
-            GameEvent::RaceFinished(_) => next_state.set(SceneState::PreGame),
+            GameEvent::RaceFinished { .. } => next_state.set(SceneState::PreGame),
             GameEvent::GameFinished => next_state.set(SceneState::Lobby),
             _ => {}
         }

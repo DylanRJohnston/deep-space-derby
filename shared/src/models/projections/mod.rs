@@ -1,4 +1,10 @@
-use std::hash::Hash;
+use std::{hash::Hash, time::Duration};
+
+#[cfg(feature = "wasm")]
+use web_time::{SystemTime, UNIX_EPOCH};
+
+#[cfg(not(feature = "wasm"))]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::monsters::MONSTERS;
 
@@ -6,6 +12,7 @@ use super::{
     events::{Event, PlacedBet},
     game_id::GameID,
     monsters::{Monster, RaceResults},
+    processors::start_race::PRE_GAME_TIMEOUT,
 };
 use im::{HashMap, Vector};
 use rand::SeedableRng;
@@ -69,7 +76,7 @@ pub fn player_info(events: &Vector<Event>, player: Uuid) -> Option<PlayerInfo> {
 
 pub fn game_has_started(events: &Vector<Event>) -> bool {
     for event in events {
-        if let Event::GameStarted { .. } = event {
+        if let Event::RoundStarted { .. } = event {
             return true;
         }
     }
@@ -123,6 +130,22 @@ pub fn placed_bets(events: &Vector<Event>) -> HashMap<Uuid, Vector<PlacedBet>> {
     bets
 }
 
+pub fn player_has_bet(events: &Vector<Event>, player_id: Uuid) -> bool {
+    let mut player_has_bet = false;
+
+    for event in events {
+        match event {
+            Event::PlacedBet(PlacedBet { session_id, .. }) if player_id == *session_id => {
+                player_has_bet = true
+            }
+            Event::RaceFinished { .. } => player_has_bet = false,
+            _ => {}
+        }
+    }
+
+    player_has_bet
+}
+
 pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     let players = players(events);
     let bets = placed_bets(events);
@@ -166,7 +189,10 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
             }
-            Event::RaceFinished(RaceResults { first, .. }) => {
+            Event::RaceFinished {
+                results: RaceResults { first, .. },
+                ..
+            } => {
                 for bet in bets.iter() {
                     accounts.entry(bet.session_id).and_modify(|account| {
                         if bet.monster_id == *first {
@@ -184,6 +210,36 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     accounts
 }
 
+pub fn winnings(events: &Vector<Event>) -> HashMap<Uuid, i32> {
+    let mut winnings = HashMap::new();
+    let mut bets = Vec::new();
+
+    for event in events {
+        match event {
+            Event::RoundStarted { .. } => {
+                winnings.clear();
+                bets.clear();
+            }
+            Event::PlacedBet(bet) => {
+                bets.push(*bet);
+            }
+            Event::RaceFinished { results, .. } => {
+                for bet in bets.iter() {
+                    *winnings.entry(bet.session_id).or_default() +=
+                        if bet.monster_id == results.first {
+                            bet.amount
+                        } else {
+                            -1 * bet.amount
+                        }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    winnings
+}
+
 pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
     let mut debt = 0;
 
@@ -195,7 +251,7 @@ pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
             Event::PaidBackMoney { session_id, amount } if *session_id == player_id => {
                 debt -= amount
             }
-            Event::RaceFinished(_) => debt = ((debt as f32) * 1.051) as u32,
+            Event::RaceFinished { .. } => debt = ((debt as f32) * 1.051) as u32,
             _ => {}
         };
     }
@@ -220,7 +276,7 @@ pub fn round(events: &Vector<Event>) -> u64 {
     for event in events {
         match event {
             Event::GameCreated { .. } => round += 1,
-            Event::RaceFinished(_) => round += 1,
+            Event::RaceFinished { .. } => round += 1,
             _ => {}
         }
     }
@@ -266,6 +322,29 @@ pub fn race_duration(events: &Vector<Event>) -> f32 {
     jumps.last().unwrap().end
 }
 
+pub fn time_left_in_pregame(events: &Vector<Event>) -> u64 {
+    let Some(start) = events
+        .iter()
+        .rev()
+        .find_map(|event| match event {
+            Event::RoundStarted { time: start } => Some(start),
+            _ => None,
+        })
+        .copied()
+    else {
+        return 0;
+    };
+
+    match (UNIX_EPOCH
+        + Duration::from_secs(start as u64)
+        + Duration::from_secs(PRE_GAME_TIMEOUT as u64))
+    .duration_since(SystemTime::now())
+    {
+        Ok(it) => it.as_secs(),
+        Err(_) => 0,
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -274,6 +353,7 @@ mod tests {
 
     use crate::models::{
         events::{Event, PlacedBet},
+        game_id::GameID,
         monsters::RaceResults,
     };
 
@@ -506,11 +586,14 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(RaceResults {
-                first: monster_a,
-                second: monster_b,
-                third: monster_c,
-            })
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                }
+            }
         ];
 
         let accounts = all_account_balances(&events);
@@ -555,11 +638,14 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(RaceResults {
-                first: monster_a,
-                second: monster_b,
-                third: monster_c,
-            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                }
+            },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_a,
@@ -570,11 +656,14 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(RaceResults {
-                first: monster_b,
-                second: monster_a,
-                third: monster_c,
-            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_b,
+                    second: monster_a,
+                    third: monster_c,
+                }
+            },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_b,
@@ -585,11 +674,14 @@ mod tests {
                 monster_id: monster_c,
                 amount: 300
             }),
-            Event::RaceFinished(RaceResults {
-                first: monster_c,
-                second: monster_b,
-                third: monster_a,
-            })
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_c,
+                    second: monster_b,
+                    third: monster_a,
+                }
+            }
         ];
 
         let accounts = all_account_balances(&events);
@@ -635,11 +727,14 @@ mod tests {
                 monster_id: monster_b,
                 amount: 500
             }),
-            Event::RaceFinished(RaceResults {
-                first: monster_a,
-                second: monster_b,
-                third: monster_c,
-            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                }
+            },
             Event::BoughtCard { session_id: bob },
             Event::BorrowedMoney {
                 session_id: bob,
@@ -659,11 +754,14 @@ mod tests {
                 session_id: alice,
                 amount: 100
             },
-            Event::RaceFinished(RaceResults {
-                first: monster_b,
-                second: monster_a,
-                third: monster_c,
-            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_b,
+                    second: monster_a,
+                    third: monster_c,
+                }
+            },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_b,
@@ -674,11 +772,14 @@ mod tests {
                 monster_id: monster_c,
                 amount: 300
             }),
-            Event::RaceFinished(RaceResults {
-                first: monster_c,
-                second: monster_b,
-                third: monster_a,
-            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_c,
+                    second: monster_b,
+                    third: monster_a,
+                }
+            },
             Event::PaidBackMoney {
                 session_id: bob,
                 amount: 500
@@ -693,5 +794,69 @@ mod tests {
                 .into_iter()
                 .collect::<HashMap<Uuid, i32>>()
         )
+    }
+
+    #[test]
+    fn winnings() {
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+        let carol = Uuid::new_v4();
+
+        let monster_a = Uuid::new_v4();
+        let monster_b = Uuid::new_v4();
+        let monster_c = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::PlayerJoined {
+                name: "Carol".into(),
+                session_id: carol
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_a,
+                amount: 100
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_b,
+                amount: 100
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_b,
+                amount: 100
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: carol,
+                monster_id: monster_a,
+                amount: 100
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_b,
+                    second: monster_a,
+                    third: monster_c
+                }
+            }
+        ];
+
+        let winnings = super::winnings(&events);
+
+        assert_eq!(
+            winnings,
+            HashMap::from([(alice, 0_i32), (bob, 100), (carol, -100)].as_ref())
+        );
     }
 }

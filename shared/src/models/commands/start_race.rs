@@ -31,7 +31,7 @@ impl CommandHandler for StartRace {
         // }
 
         Ok(vec![Event::RaceStarted {
-            start: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as u32,
+            time: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as u32,
         }])
     }
 }

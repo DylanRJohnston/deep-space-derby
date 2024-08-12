@@ -1,22 +1,24 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use finish_race::FinishRace;
 use im::Vector;
-use race_timeout::FinishRace;
 use start_game::StartGame;
 use start_race::StartRace;
+use start_round::StartRound;
 
 use super::{
     commands::{Command, CommandHandler},
     events::Event,
 };
 
-pub mod race_timeout;
+pub mod finish_race;
 pub mod start_game;
 pub mod start_race;
+pub mod start_round;
 
-const PROCESSORS: [&'static dyn Processor; 3] = [&StartGame, &StartRace, &FinishRace];
-const ALARMS: [&'static dyn AlarmProcessor; 2] = [&StartRace, &FinishRace];
+const PROCESSORS: [&'static dyn Processor; 4] = [&StartGame, &StartRace, &FinishRace, &StartRound];
+const ALARMS: [&'static dyn AlarmProcessor; 3] = [&StartRace, &FinishRace, &StartRound];
 
 pub trait Processor: Send + Sync + 'static {
     fn process(&self, events: &Vector<Event>) -> Option<Command>;
@@ -97,7 +99,10 @@ mod test {
             Event::PlayerReady { session_id: a },
         ]);
 
-        if !matches!(&run_processors(&events)?.0[..], [Event::GameStarted { .. }]) {
+        if !matches!(
+            &run_processors(&events)?.0[..],
+            [Event::RoundStarted { .. }]
+        ) {
             bail!("didn't match");
         };
 
@@ -117,7 +122,7 @@ mod test {
                 name: "Test".into(),
             },
             Event::PlayerReady { session_id: a },
-            Event::GameStarted { start: 0 },
+            Event::RoundStarted { time: 0 },
         ]);
 
         assert_eq!(
@@ -141,7 +146,7 @@ mod test {
                 name: "Test".into(),
             },
             Event::PlayerReady { session_id: a },
-            Event::start_game_now(),
+            Event::start_round_now(),
             Event::start_race_now(),
         ]);
 
@@ -167,11 +172,14 @@ mod test {
                 name: "Test".into(),
             },
             Event::PlayerReady { session_id: a },
-            Event::GameStarted { start: now },
-            Event::RaceStarted { start: now - 60 },
+            Event::RoundStarted { time: now },
+            Event::RaceStarted { time: now - 60 },
         ]);
 
-        if !matches!(&run_processors(&events)?.0[..], [Event::RaceFinished(_)]) {
+        if !matches!(
+            &run_processors(&events)?.0[..],
+            [Event::RaceFinished { .. }]
+        ) {
             bail!("race didn't finish");
         }
 

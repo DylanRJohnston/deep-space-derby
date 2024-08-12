@@ -12,7 +12,7 @@ pub struct StartRace;
 
 impl AlarmProcessor for StartRace {
     fn alarm(&self, events: &Vector<Event>) -> Option<Alarm> {
-        if !matches!(events.last(), Some(Event::GameStarted { .. })) {
+        if !matches!(events.last(), Some(Event::RoundStarted { .. })) {
             return None;
         }
 
@@ -27,13 +27,14 @@ impl Processor for StartRace {
         }
 
         if projections::all_players_have_bet(events) {
+            tracing::info!("all players have bet, starting race");
             return Some(Command::StartRace(()));
         }
 
-        let Some(Event::GameStarted { start }) = events
+        let Some(Event::RoundStarted { time: start }) = events
             .iter()
             .rev()
-            .find(|event| matches!(event, Event::GameStarted { .. }))
+            .find(|event| matches!(event, Event::RoundStarted { .. }))
         else {
             return None;
         };
@@ -41,8 +42,9 @@ impl Processor for StartRace {
         if SystemTime::now()
             >= UNIX_EPOCH
                 + Duration::from_secs(*start as u64)
-                + Duration::from_secs(PRE_GAME_TIMEOUT as u64)
+                + Duration::from_secs(PRE_GAME_TIMEOUT as u64 - 1)
         {
+            tracing::info!("pre-game has timed out, starting race");
             return Some(Command::StartRace(()));
         }
 
@@ -85,7 +87,7 @@ mod test {
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
-            Event::start_game_now(),
+            Event::start_round_now(),
             Event::PlacedBet(PlacedBet {
                 session_id: a,
                 monster_id: Uuid::new_v4(),
@@ -115,7 +117,7 @@ mod test {
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
-            Event::start_game_now(),
+            Event::start_round_now(),
             Event::PlacedBet(PlacedBet {
                 session_id: a,
                 monster_id: Uuid::new_v4(),
@@ -155,7 +157,7 @@ mod test {
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
-            Event::GameStarted { start: start - 90 },
+            Event::RoundStarted { time: start - 90 },
             Event::PlacedBet(PlacedBet {
                 session_id: a,
                 monster_id: Uuid::new_v4(),

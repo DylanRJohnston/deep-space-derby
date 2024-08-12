@@ -1,4 +1,4 @@
-use leptos::{component, create_memo, view, ChildrenFn, IntoView, SignalGet};
+use leptos::*;
 use leptos_router::{use_navigate, NavigateOptions};
 
 use crate::utils::{
@@ -8,7 +8,7 @@ use crate::utils::{
 
 // Turn this into a resource and add an error boundary
 #[component]
-pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
+pub fn game_connection_wrapper(#[prop(optional)] children: Option<ChildrenFn>) -> impl IntoView {
     let game_id = use_game_id();
 
     let (connection, events) = create_event_signal(game_id);
@@ -16,12 +16,33 @@ pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
     let connection = create_memo(move |_| connection.get());
 
     (move || match connection.get() {
-        Connection::Connecting => view! { <h1>"Connecting to server"</h1> }.into_view(),
-        Connection::Errored(err) => {
-            view! { <h1>"Error encountered with connection to server: " {err.to_string()}</h1> }
-                .into_view()
+        Connection::Connecting => view! {
+            <div class="server-status">
+                <h1>"Connecting..."</h1>
+                <div class="loader"></div>
+            </div>
         }
-        Connection::Closed => view! { <h1>"Connection to server closed"</h1> }.into_view(),
+        .into_view(),
+        Connection::Errored => view! {
+            <div class="server-status">
+                <h1>"Error"</h1>
+                <h1>"Refresh the page"</h1>
+            </div>
+        }
+        .into_view(),
+        Connection::Reconnecting => view! {
+            <div class="server-status">
+                <h1>"Reconnecting..."</h1>
+                <div class="loader"></div>
+            </div>
+        }
+        .into_view(),
+        Connection::Closed => view! {
+            <div class="server-status">
+                <h1>"Refresh the page"</h1>
+            </div>
+        }
+        .into_view(),
         Connection::Connected => {
             let session_id = get_session_id();
             if session_id.is_none() {
@@ -33,7 +54,7 @@ pub fn game_connection_wrapper(children: ChildrenFn) -> impl IntoView {
             provide_session_id(session_id.unwrap());
             provide_events(events.into());
 
-            children().into_view()
+            children.clone().into_view()
         }
     })
     .into_view()

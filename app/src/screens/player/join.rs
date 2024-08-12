@@ -9,7 +9,7 @@ pub fn join() -> impl IntoView {
         <div class="vertical-stack container full-height">
             <div class="headroom"></div>
             <h1 class="title">"Join a game"</h1>
-            <div class="splash-image">"Image"</div>
+            <div class="placeholder-image">"Image"</div>
             <Form action="/api/join_game" method="POST" class="vertical-stack">
                 <TextInput
                     id="code"

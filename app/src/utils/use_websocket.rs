@@ -7,7 +7,8 @@ use shared::models::{events::Event, game_id::GameID};
 pub enum Connection {
     Connecting,
     Connected,
-    Errored(ServerFnError),
+    Reconnecting,
+    Errored,
     Closed,
 }
 
@@ -52,32 +53,51 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
     let (events, set_events) = create_signal(Vector::new());
 
     spawn_local(async move {
-        let result: Result<(), ServerFnError> = try {
-            let mut socket = WebSocket::open(&url)?;
+        let mut count = 0;
 
-            while let Some(msg) = socket.next().await {
-                let event = match msg {
-                    Ok(Message::Text(text)) => {
-                        serde_json::from_str::<Event>(&text).map_err(|err: serde_json::Error| {
-                            ServerFnError::<NoCustomError>::Deserialization(err.to_string())
-                        })
-                    }
-                    Ok(Message::Bytes(_)) => Err(ServerFnError::Deserialization(
-                        "got binary message on websocket".into(),
-                    )),
-                    Err(err) => Err(ServerFnError::ServerError(err.to_string())),
-                }?;
+        loop {
+            let result: Result<(), ServerFnError> = try {
+                let mut socket = WebSocket::open(&url)?;
 
-                leptos::logging::log!("Event {:#?}", &event);
+                while let Some(msg) = socket.next().await {
+                    let event = match msg {
+                        Ok(Message::Text(text)) => serde_json::from_str::<Event>(&text).map_err(
+                            |err: serde_json::Error| {
+                                ServerFnError::<NoCustomError>::Deserialization(err.to_string())
+                            },
+                        ),
+                        Ok(Message::Bytes(_)) => Err(ServerFnError::Deserialization(
+                            "got binary message on websocket".into(),
+                        )),
+                        Err(err) => Err(ServerFnError::ServerError(err.to_string())),
+                    }?;
 
-                set_events.update(|events| events.push_back(event));
-                set_connection.set(Connection::Connected);
+                    leptos::logging::log!("Event {:#?}", &event);
+
+                    set_events.update(|events| events.push_back(event));
+                    set_connection.set(Connection::Connected);
+                }
+            };
+
+            match result {
+                Ok(_) => {
+                    set_connection.set(Connection::Closed);
+                    break;
+                }
+                Err(err) => {
+                    tracing::error!(?err);
+                    set_connection.set(Connection::Reconnecting)
+                }
             }
-        };
 
-        match result {
-            Ok(_) => set_connection.set(Connection::Closed),
-            Err(err) => set_connection.set(Connection::Errored(err)),
+            count += 1;
+
+            sleep(count * 1000).await;
+
+            if count > 5 {
+                set_connection.set(Connection::Errored);
+                break;
+            }
         }
     });
 

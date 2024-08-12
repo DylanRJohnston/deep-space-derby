@@ -31,7 +31,10 @@ impl CommandHandler for FinishRace {
         let monsters = projections::monsters(race_seed);
         let (results, _) = race(&monsters, race_seed);
 
-        Ok(vec![Event::RaceFinished(results)])
+        Ok(vec![Event::RaceFinished {
+            time: Event::now(),
+            results,
+        }])
     }
 }
 
@@ -60,7 +63,7 @@ mod test {
                 name: "example".into()
             },
             Event::PlayerReady { session_id: player },
-            Event::GameStarted { start: 0 }
+            Event::RoundStarted { time: 0 }
         ];
 
         assert_eq!(
@@ -88,13 +91,16 @@ mod test {
                 name: "example".into()
             },
             Event::PlayerReady { session_id: player },
-            Event::GameStarted { start: 0 },
-            Event::RaceStarted { start: 0 },
-            Event::RaceFinished(RaceResults {
-                first: Uuid::new_v4(),
-                second: Uuid::new_v4(),
-                third: Uuid::new_v4(),
-            })
+            Event::RoundStarted { time: 0 },
+            Event::RaceStarted { time: 0 },
+            Event::RaceFinished {
+                time: 0,
+                results: RaceResults {
+                    first: Uuid::new_v4(),
+                    second: Uuid::new_v4(),
+                    third: Uuid::new_v4(),
+                }
+            }
         ];
 
         assert_eq!(
@@ -122,13 +128,13 @@ mod test {
                 name: "example".into()
             },
             Event::PlayerReady { session_id: player },
-            Event::GameStarted { start: 0 },
-            Event::RaceStarted { start: 0 },
+            Event::RoundStarted { time: 0 },
+            Event::RaceStarted { time: 0 },
         ];
 
         if !matches!(
             FinishRace::handle(Uuid::nil(), &events, ())?.last(),
-            Some(Event::RaceFinished(_)),
+            Some(Event::RaceFinished { .. }),
         ) {
             bail!("didn't finish race");
         }

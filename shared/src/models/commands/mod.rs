@@ -47,8 +47,8 @@ pub use change_profile::ChangeProfile;
 pub mod ready_player;
 pub use ready_player::ReadyPlayer;
 
-pub mod start_game;
-pub use start_game::StartGame;
+pub mod start_round;
+pub use start_round::StartRound;
 
 pub mod place_bets;
 pub use place_bets::PlaceBets;
@@ -68,7 +68,7 @@ pub enum Command {
     JoinGame(join_game::Input),
     ChangeProfile(change_profile::Input),
     ReadyPlayer(ready_player::Input),
-    StartGame(start_game::Input),
+    StartRound(start_round::Input),
     StartRace(start_race::Input),
     PlaceBets(place_bets::Input),
     FinishRace(finish_race::Input),
@@ -87,7 +87,7 @@ impl CommandHandler for Command {
             Command::JoinGame(input) => JoinGame::handle(session_id, events, input),
             Command::ChangeProfile(input) => ChangeProfile::handle(session_id, events, input),
             Command::ReadyPlayer(input) => ReadyPlayer::handle(session_id, events, input),
-            Command::StartGame(input) => StartGame::handle(session_id, events, input),
+            Command::StartRound(input) => StartRound::handle(session_id, events, input),
             Command::StartRace(input) => StartRace::handle(session_id, events, input),
             Command::PlaceBets(input) => PlaceBets::handle(session_id, events, input),
             Command::FinishRace(input) => FinishRace::handle(session_id, events, input),

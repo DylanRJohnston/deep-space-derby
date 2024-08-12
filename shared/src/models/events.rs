@@ -20,28 +20,24 @@ pub enum Event {
     PlayerJoined { session_id: Uuid, name: String },
     ChangedProfile { session_id: Uuid, name: String },
     PlayerReady { session_id: Uuid },
-    GameStarted { start: u32 },
+    RoundStarted { time: u32 },
     BoughtCard { session_id: Uuid },
     PlayedCard,
     BorrowedMoney { session_id: Uuid, amount: u32 },
     PaidBackMoney { session_id: Uuid, amount: u32 },
     PlacedBet(PlacedBet),
-    RaceStarted { start: u32 },
-    RaceFinished(RaceResults),
+    RaceStarted { time: u32 },
+    RaceFinished { time: u32, results: RaceResults },
     GameFinished,
 }
 
 impl Event {
-    pub fn start_game_now() -> Event {
-        Event::GameStarted {
-            start: Event::now(),
-        }
+    pub fn start_round_now() -> Event {
+        Event::RoundStarted { time: Event::now() }
     }
 
     pub fn start_race_now() -> Event {
-        Event::RaceStarted {
-            start: Event::now(),
-        }
+        Event::RaceStarted { time: Event::now() }
     }
 
     pub fn now() -> u32 {

@@ -12,7 +12,7 @@ impl Processor for StartGame {
             return None;
         }
 
-        projections::all_players_ready(events).then_some(Command::StartGame(()))
+        projections::all_players_ready(events).then_some(Command::StartRound(()))
     }
 }
 
@@ -71,6 +71,6 @@ mod test {
             Event::PlayerReady { session_id: b },
         ]);
 
-        assert_eq!(Some(Command::StartGame(())), StartGame.process(&events));
+        assert_eq!(Some(Command::StartRound(())), StartGame.process(&events));
     }
 }
