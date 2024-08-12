@@ -211,8 +211,8 @@
             find {app,shared} | ${pkgs.entr}/bin/entr -n $(build_client) &
             echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
 
-            find {game,shared} | ${pkgs.entr}/bin/entr -n $(build_game) &
-            echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
+            # find {game,shared} | ${pkgs.entr}/bin/entr -n $(build_game) &
+            # echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
 
             find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
 

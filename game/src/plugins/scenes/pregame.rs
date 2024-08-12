@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::tracing};
+use bevy::{prelude::*, text::TextLayoutInfo, utils::tracing};
 use shared::models::projections;
 
 use crate::plugins::{
@@ -119,6 +119,8 @@ fn init_pregame(
 #[derive(Debug, Component)]
 struct StatID(Entity);
 
+const FONT_COLOR: Color = Color::linear_rgb(0.0, 0.0, 0.0);
+
 fn spawn_ui(
     mut commands: Commands,
     camera: Query<(&Camera, &GlobalTransform)>,
@@ -127,14 +129,19 @@ fn spawn_ui(
     let (camera, camera_transform) = camera.get_single().unwrap();
 
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                width: Val::Percent(100.),
-                height: Val::Percent(100.),
+        .spawn((
+            StateScoped(SceneState::PreGame),
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.),
+                    height: Val::Percent(75.),
+                    justify_content: JustifyContent::SpaceEvenly,
+                    align_items: AlignItems::End,
+                    ..default()
+                },
                 ..default()
             },
-            ..default()
-        })
+        ))
         .with_children(|container| {
             for (id, details, monster) in &monsters {
                 let Some(position) =
@@ -143,36 +150,186 @@ fn spawn_ui(
                     return;
                 };
 
-                tracing::info!(?position);
-
                 container
-                    .spawn((
-                        StatID(id),
-                        StateScoped(SceneState::PreGame),
-                        NodeBundle {
-                            style: Style {
-                                position_type: PositionType::Absolute,
-                                top: Val::Px(position.y),
-                                left: Val::Px(position.x),
-                                ..default()
-                            },
-                            background_color: Color::WHITE.into(),
+                    .spawn(NodeBundle {
+                        style: Style {
+                            // position_type: PositionType::Absolute,
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(8.),
+                            align_items: AlignItems::Stretch,
+                            padding: UiRect::all(Val::Px(16.0)),
+                            width: Val::Px(500.),
                             ..default()
                         },
-                    ))
+                        border_radius: BorderRadius::all(Val::Px(16.0)),
+                        background_color: Color::srgba_u8(0xff, 0xff, 0xff, 0x77).into(),
+                        ..default()
+                    })
                     .with_children(|container| {
-                        container.spawn(TextBundle {
-                            text: Text::from_section(
-                                details.name,
-                                TextStyle {
-                                    font_size: 20.0,
-                                    color: Color::BLACK,
+                        let mut row = |f: &mut dyn FnMut(&mut ChildBuilder)| {
+                            container
+                                .spawn(NodeBundle {
+                                    style: Style {
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
                                     ..default()
-                                },
-                            ),
-                            ..default()
+                                })
+                                .with_children(|container| {
+                                    f(container);
+                                });
+                        };
+
+                        row(&mut |container| {
+                            container.spawn(TextBundle {
+                                text: Text::from_section(
+                                    details.name,
+                                    TextStyle {
+                                        font_size: 40.0,
+                                        color: FONT_COLOR,
+                                        ..default()
+                                    },
+                                ),
+                                ..default()
+                            });
                         });
+
+                        let odds_text_style = TextStyle {
+                            color: FONT_COLOR,
+                            font_size: 32.,
+                            ..default()
+                        };
+
+                        row(&mut |container| {
+                            // odds
+                            container
+                                .spawn(NodeBundle {
+                                    style: Style {
+                                        margin: UiRect::right(Val::Auto),
+                                        ..default()
+                                    },
+                                    ..default()
+                                })
+                                .with_children(|container| {
+                                    container.spawn(TextBundle {
+                                        text: Text::from_section("Odds: ", odds_text_style.clone()),
+                                        ..default()
+                                    });
+                                    container.spawn(TextBundle {
+                                        text: Text::from_section("33%", odds_text_style.clone()),
+                                        ..default()
+                                    });
+                                });
+
+                            // Payout
+                            container
+                                .spawn(NodeBundle {
+                                    style: Style { ..default() },
+                                    ..default()
+                                })
+                                .with_children(|container| {
+                                    container.spawn(TextBundle {
+                                        text: Text::from_section(
+                                            "Payout: ",
+                                            odds_text_style.clone(),
+                                        ),
+                                        ..default()
+                                    });
+                                    container.spawn(TextBundle {
+                                        text: Text::from_section("3.0x", odds_text_style.clone()),
+                                        ..default()
+                                    });
+                                });
+                        });
+
+                        // Odds
+
+                        let stats_text_style = TextStyle {
+                            font_size: 32.,
+                            color: FONT_COLOR,
+                            ..default()
+                        };
+
+                        // Speed
+                        let mut stats_row = |name: &str, amount: f32, color: Color| {
+                            row(&mut |container| {
+                                container
+                                    .spawn(NodeBundle {
+                                        style: Style {
+                                            width: Val::Percent(33.),
+                                            ..default()
+                                        },
+                                        ..default()
+                                    })
+                                    .with_children(|container| {
+                                        container.spawn(TextBundle {
+                                            text: Text::from_section(
+                                                format!("{name}:"),
+                                                stats_text_style.clone(),
+                                            ),
+                                            ..default()
+                                        });
+                                    });
+
+                                container
+                                    .spawn(NodeBundle {
+                                        style: Style {
+                                            flex_grow: 1.0,
+                                            ..default()
+                                        },
+                                        ..default()
+                                    })
+                                    .with_children(|container| {
+                                        container.spawn(NodeBundle {
+                                            style: Style {
+                                                width: Val::Percent(100.),
+                                                height: Val::Px(28.),
+                                                position_type: PositionType::Absolute,
+                                                ..default()
+                                            },
+                                            border_radius: BorderRadius::all(Val::Px(8.)),
+                                            background_color: Color::srgb_u8(0x6b, 0x71, 0x79)
+                                                .into(),
+                                            ..default()
+                                        });
+
+                                        container.spawn(NodeBundle {
+                                            style: Style {
+                                                width: Val::Percent(100. * amount),
+                                                height: Val::Px(28.),
+                                                border: UiRect::all(Val::Px(4.)),
+                                                ..default()
+                                            },
+                                            border_radius: BorderRadius::all(Val::Px(8.)),
+                                            border_color: Color::srgb_u8(0x6b, 0x71, 0x79).into(),
+                                            background_color: BackgroundColor::from(color),
+                                            ..default()
+                                        });
+
+                                        for i in 1..9 {
+                                            container.spawn(NodeBundle {
+                                                style: Style {
+                                                    height: Val::Px(28.),
+                                                    position_type: PositionType::Absolute,
+                                                    left: Val::Percent((i as f32) * 10.),
+                                                    border: UiRect::all(Val::Px(2.)),
+                                                    ..default()
+                                                },
+                                                border_color: Color::srgb_u8(0x6b, 0x71, 0x79)
+                                                    .into(),
+                                                ..default()
+                                            });
+                                        }
+                                    });
+                            });
+                        };
+
+                        stats_row("Speed", 0.5, Color::srgb_u8(0x97, 0xd9, 0x48));
+                        // stats_row("Strength", 0.5, Color::srgb_u8(0xec, 0x6a, 0x45));
+                        stats_row("Strength", 0.5, Color::srgb_u8(0xdc, 0x47, 0x3c));
                     });
+                // });
             }
         });
 }
@@ -182,17 +339,17 @@ fn update_ui_position(
     monsters: Query<&GlobalTransform>,
     mut ui_nodes: Query<(&mut Style, &StatID)>,
 ) {
-    let (camera, camera_transform) = camera.get_single().unwrap();
+    // let (camera, camera_transform) = camera.get_single().unwrap();
 
-    for (mut style, StatID(entity)) in &mut ui_nodes {
-        let monster = monsters.get(*entity).unwrap();
+    // for (mut style, StatID(entity)) in &mut ui_nodes {
+    //     let monster = monsters.get(*entity).unwrap();
 
-        let Some(position) = camera.world_to_viewport(camera_transform, monster.translation())
-        else {
-            continue;
-        };
+    //     let Some(position) = camera.world_to_viewport(camera_transform, monster.translation())
+    //     else {
+    //         continue;
+    //     };
 
-        style.top = Val::Px(position.y);
-        style.left = Val::Px(position.x);
-    }
+    //     style.top = Val::Px(position.y);
+    //     style.left = Val::Px(position.x);
+    // }
 }

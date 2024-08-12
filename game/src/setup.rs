@@ -1,4 +1,4 @@
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::{asset::AssetMetaCheck, prelude::*, window::WindowResolution};
 use bevy_tweening::TweeningPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
 use shared::models::game_id::GameID;
@@ -28,11 +28,21 @@ pub fn start(f: impl FnOnce(&mut App)) {
         app.insert_resource(GameCode(game_id));
     }
 
-    app.add_plugins(DefaultPlugins.set(AssetPlugin {
-        meta_check: AssetMetaCheck::Never,
-        file_path: FILE_PATH.into(),
-        ..Default::default()
-    }))
+    app.add_plugins(
+        DefaultPlugins
+            .set(AssetPlugin {
+                meta_check: AssetMetaCheck::Never,
+                file_path: FILE_PATH.into(),
+                ..Default::default()
+            })
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(1920.0, 1080.0),
+                    ..default()
+                }),
+                ..default()
+            }),
+    )
     .add_plugins(AnimationLinkPlugin)
     .add_plugins(ScenesPlugin)
     .add_plugins(EventStreamPlugin)
