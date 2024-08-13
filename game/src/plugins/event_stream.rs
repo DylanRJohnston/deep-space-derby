@@ -14,6 +14,7 @@ impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
             .add_systems(Update, read_event_stream)
+            .add_systems(Update, reset_event_stream)
             .add_systems(Update, transition_debug);
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -21,13 +22,19 @@ impl Plugin for EventStreamPlugin {
     }
 }
 
-struct EventChannel {
-    sender: Sender<Event>,
-    receiver: Receiver<Event>,
+struct EventChannel<T> {
+    sender: Sender<T>,
+    receiver: Receiver<T>,
 }
 
-static EVENT_CHANNEL: LazyLock<EventChannel> = LazyLock::new(|| {
+static EVENT_CHANNEL: LazyLock<EventChannel<Event>> = LazyLock::new(|| {
     let (sender, receiver) = crossbeam_channel::unbounded::<Event>();
+
+    EventChannel { sender, receiver }
+});
+
+static RESET_CHANNEL: LazyLock<EventChannel<()>> = LazyLock::new(|| {
+    let (sender, receiver) = crossbeam_channel::unbounded::<()>();
 
     EventChannel { sender, receiver }
 });
@@ -56,6 +63,12 @@ fn read_event_stream(
     }
 }
 
+fn reset_event_stream(mut events: ResMut<GameEvents>) {
+    while let Ok(_) = RESET_CHANNEL.receiver.try_recv() {
+        events.as_mut().0.clear();
+    }
+}
+
 // #[cfg(feature = debug)]
 fn transition_debug(
     keys: Res<ButtonInput<KeyCode>>,
@@ -74,7 +87,15 @@ fn transition_debug(
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(js_name = "sendGameEvent")]
 pub fn send_game_event(event: Event) -> Result<(), wasm_bindgen::JsError> {
+    tracing::info!(?event, "push event into event stream");
     EVENT_CHANNEL.sender.send(event).map_err(Into::into)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen::prelude::wasm_bindgen(js_name = "resetGameEvents")]
+pub fn reset_game_events() -> Result<(), wasm_bindgen::JsError> {
+    tracing::info!("resetting event stream");
+    RESET_CHANNEL.sender.send(()).map_err(Into::into)
 }
 
 #[derive(Debug, Resource, Deref)]

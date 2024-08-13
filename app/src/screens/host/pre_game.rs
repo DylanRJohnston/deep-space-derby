@@ -3,63 +3,91 @@ use shared::models::{monsters::Monster, projections};
 
 use crate::utils::use_events;
 
-#[component]
-pub fn leaderboard() -> impl IntoView {
-    let events = use_events();
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum Stat {
+    Speed,
+    Strength,
+}
 
-    let account_balances = move || {
-        let events = events();
-        let players = projections::players(&events);
-
-        let mut accounts = projections::all_account_balances(&events)
-            .into_iter()
-            .filter_map(|(id, balance)| Some((players.get(&id).cloned()?.name, balance)))
-            .collect::<Vec<_>>();
-
-        accounts.sort_by(|(_, a), (_, b)| a.cmp(b));
-        accounts.into_iter().enumerate().collect::<Vec<_>>()
-    };
-
-    view! {
-        <div class="leaderboard">
-            <span>"Leaderboard: "</span>
-            <For each=account_balances key=|it| it.clone() let:data>
-                <span>{data.0}</span>
-                <span>{data.1}</span>
-            </For>
-        </div>
+impl Stat {
+    fn name(&self) -> &'static str {
+        match self {
+            Stat::Speed => "Speed",
+            Stat::Strength => "Strength",
+        }
     }
 }
 
 #[component]
-pub fn monster_card(monster: &'static Monster) -> impl IntoView {
+fn stat_row(stat: Stat, value: f32) -> impl IntoView {
+    let value = (10. * value / 2.0) as u32;
+
     view! {
-        <div class="container vertical-stack bg-white">
-            <span>{monster.name}</span>
-            <div class="avatar-img">"Image"</div>
-            <div class="monster-stats">
-                <div class="monster-stats">"Speed: " {monster.speed}</div>
+        <div class="monster-stats-row">
+            <p class:font-speed=stat == Stat::Speed class:font-strength=stat == Stat::Strength>{stat.name()}":"</p>
+            <div class="stat-bar-container">
+                {
+                    (1..=value).map(|i|
+                        view! {
+                            <div
+                                class="stat-notch"
+                                class:stat-speed=stat == Stat::Speed
+                                class:stat-strength=stat == Stat::Strength
+                            >{
+                                if i == value { value.into_view() } else { "".into_view() }
+                            }</div>
+                        }
+                    ).collect::<Vec<_>>()
+                }
             </div>
         </div>
     }
 }
 
+struct MonsterData {
+    monster: &'static Monster,
+    odds: f32,
+    payout: f32,
+}
+
 #[component]
 pub fn pre_game() -> impl IntoView {
-    // let events = use_events();
-    // let monsters = move || projections::monsters(projections::race_seed(&events()));
+    let events = use_events();
+
+    let race_seed = move || projections::race_seed(&events());
+    let monsters = move || projections::monsters(race_seed());
+
+    let odds = create_memo(move |_| projections::odds(&monsters(), race_seed()));
+
+    let monsters = move || {
+        monsters()
+            .into_iter()
+            .enumerate()
+            .map(|(index, monster)| MonsterData {
+                monster,
+                odds: odds()[index] * 100.,
+                payout: 1.0 / odds()[index],
+            })
+            .collect::<Vec<_>>()
+    };
 
     view! {
-        // <div class="vertical-stack full-width full-height container">
-        //     <h1>"Race Overview"</h1>
-        //     <div class="monster-grid">
-        //         <For
-        //             each=monsters
-        //             key=|it| (*it).clone()
-        //             children=|monster| view! { <MonsterCard monster/> }
-        //         />
-        //     </div>
-        //     <span>"Race will start once all bets are placed"</span>
-        // </div>
+        <div class="host-pre-game-container">
+            <For
+                each=monsters
+                key=|it| it.monster.uuid
+                let:data
+            >
+                <div class="monster-stats-container">
+                    <h1>{data.monster.name}</h1>
+                    <div class="monster-stats-row space-between">
+                        <p>"Odds: "{format!("{:.0}", data.odds)}"%"</p>
+                        <p>"Payout: "{format!("{:.2}", data.payout)}"x"</p>
+                    </div>
+                    <StatRow stat=Stat::Speed value=data.monster.speed />
+                    <StatRow stat=Stat::Strength value=data.monster.strength />
+                </div>
+            </For>
+        </div>
     }
 }

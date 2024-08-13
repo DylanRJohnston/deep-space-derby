@@ -577,3 +577,84 @@ input[type="number"] {
 @keyframes l2 {
    100% {transform:rotate(calc(var(--s,1)*1turn))}
 }
+
+.host-pre-game-container {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: start;
+}
+
+.monster-stats-container {
+  width: 500px;
+  margin-top: 55vh;
+
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  align-items: stretch;
+  border-radius: 16px;
+  gap: 1em;
+
+  backdrop-filter: blur(8px); 
+  box-shadow: 0px 0px 5px #7a09fa66;
+  background-color: #7a09fa11;
+
+  text-shadow: 0px 1px 2px #000;
+}
+
+.monster-stats-row {
+  width: 100%;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 24px;
+}
+
+.space-between {
+  justify-content: space-between;
+}
+
+.stat-bar-container {
+  width: 75%;
+  position: relative;
+  display: flex;
+  gap: 1%
+}
+
+.stat-notch {
+  height: 28px;
+  width: 9%;
+
+  border-radius: 8px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  box-shadow: 0px 1px 2px #000;
+}
+
+.stat-speed {
+  background-color: #97d948ee;
+}
+
+.stat-strength {
+  background-color: #ec473b;
+}
+
+.font-speed {
+  font-style: bold;
+  color: #97d948ee;
+}
+
+.font-strength {
+  font-style: bold;
+  color: #ec473b;
+}

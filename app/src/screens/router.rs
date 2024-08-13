@@ -1,16 +1,17 @@
 use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
-use leptos_use::{use_interval, UseIntervalReturn};
 
 use crate::{
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
-    utils::{send_game_event, use_events, use_session_id},
+    utils::{reset_game_events, send_game_event, use_events, use_session_id},
 };
 use shared::models::{events::Event, projections};
 
 #[component]
 pub fn send_events_to_bevy() -> impl IntoView {
     let events = use_events();
+
+    reset_game_events();
 
     move || {
         events.get().last().map(|event| {
@@ -31,10 +32,11 @@ pub fn router() -> impl IntoView {
                         view! {
                             <script type="module">
                                 "
-                                import init, { sendGameEvent as innerSendGameEvent } from '/pkg/game.js';
+                                import init, { sendGameEvent as innerSendGameEvent, resetGameEvents as innerResetGameEvents } from '/pkg/game.js';
                                 
                                 init().catch(() => {
-                                    window['innerSendGameEvent'] = innerSendGameEvent;
+                                    globalThis['resetGameEvents'] = innerResetGameEvents;
+                                    globalThis['innerSendGameEvent'] = innerSendGameEvent;
                                     console.log('Module initialised, flushing pending events')
                                     while (pendingEvents.length > 0) {
                                         let event = pendingEvents.shift();
@@ -43,7 +45,16 @@ pub fn router() -> impl IntoView {
                                 });
                                 "
                             </script>
-                            <GameConnectionWrapper/>
+                            <GameConnectionWrapper>
+                                <SendEventsToBevy/>
+                                <GameStateRouter
+                                    lobby=|| {}
+                                    pre_game=host::PreGame
+                                    race=|| {}
+                                    wait=|| {}
+                                    summary=|| {}
+                                />
+                            </GameConnectionWrapper>
                         }
                     }
                 />

@@ -38,6 +38,8 @@ pub const MONSTERS: [Monster; 9] = [
         name: "Purglehorn",
         uuid: Uuid::from_u128(0x99a7c5d8c06744eeb856df9d6b04c4e8u128),
         blueprint_name: "library/Monster_Alien.glb",
+        speed: 1.0,
+        strength: 1.0,
         ..Monster::DEFAULT
     },
     Monster {
@@ -56,12 +58,16 @@ pub const MONSTERS: [Monster; 9] = [
         name: "Finflare",
         uuid: Uuid::from_u128(0x6cb10197a7234cf980f7fb957f7eb9f1u128),
         blueprint_name: "library/Monster_Fish.glb",
+        speed: 1.4,
+        strength: 0.6,
         ..Monster::DEFAULT
     },
     Monster {
         name: "Green Spiky Thing",
         uuid: Uuid::from_u128(0xcbde634a2d3648f383b3c7e45cc864b7u128),
         blueprint_name: "library/Monster_Green_Spiky.glb",
+        speed: 0.6,
+        strength: 1.4,
         ..Monster::DEFAULT
     },
     Monster {
@@ -117,7 +123,7 @@ impl Ord for Jump {
 }
 
 const BASE_JUMP_TIME: f32 = 0.4;
-const BASE_JUMP_DISTANCE: f32 = 0.1;
+const BASE_JUMP_DISTANCE: f32 = 0.2;
 
 pub fn race(monsters: &[&Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
     let mut rng = StdRng::seed_from_u64(seed as u64);

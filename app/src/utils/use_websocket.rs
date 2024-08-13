@@ -54,10 +54,11 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
 
     spawn_local(async move {
         let mut count = 0;
-
         loop {
             let result: Result<(), ServerFnError> = try {
                 let mut socket = WebSocket::open(&url)?;
+
+                set_events(Vector::new());
 
                 while let Some(msg) = socket.next().await {
                     let event = match msg {

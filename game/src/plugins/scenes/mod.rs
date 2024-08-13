@@ -7,6 +7,7 @@ use bevy::{
     utils::{tracing, HashMap},
 };
 use bevy_asset_loader::prelude::*;
+use summary::SummaryPlugin;
 
 use self::{lobby::LobbyPlugin, pregame::PreGamePlugin, race::RacePlugin};
 
@@ -16,6 +17,7 @@ use shared::models::events::Event as GameEvent;
 pub mod lobby;
 pub mod pregame;
 pub mod race;
+pub mod summary;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
 pub enum SceneState {
@@ -30,7 +32,7 @@ pub enum SceneState {
 
 pub struct ScenesPlugin;
 
-#[derive(Component)]
+#[derive(Debug, Component)]
 pub struct SceneMetadata(pub serde_json::Map<String, serde_json::Value>);
 
 impl Plugin for ScenesPlugin {
@@ -40,6 +42,7 @@ impl Plugin for ScenesPlugin {
             .add_plugins(LobbyPlugin)
             .add_plugins(RacePlugin)
             .add_plugins(PreGamePlugin)
+            .add_plugins(SummaryPlugin)
             .register_type::<GltfExtras>()
             .init_state::<SceneState>()
             .add_loading_state(
@@ -209,7 +212,7 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
             GameEvent::GameCreated { .. } => next_state.set(SceneState::Lobby),
             GameEvent::RoundStarted { .. } => next_state.set(SceneState::PreGame),
             GameEvent::RaceStarted { .. } => next_state.set(SceneState::Race),
-            GameEvent::RaceFinished { .. } => next_state.set(SceneState::PreGame),
+            GameEvent::RaceFinished { .. } => next_state.set(SceneState::Results),
             GameEvent::GameFinished => next_state.set(SceneState::Lobby),
             _ => {}
         }

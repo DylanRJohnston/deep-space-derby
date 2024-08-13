@@ -15,14 +15,11 @@ impl Plugin for PreGamePlugin {
         app.enable_state_scoped_entities::<SceneState>()
             .register_type::<PreGameSpawnPoint>()
             .register_type::<PreGameCamera>()
-            .add_systems(
-                OnEnter(SceneState::PreGame),
-                (spawn_monsters, spawn_ui).chain(),
-            )
-            .add_systems(
-                Update,
-                update_ui_position.run_if(in_state(SceneState::PreGame)),
-            )
+            .add_systems(OnEnter(SceneState::PreGame), (spawn_monsters).chain())
+            // .add_systems(
+            //     Update,
+            //     update_ui_position.run_if(in_state(SceneState::PreGame)),
+            // )
             .add_systems(
                 OnEnter(SceneState::PreGame),
                 init_pregame.after(spawn_pregame_spawn_point_on_scene_load),

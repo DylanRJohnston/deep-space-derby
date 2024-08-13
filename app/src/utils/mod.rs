@@ -42,4 +42,7 @@ pub fn use_session_id() -> Uuid {
 extern "C" {
     #[wasm_bindgen(js_name = "sendGameEvent")]
     pub fn send_game_event(event: Event);
+
+    #[wasm_bindgen(js_name = "resetGameEvents")]
+    pub fn reset_game_events();
 }
