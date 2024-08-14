@@ -659,3 +659,50 @@ input[type="number"] {
   font-style: bold;
   color: #ec473b;
 }
+
+.host-results-container {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.results-container {
+  border-radius: 1em;
+  padding: 1em;
+  backdrop-filter: blur(24px); 
+  box-shadow: 0px 0px 5px #7a09fa66;
+  background-color: #20004562;
+  display: grid;
+  grid-template-columns: repeat(4, auto) 2em repeat(4, auto);
+  grid-template-rows: auto 1em repeat(7, auto);
+  font-size: 36px;
+  font-weight: bold;
+  justify-items: stretch;
+  opacity: 1;
+  transition: opacity 1.0s ease;
+}
+
+.invisible {
+  opacity: 0;
+  backdrop-filter: blur(0px); 
+  transition: opacity 1.0s ease;
+}
+
+.results-container > h1 {
+  justify-self: center;
+  grid-column: span 9;
+  font-size: 64px;
+}
+
+.results-container > div {
+  padding: 0.5em;
+}
+
+.results-container>.leaderboard-background:nth-of-type(odd) {
+  background-color: #ac63ff2d;
+  border-radius: 0.5em;
+}
+

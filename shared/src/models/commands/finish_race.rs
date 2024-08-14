@@ -63,7 +63,10 @@ mod test {
                 name: "example".into()
             },
             Event::PlayerReady { session_id: player },
-            Event::RoundStarted { time: 0 }
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            }
         ];
 
         assert_eq!(
@@ -91,7 +94,10 @@ mod test {
                 name: "example".into()
             },
             Event::PlayerReady { session_id: player },
-            Event::RoundStarted { time: 0 },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
             Event::RaceStarted { time: 0 },
             Event::RaceFinished {
                 time: 0,
@@ -128,7 +134,10 @@ mod test {
                 name: "example".into()
             },
             Event::PlayerReady { session_id: player },
-            Event::RoundStarted { time: 0 },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
             Event::RaceStarted { time: 0 },
         ];
 

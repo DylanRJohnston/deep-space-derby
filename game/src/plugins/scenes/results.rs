@@ -8,9 +8,9 @@ use crate::plugins::{
 
 use super::{pregame::PreGameCamera, SceneMetadata, SceneState};
 
-pub struct SummaryPlugin;
+pub struct ResultsPlugin;
 
-impl Plugin for SummaryPlugin {
+impl Plugin for ResultsPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
             .enable_state_scoped_entities::<SceneState>()

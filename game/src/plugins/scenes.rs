@@ -7,7 +7,7 @@ use bevy::{
     utils::{tracing, HashMap},
 };
 use bevy_asset_loader::prelude::*;
-use summary::SummaryPlugin;
+use results::ResultsPlugin;
 
 use self::{lobby::LobbyPlugin, pregame::PreGamePlugin, race::RacePlugin};
 
@@ -17,7 +17,7 @@ use shared::models::events::Event as GameEvent;
 pub mod lobby;
 pub mod pregame;
 pub mod race;
-pub mod summary;
+pub mod results;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
 pub enum SceneState {
@@ -42,7 +42,7 @@ impl Plugin for ScenesPlugin {
             .add_plugins(LobbyPlugin)
             .add_plugins(RacePlugin)
             .add_plugins(PreGamePlugin)
-            .add_plugins(SummaryPlugin)
+            .add_plugins(ResultsPlugin)
             .register_type::<GltfExtras>()
             .init_state::<SceneState>()
             .add_loading_state(
@@ -207,14 +207,23 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
         return;
     }
 
-    for event in events.0.iter() {
-        match event {
-            GameEvent::GameCreated { .. } => next_state.set(SceneState::Lobby),
-            GameEvent::RoundStarted { .. } => next_state.set(SceneState::PreGame),
-            GameEvent::RaceStarted { .. } => next_state.set(SceneState::Race),
-            GameEvent::RaceFinished { .. } => next_state.set(SceneState::Results),
-            GameEvent::GameFinished => next_state.set(SceneState::Lobby),
-            _ => {}
-        }
-    }
+    let state = events
+        .0
+        .iter()
+        .rev()
+        .find_map(|event| {
+            Some(match event {
+                GameEvent::GameCreated { .. } => SceneState::Lobby,
+                GameEvent::RoundStarted { .. } => SceneState::PreGame,
+                GameEvent::RaceStarted { .. } => SceneState::Race,
+                GameEvent::RaceFinished { .. } => SceneState::Results,
+                GameEvent::GameFinished => SceneState::Lobby,
+                _ => None?,
+            })
+        })
+        .unwrap_or(SceneState::Lobby);
+
+    tracing::info!(?state, "setting scene state");
+
+    next_state.set(state);
 }

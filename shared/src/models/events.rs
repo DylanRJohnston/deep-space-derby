@@ -1,4 +1,7 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    ops::Deref,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use macros::serde_wasm_bindgen;
 use serde::{Deserialize, Serialize};
@@ -13,6 +16,58 @@ pub struct PlacedBet {
     pub amount: i32,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Deserialize, Serialize)]
+pub struct Odds(pub [(Uuid, f32); 3]);
+
+impl Deref for Odds {
+    type Target = [(Uuid, f32); 3];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub trait OddsExt {
+    fn odds(&self, monster_id: Uuid) -> f32;
+    fn payout(&self, monster_id: Uuid) -> f32;
+}
+
+const PAYOUT_MAX: f32 = 10.0;
+
+impl OddsExt for Odds {
+    fn odds(&self, monster_id: Uuid) -> f32 {
+        self.0
+            .iter()
+            .find(|(id, _)| *id == monster_id)
+            .map(|(_, odds)| odds)
+            .copied()
+            .unwrap_or_else(|| {
+                tracing::warn!(?monster_id, "no odds found for monster");
+                1. / 3.0
+            })
+    }
+
+    fn payout(&self, monster_id: Uuid) -> f32 {
+        f32::min(1.0 / self.odds(monster_id), PAYOUT_MAX)
+    }
+}
+
+impl OddsExt for Option<Odds> {
+    fn odds(&self, monster_id: Uuid) -> f32 {
+        self.map(|inner| inner.odds(monster_id)).unwrap_or_else(|| {
+            tracing::warn!("getting default odds");
+            1. / 3.
+        })
+    }
+
+    fn payout(&self, monster_id: Uuid) -> f32 {
+        self.map(|inner| inner.payout(monster_id))
+            .unwrap_or_else(|| {
+                tracing::warn!("getting default payout");
+                3.0
+            })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 #[serde_wasm_bindgen]
 pub enum Event {
@@ -20,7 +75,7 @@ pub enum Event {
     PlayerJoined { session_id: Uuid, name: String },
     ChangedProfile { session_id: Uuid, name: String },
     PlayerReady { session_id: Uuid },
-    RoundStarted { time: u32 },
+    RoundStarted { time: u32, odds: Option<Odds> },
     BoughtCard { session_id: Uuid },
     PlayedCard,
     BorrowedMoney { session_id: Uuid, amount: u32 },
@@ -33,7 +88,10 @@ pub enum Event {
 
 impl Event {
     pub fn start_round_now() -> Event {
-        Event::RoundStarted { time: Event::now() }
+        Event::RoundStarted {
+            time: Event::now(),
+            odds: None,
+        }
     }
 
     pub fn start_race_now() -> Event {

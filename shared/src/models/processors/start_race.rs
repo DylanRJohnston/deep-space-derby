@@ -30,7 +30,7 @@ impl Processor for StartRace {
             return Some(Command::StartRace(()));
         }
 
-        let Some(Event::RoundStarted { time: start }) = events
+        let Some(Event::RoundStarted { time: start, .. }) = events
             .iter()
             .rev()
             .find(|event| matches!(event, Event::RoundStarted { .. }))
@@ -155,7 +155,10 @@ mod test {
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
-            Event::RoundStarted { time: start - 90 },
+            Event::RoundStarted {
+                time: start - 90,
+                odds: None,
+            },
             Event::PlacedBet(PlacedBet {
                 session_id: a,
                 monster_id: Uuid::new_v4(),

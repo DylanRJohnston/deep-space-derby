@@ -11,13 +11,13 @@ use crate::models::monsters::MONSTERS;
 use rand::Rng;
 
 use super::{
-    events::{Event, PlacedBet},
+    events::{Event, Odds, OddsExt, PlacedBet},
     game_id::GameID,
     monsters::{self, Monster, RaceResults},
     processors::start_race::PRE_GAME_TIMEOUT,
 };
 use im::{HashMap, Vector};
-use rand::{distributions::uniform::UniformInt, rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, SeedableRng};
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -165,6 +165,8 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     let mut accounts = HashMap::<Uuid, i32>::new();
     let mut bets = Vector::new();
 
+    let mut maybe_odds = None;
+
     for event in events {
         match event {
             Event::PlayerJoined { session_id, .. } => {
@@ -191,17 +193,24 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
             }
+            Event::RoundStarted { odds, .. } => {
+                maybe_odds = *odds;
+            }
             Event::RaceFinished {
                 results: RaceResults { first, .. },
                 ..
             } => {
-                for bet in bets.iter() {
-                    accounts.entry(bet.session_id).and_modify(|account| {
-                        if bet.monster_id == *first {
-                            *account += 2 * bet.amount;
-                        }
+                bets.iter()
+                    .filter(|bet| bet.monster_id == *first)
+                    .for_each(|bet| {
+                        let balance = accounts.entry(bet.session_id).or_default();
+
+                        let payout = maybe_odds.payout(bet.monster_id);
+
+                        *balance += (payout * (bet.amount as f32)) as i32;
+
+                        tracing::info!(?bet.amount, ?payout, ?balance);
                     });
-                }
 
                 bets.clear();
             }
@@ -212,9 +221,29 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     accounts
 }
 
+pub fn last_round(events: &Vector<Event>) -> Option<Vector<Event>> {
+    let start = events
+        .iter()
+        .rev()
+        .enumerate()
+        .find(|(_, event)| matches!(event, Event::RoundStarted { .. }))?
+        .0;
+
+    let end = events
+        .iter()
+        .rev()
+        .enumerate()
+        .find(|(_, event)| matches!(event, Event::RaceFinished { .. }))
+        .map(|(index, _)| index)
+        .unwrap_or_else(|| events.len());
+
+    Some(events.clone().slice(start..=end))
+}
+
 pub fn winnings(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     let mut winnings = HashMap::new();
     let mut bets = Vec::new();
+    let odds = pre_computed_odds(events);
 
     for event in events {
         match event {
@@ -229,7 +258,7 @@ pub fn winnings(events: &Vector<Event>) -> HashMap<Uuid, i32> {
                 for bet in bets.iter() {
                     *winnings.entry(bet.session_id).or_default() +=
                         if bet.monster_id == results.first {
-                            bet.amount
+                            ((odds.payout(bet.monster_id) - 1.0) * (bet.amount as f32)) as i32
                         } else {
                             -1 * bet.amount
                         }
@@ -273,7 +302,7 @@ pub fn game_id(events: &Vector<Event>) -> GameID {
     }
 }
 
-pub fn round(events: &Vector<Event>) -> u64 {
+pub fn round(events: &Vector<Event>) -> u32 {
     let mut round = 0;
 
     for event in events {
@@ -283,27 +312,20 @@ pub fn round(events: &Vector<Event>) -> u64 {
         }
     }
 
-    // Ensure that the monsters during the lobby match the first race
-    if round == 0 {
-        round = 1;
-    }
-
     round
 }
 
 // Have to use u32 instead of u64 because JS can't handle u64
 #[instrument(skip_all)]
-pub fn race_seed(events: &Vector<Event>) -> u32 {
-    let fuck = game_id(events).bytes();
-    let fuck = fuck.as_chunks::<4>().0[0];
-
-    let game_id = u32::from_be_bytes(fuck);
-
-    let round = round(events) as u32;
-
+pub fn race_seed_for_round(events: &Vector<Event>, round: u32) -> u32 {
+    let game_id = u32::from_be_bytes(game_id(events).bytes().as_chunks::<4>().0[0]);
     let seed = game_id.wrapping_add(round);
 
     seed
+}
+
+pub fn race_seed(events: &Vector<Event>) -> u32 {
+    race_seed_for_round(events, round(events))
 }
 
 pub fn monsters(race_seed: u32) -> [&'static Monster; 3] {
@@ -332,7 +354,7 @@ pub fn time_left_in_pregame(events: &Vector<Event>) -> u64 {
         .iter()
         .rev()
         .find_map(|event| match event {
-            Event::RoundStarted { time: start } => Some(start),
+            Event::RoundStarted { time: start, .. } => Some(start),
             _ => None,
         })
         .copied()
@@ -350,17 +372,43 @@ pub fn time_left_in_pregame(events: &Vector<Event>) -> u64 {
     }
 }
 
-pub fn odds(monsters: &[&Monster; 3], seed: u32) -> [f32; 3] {
+pub fn pre_computed_odds(events: &Vector<Event>) -> Odds {
+    let monsters = monsters(race_seed(events));
+
+    events
+        .iter()
+        .rev()
+        .find_map(|event| match event {
+            Event::RoundStarted {
+                odds: Some(odds), ..
+            } => Some(odds),
+            _ => None,
+        })
+        .copied()
+        .unwrap_or_else(|| {
+            Odds([
+                (monsters[0].uuid, 1. / 3.),
+                (monsters[1].uuid, 1. / 3.),
+                (monsters[2].uuid, 1. / 3.),
+            ])
+        })
+}
+pub fn odds(monsters: &[&Monster; 3], seed: u32) -> Odds {
     let mut wins = HashMap::<Uuid, u32>::new();
     let mut rng = StdRng::seed_from_u64(seed as u64);
 
-    for i in 0..1000 {
+    for _ in 0..1000 {
         let (results, _) = monsters::race(monsters, rng.gen::<u32>());
 
         *wins.entry(results.first).or_default() += 1;
     }
 
-    monsters.map(|monster| wins.get(&monster.uuid).copied().unwrap_or_default() as f32 / 1000.)
+    Odds(monsters.map(|monster| {
+        (
+            monster.uuid,
+            wins.get(&monster.uuid).copied().unwrap_or_default() as f32 / 1000.,
+        )
+    }))
 }
 
 #[cfg(test)]
@@ -706,7 +754,7 @@ mod tests {
 
         assert_eq!(
             accounts,
-            [(alice, 900), (bob, 1300)]
+            [(alice, 1100), (bob, 2100)]
                 .into_iter()
                 .collect::<HashMap<Uuid, i32>>()
         )

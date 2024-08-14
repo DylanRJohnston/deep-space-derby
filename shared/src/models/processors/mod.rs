@@ -122,7 +122,10 @@ mod test {
                 name: "Test".into(),
             },
             Event::PlayerReady { session_id: a },
-            Event::RoundStarted { time: 0 },
+            Event::RoundStarted {
+                time: 0,
+                odds: None,
+            },
         ]);
 
         assert_eq!(
@@ -172,7 +175,10 @@ mod test {
                 name: "Test".into(),
             },
             Event::PlayerReady { session_id: a },
-            Event::RoundStarted { time: now },
+            Event::RoundStarted {
+                time: now,
+                odds: None,
+            },
             Event::RaceStarted { time: now - 60 },
         ]);
 

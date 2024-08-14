@@ -181,7 +181,7 @@
             export RUST_LOG=info
 
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
-            GAME_TARGET="./target/wasm32-unknown-unknown/release/game.wasm"
+            GAME_TARGET="target/wasm32-unknown-unknown/debug/game.wasm"
 
             #entr can't execute bash functions, so we do a little bash metaprogramming
             function build() {
@@ -193,7 +193,7 @@
             }
 
             function build_game() {
-              echo "cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game"
+              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p game --bin game"
             }
 
             function bindgen() {

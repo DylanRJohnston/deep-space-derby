@@ -53,7 +53,7 @@ pub fn router() -> impl IntoView {
                                     pre_game=host::PreGame
                                     race=|| {}
                                     wait=|| {}
-                                    summary=|| {}
+                                    summary=host::Results
                                 />
                             </GameConnectionWrapper>
                         }

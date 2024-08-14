@@ -1,5 +1,12 @@
 {
-  "cSpell.words": ["color", "despawn", "Gltf", "leptos", "opentelemetry"],
+  "cSpell.words": [
+    "color",
+    "despawn",
+    "Gltf",
+    "Leaderboard",
+    "leptos",
+    "opentelemetry"
+  ],
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -12,7 +19,14 @@
     ".direnv": true,
     "node_modules": true,
     ".wrangler": true
-  }
-  // "rust-analyzer.rustfmt.overrideCommand": e["leptosfmt", "--stdin", "--rustfmt"]
-  // "rust-analyzer.cargo.target": "wasm32-unknown-unknown"
+  },
+  "rust-analyzer.rustfmt.overrideCommand": [
+    "leptosfmt",
+    "--stdin",
+    "--rustfmt"
+  ],
+  "rust-analyzer.server.extraEnv": {
+    "CARGO_TARGET_DIR": "target/rust-analyzer"
+  },
+  "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"]
 }
