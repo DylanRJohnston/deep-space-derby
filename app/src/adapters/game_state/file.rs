@@ -97,8 +97,6 @@ impl GameState for FileGameState {
         duration: Duration,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>> {
         Box::pin(async move {
-            tracing::info!("setting alarm");
-
             let mut lock_guard = self.inner.lock().await;
 
             let game = lock_guard
@@ -106,8 +104,6 @@ impl GameState for FileGameState {
                 .or_insert_with(|| Game::from_game_id(game_id));
 
             if let Some(handle) = game.alarm.take() {
-                tracing::warn!("overriding alarm");
-
                 handle.abort();
             }
 
@@ -116,7 +112,6 @@ impl GameState for FileGameState {
             game.alarm = Some(tokio::spawn(async move {
                 let result: anyhow::Result<()> = try {
                     tokio::time::sleep(duration).await;
-                    tracing::info!("woke up from alarm");
 
                     let Some(this) = this.upgrade() else {
                         tracing::warn!("alarm trigger after game state was dropped");
@@ -130,8 +125,6 @@ impl GameState for FileGameState {
                         .or_insert_with(|| Game::from_game_id(game_id));
 
                     let (new_events, alarm) = run_processors(&game.events.vector().await?)?;
-
-                    tracing::info!(?new_events, ?alarm);
 
                     for event in new_events {
                         game.push_event(event).await?;

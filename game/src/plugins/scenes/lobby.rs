@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use shared::models::projections;
 
-use crate::plugins::{event_stream::GameEvents, monster::SpawnMonster};
+use crate::plugins::{
+    event_stream::GameEvents,
+    monster::{MonsterBehaviour, SpawnMonster},
+};
 
 use super::{pregame::PreGameSpawnPoint, SceneState};
 
@@ -61,6 +64,7 @@ pub fn spawn_racers(
                 id: spawn_point.id,
                 transform: *transform,
                 monster,
+                behaviour: MonsterBehaviour::Dancing,
             })
         });
 }

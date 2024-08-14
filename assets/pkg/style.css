@@ -639,6 +639,7 @@ input[type="number"] {
   align-items: center;
 
   box-shadow: 0px 1px 2px #000;
+  font-size: 20px;
 }
 
 .stat-speed {

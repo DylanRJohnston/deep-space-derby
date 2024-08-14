@@ -27,7 +27,6 @@ impl Processor for StartRace {
         }
 
         if projections::all_players_have_bet(events) {
-            tracing::info!("all players have bet, starting race");
             return Some(Command::StartRace(()));
         }
 
@@ -44,7 +43,6 @@ impl Processor for StartRace {
                 + Duration::from_secs(*start as u64)
                 + Duration::from_secs(PRE_GAME_TIMEOUT as u64 - 1)
         {
-            tracing::info!("pre-game has timed out, starting race");
             return Some(Command::StartRace(()));
         }
 

@@ -1,7 +1,7 @@
 use rand::{
     distributions::{Distribution, Uniform},
     rngs::StdRng,
-    SeedableRng,
+    Rng, SeedableRng,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -32,7 +32,8 @@ pub const MONSTERS: [Monster; 9] = [
         name: "Cactoro",
         uuid: Uuid::from_u128(0xb19768d8fce94b66a2d7ea84799c0101u128),
         blueprint_name: "library/Monster_Cactoro.glb",
-        ..Monster::DEFAULT
+        speed: 1.0,
+        strength: 0.8,
     },
     Monster {
         name: "Purglehorn",
@@ -46,13 +47,16 @@ pub const MONSTERS: [Monster; 9] = [
         name: "Mawshroom",
         uuid: Uuid::from_u128(0xf8a2f4560fa44e89b915f0b0de101a1au128),
         blueprint_name: "library/Monster_Mushnub.glb",
+        speed: 0.2,
+        strength: 1.8,
         ..Monster::DEFAULT
     },
     Monster {
         name: "Mechapanda",
         uuid: Uuid::from_u128(0x0ef5f3373cea4c9ca6655bd3e7bc4c63u128),
         blueprint_name: "library/Monster_Mech.glb",
-        ..Monster::DEFAULT
+        speed: 0.8,
+        strength: 1.4,
     },
     Monster {
         name: "Finflare",
@@ -74,18 +78,24 @@ pub const MONSTERS: [Monster; 9] = [
         name: "Gallus Cranium",
         uuid: Uuid::from_u128(0x73c68289e1334859a0f4e45883076e10u128),
         blueprint_name: "library/Monster_Pink_Slime.glb",
+        speed: 2.0,
+        strength: 0.0,
         ..Monster::DEFAULT
     },
     Monster {
         name: "Cluckerhead",
         uuid: Uuid::from_u128(0x9f987f8ff320446e8930740aca46954fu128),
         blueprint_name: "library/Monster_Chicken.glb",
+        speed: 1.6,
+        strength: 0.4,
         ..Monster::DEFAULT
     },
     Monster {
         name: "Fangmaw",
         uuid: Uuid::from_u128(0xb4775b5b2e1f42debe985d3d7890db0du128),
         blueprint_name: "library/Monster_Yeti.glb",
+        speed: 1.6,
+        strength: 0.2,
         ..Monster::DEFAULT
     },
 ];
@@ -122,8 +132,8 @@ impl Ord for Jump {
     }
 }
 
-const BASE_JUMP_TIME: f32 = 0.4;
-const BASE_JUMP_DISTANCE: f32 = 0.2;
+const BASE_JUMP_TIME: f32 = 0.2;
+const BASE_JUMP_DISTANCE: f32 = 0.3;
 
 pub fn race(monsters: &[&Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
     let mut rng = StdRng::seed_from_u64(seed as u64);
@@ -141,10 +151,23 @@ pub fn race(monsters: &[&Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
         loop {
             if counter == 0 {
                 counter = Uniform::new(1, 5).sample(&mut rng);
-                jump_time = BASE_JUMP_TIME
-                    + Uniform::new(0.0, f32::max(1.3 - monster.speed, 0.01)).sample(&mut rng);
-                jump_distance = BASE_JUMP_DISTANCE
-                    + 0.75 * Uniform::new(0.0, f32::max(monster.strength, 0.01)).sample(&mut rng);
+                jump_time = {
+                    let lower = f32::max(1.25 - monster.speed, 0.0);
+                    let upper = f32::max(2.0 - monster.speed, 0.00);
+
+                    1.3 * (BASE_JUMP_TIME + 0.5 * (lower + rng.gen::<f32>() * (upper - lower)))
+                };
+                jump_distance = {
+                    let lower = f32::max(f32::powi(monster.strength / 2.0, 2), 0.0);
+                    let upper = f32::max(monster.strength, 0.0);
+
+                    0.6 * (BASE_JUMP_DISTANCE + (lower + rng.gen::<f32>() * (upper - lower)))
+                };
+
+                // Confusion
+                // if rng.gen::<f32>() < 0.25 {
+                //     jump_distance *= -1.;
+                // }
             }
             counter -= 1;
 

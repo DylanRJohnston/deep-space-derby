@@ -3,7 +3,7 @@ use shared::models::projections;
 
 use crate::plugins::{
     event_stream::GameEvents,
-    monster::{DespawnAllMonsters, MonsterID, MonsterRef, SpawnMonster},
+    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterRef, SpawnMonster},
 };
 
 use super::{SceneMetadata, SceneState};
@@ -52,7 +52,6 @@ pub fn spawn_pregame_spawn_point_on_scene_load(
 ) {
     for (entity, metadata) in &query {
         if let Some(value) = metadata.0.get("PreGameSpawnPoint") {
-            tracing::info!("Spawning pregame spawn points");
             match value {
                 serde_json::Value::Number(n) if n.is_u64() => {
                     commands.entity(entity).insert(PreGameSpawnPoint {
@@ -90,6 +89,7 @@ fn spawn_monsters(
             commands.trigger(SpawnMonster {
                 transform: *transform,
                 monster,
+                behaviour: MonsterBehaviour::Idle,
                 id: spawn_point.id,
             })
         });

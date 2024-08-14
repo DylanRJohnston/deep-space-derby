@@ -58,13 +58,14 @@ fn read_event_stream(
     mut events: ResMut<GameEvents>,
 ) {
     while let Ok(event) = EVENT_CHANNEL.receiver.try_recv() {
-        tracing::info!(?event, "Pushing event into bevy");
+        tracing::info!(?event);
         events.as_mut().0.push_back(event);
     }
 }
 
 fn reset_event_stream(mut events: ResMut<GameEvents>) {
     while let Ok(_) = RESET_CHANNEL.receiver.try_recv() {
+        tracing::error!("event stream reset");
         events.as_mut().0.clear();
     }
 }
@@ -87,14 +88,12 @@ fn transition_debug(
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(js_name = "sendGameEvent")]
 pub fn send_game_event(event: Event) -> Result<(), wasm_bindgen::JsError> {
-    tracing::info!(?event, "push event into event stream");
     EVENT_CHANNEL.sender.send(event).map_err(Into::into)
 }
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(js_name = "resetGameEvents")]
 pub fn reset_game_events() -> Result<(), wasm_bindgen::JsError> {
-    tracing::info!("resetting event stream");
     RESET_CHANNEL.sender.send(()).map_err(Into::into)
 }
 
@@ -113,8 +112,6 @@ fn connect_to_server(game_code: Res<GameCode>) {
     ))
     .context("failed to connect to web socket")
     .unwrap();
-
-    tracing::info!("Connected to server");
 
     IoTaskPool::get()
         .spawn(async move {

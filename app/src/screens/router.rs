@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
 
@@ -11,13 +13,11 @@ use shared::models::{events::Event, projections};
 pub fn send_events_to_bevy() -> impl IntoView {
     let events = use_events();
 
-    reset_game_events();
-
-    move || {
-        events.get().last().map(|event| {
+    create_effect(move |_| {
+        if let Some(event) = events().last() {
             send_game_event(event.clone());
-        })
-    }
+        }
+    });
 }
 
 #[component]
@@ -35,9 +35,10 @@ pub fn router() -> impl IntoView {
                                 import init, { sendGameEvent as innerSendGameEvent, resetGameEvents as innerResetGameEvents } from '/pkg/game.js';
                                 
                                 init().catch(() => {
-                                    globalThis['resetGameEvents'] = innerResetGameEvents;
                                     globalThis['innerSendGameEvent'] = innerSendGameEvent;
+                                    globalThis['innerResetGameEvents'] = innerResetGameEvents;
                                     console.log('Module initialised, flushing pending events')
+                                    console.log(pendingEvents);
                                     while (pendingEvents.length > 0) {
                                         let event = pendingEvents.shift();
                                         innerSendGameEvent(event);

@@ -33,7 +33,6 @@ pub struct MonsterBundle {
     pub stats: Stats,
     // pub animations: NamedAnimations,
     // pub behaviour: StateMachine<Behaviour>,
-    pub behaviour_timer: BehaviourTimer,
     pub start: Start,
     pub animation_root: AnimationRoot,
 }
@@ -58,12 +57,6 @@ pub struct NamedAnimations {
 #[derive(Component, Debug, Reflect, Default)]
 pub struct Stats {
     pub recovery_time: f32,
-}
-
-#[derive(Component, Debug, Default)]
-pub struct BehaviourTimer {
-    pub timer: Timer,
-    pub next_state: MonsterBehaviour,
 }
 
 #[derive(Debug, Clone, Default, Copy, Component, PartialEq)]
@@ -103,18 +96,12 @@ pub fn init_animation(
             TimedAnimation { index, duration }
         };
 
-        commands
-            .entity(entity)
-            .insert((NamedAnimations {
-                idle: get_timed_animation("CharacterArmature|Idle", "RobotArmature|Idle"),
-                jump: get_timed_animation("CharacterArmature|Jump", "RobotArmature|Jump"),
-                dance: get_timed_animation("CharacterArmature|Dance", "RobotArmature|Dance"),
-                death: get_timed_animation("CharacterArmature|Death", "RobotArmature|Death"),
-            },))
-            .insert(BehaviourTimer {
-                timer: Timer::from_seconds(1.0, TimerMode::Once),
-                next_state: MonsterBehaviour::Idle,
-            });
+        commands.entity(entity).insert((NamedAnimations {
+            idle: get_timed_animation("CharacterArmature|Idle", "RobotArmature|Idle"),
+            jump: get_timed_animation("CharacterArmature|Jump", "RobotArmature|Jump"),
+            dance: get_timed_animation("CharacterArmature|Dance", "RobotArmature|Dance"),
+            death: get_timed_animation("CharacterArmature|Death", "RobotArmature|Death"),
+        },));
 
         let graph_handle = graphs.add(graph);
         let transition = AnimationTransitions::new();
@@ -134,32 +121,23 @@ pub struct JumpTarget {
 
 pub fn run_timers(
     mut commands: Commands,
-    mut query: Query<(
-        Entity,
-        &Start,
-        &AnimationLink,
-        &NamedAnimations,
-        &mut MonsterBehaviour,
-        &mut BehaviourTimer,
-        &Transform,
-    )>,
+    mut query: Query<
+        (
+            Entity,
+            &Start,
+            &AnimationLink,
+            &NamedAnimations,
+            &MonsterBehaviour,
+            &Transform,
+        ),
+        Or<(Changed<MonsterBehaviour>, Added<NamedAnimations>)>,
+    >,
     mut anim_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     time: Res<Time>,
 ) {
-    for (entity, start, anim_link, animations, mut monster, mut timer, transform) in &mut query {
-        if timer.timer.finished() {
-            continue;
-        }
-
-        timer.timer.tick(time.delta());
-        if !timer.timer.finished() {
-            continue;
-        }
-
+    for (entity, start, anim_link, animations, monster, transform) in &mut query {
         let (mut player, mut transition) = anim_players.get_mut(anim_link.0).unwrap();
 
-        *monster = timer.next_state;
-        tracing::info!(?monster);
         match *monster {
             MonsterBehaviour::Idle => {
                 transition
@@ -241,6 +219,7 @@ fn despawn_all_monsters(
 pub struct SpawnMonster {
     pub transform: Transform,
     pub monster: &'static Monster,
+    pub behaviour: MonsterBehaviour,
     pub id: usize,
 }
 
@@ -259,6 +238,7 @@ fn spawn_monster(
     let SpawnMonster {
         transform,
         monster,
+        behaviour,
         id,
     } = trigger.event();
 
@@ -294,11 +274,7 @@ fn spawn_monster(
         Name::from(monster.name),
         MonsterBundle {
             id: MonsterID(*id),
-            monster: MonsterBehaviour::default(),
-            behaviour_timer: BehaviourTimer {
-                timer: Timer::from_seconds(0.1, TimerMode::Once),
-                next_state: MonsterBehaviour::Idle,
-            },
+            monster: *behaviour,
             start: Start(transform),
             ..default()
         },

@@ -73,8 +73,6 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
                         Err(err) => Err(ServerFnError::ServerError(err.to_string())),
                     }?;
 
-                    leptos::logging::log!("Event {:#?}", &event);
-
                     set_events.update(|events| events.push_back(event));
                     set_connection.set(Connection::Connected);
                 }

@@ -6,7 +6,7 @@ use shared::models::{
 
 use crate::plugins::{
     event_stream::GameEvents,
-    monster::{BehaviourTimer, DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
+    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
 };
 
 use super::{SceneMetadata, SceneState};
@@ -108,6 +108,7 @@ fn reset_race(
             commands.trigger(SpawnMonster {
                 transform: *transform,
                 monster,
+                behaviour: MonsterBehaviour::Idle,
                 id: spawn_point.id,
             })
         });
@@ -134,7 +135,7 @@ impl Default for RaceTimer {
 fn run_race(
     race: Res<Race>,
     time: Res<Time>,
-    mut monsters: Query<(&MonsterID, &mut BehaviourTimer, &mut RaceTimer)>,
+    mut monsters: Query<(&MonsterID, &mut MonsterBehaviour, &mut RaceTimer)>,
 ) {
     for (id, mut behaviour_timer, mut race_timer) in &mut monsters {
         if !race_timer.timer.tick(time.delta()).just_finished() {
@@ -147,11 +148,8 @@ fn run_race(
             .filter(|jump| jump.monster_id == (**id - 1))
             .nth(race_timer.index)
         else {
-            if behaviour_timer.next_state != MonsterBehaviour::Dancing {
-                *behaviour_timer = BehaviourTimer {
-                    timer: Timer::from_seconds(0., TimerMode::Once),
-                    next_state: MonsterBehaviour::Dancing,
-                };
+            if *behaviour_timer != MonsterBehaviour::Dancing {
+                *behaviour_timer = MonsterBehaviour::Dancing;
             }
 
             continue;
@@ -164,10 +162,7 @@ fn run_race(
             timer: Timer::from_seconds(f32::max(timer, 0.0), TimerMode::Once),
         };
 
-        *behaviour_timer = BehaviourTimer {
-            timer: Timer::from_seconds(0., TimerMode::Once),
-            next_state: MonsterBehaviour::Jumping(*jump),
-        };
+        *behaviour_timer = MonsterBehaviour::Jumping(*jump);
     }
 }
 

@@ -3,7 +3,7 @@ use shared::models::projections;
 
 use crate::plugins::{
     event_stream::GameEvents,
-    monster::{DespawnAllMonsters, SpawnMonster},
+    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
 };
 
 use super::{pregame::PreGameCamera, SceneMetadata, SceneState};
@@ -119,6 +119,11 @@ fn spawn_monsters(
             commands.trigger(SpawnMonster {
                 transform: monster_transform,
                 monster,
+                behaviour: if spawn_point.id == 1 {
+                    MonsterBehaviour::Dancing
+                } else {
+                    MonsterBehaviour::Idle
+                },
                 id: spawn_point.id,
             });
 

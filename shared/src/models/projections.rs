@@ -303,8 +303,6 @@ pub fn race_seed(events: &Vector<Event>) -> u32 {
 
     let seed = game_id.wrapping_add(round);
 
-    tracing::info!(?seed);
-
     seed
 }
 

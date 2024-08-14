@@ -27,8 +27,8 @@ pub fn app() -> impl IntoView {
             }
             
             function resetGameEvents() {
-                if (typeof globalThis['resetGameEvents'] === 'function') {
-                    globalThis['resetGameEvents']();
+                if (typeof globalThis['innerResetGameEvents'] === 'function') {
+                    globalThis['innerResetGameEvents']();
                 }
             }
             "

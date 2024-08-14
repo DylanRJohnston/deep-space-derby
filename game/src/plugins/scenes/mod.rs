@@ -217,6 +217,4 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
             _ => {}
         }
     }
-
-    tracing::info!(?next_state, "Next SceneState");
 }

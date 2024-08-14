@@ -63,7 +63,6 @@ impl CommandHandler for PlaceBets {
 
         let race_seed = projections::race_seed(events);
         let monsters = projections::monsters(race_seed);
-        tracing::info!(?race_seed, ?monsters);
 
         for bet in input.bets.iter() {
             if !monsters
