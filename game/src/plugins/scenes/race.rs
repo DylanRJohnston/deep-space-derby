@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::models::{
-    monsters::{self, Jump},
-    projections,
+    monsters::{self},
+    projections::{self, Jump},
 };
 
 use crate::plugins::{
@@ -92,8 +92,8 @@ fn reset_race(
     camera.rotation = position.rotation * Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
 
     let seed = projections::race_seed(&game_events);
-    let monsters = projections::monsters(seed);
-    let (_, jump) = monsters::race(&monsters, seed);
+    let monsters = projections::monsters(&game_events, seed);
+    let (_, jump) = projections::race(&monsters, seed);
 
     commands.insert_resource(Race(jump));
 
@@ -103,6 +103,7 @@ fn reset_race(
             let monster = monsters
                 .get(spawn_point.id - 1)
                 .ok_or_else(|| "failed to find race point for monster".to_string())
+                .copied()
                 .unwrap();
 
             commands.trigger(SpawnMonster {

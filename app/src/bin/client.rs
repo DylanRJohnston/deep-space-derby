@@ -1,6 +1,6 @@
 use std::io;
 
-use app::screens;
+use app::app;
 use leptos::{leptos_dom::logging::console_log, mount_to_body};
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -31,5 +31,5 @@ pub fn hydrate() {
         .without_time()
         .init();
 
-    mount_to_body(screens::App);
+    mount_to_body(app::App);
 }

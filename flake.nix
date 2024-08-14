@@ -181,7 +181,7 @@
             export RUST_LOG=info
 
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
-            GAME_TARGET="target/wasm32-unknown-unknown/debug/game.wasm"
+            GAME_TARGET="./target/wasm32-unknown-unknown/debug/game.wasm"
 
             #entr can't execute bash functions, so we do a little bash metaprogramming
             function build() {
@@ -197,7 +197,7 @@
             }
 
             function bindgen() {
-              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --keep-debug --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
+              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
             }
 
             function bindgen_client() {

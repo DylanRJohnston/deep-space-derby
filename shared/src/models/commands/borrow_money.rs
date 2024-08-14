@@ -27,7 +27,7 @@ impl API for BorrowMoney {
 impl CommandHandler for BorrowMoney {
     type Input = Input;
 
-    #[instrument(name = "BorrowMoney::handle", err)]
+    #[instrument(name = "BorrowMoney::handle", skip(events), err)]
     fn handle(
         session_id: Uuid,
         events: &Vector<Event>,

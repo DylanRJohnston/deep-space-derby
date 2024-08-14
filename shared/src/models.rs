@@ -1,3 +1,4 @@
+pub mod cards;
 pub mod commands;
 pub mod events;
 pub mod game_id;

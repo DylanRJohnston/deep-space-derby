@@ -31,7 +31,7 @@ impl CommandHandler for StartRound {
         }
 
         let seed = projections::race_seed_for_round(events, projections::round(events) + 1);
-        let monsters = projections::monsters(seed);
+        let monsters = projections::monsters(events, seed);
 
         Ok(vec![Event::RoundStarted {
             time: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as u32,

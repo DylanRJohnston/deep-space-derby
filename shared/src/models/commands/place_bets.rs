@@ -62,7 +62,7 @@ impl CommandHandler for PlaceBets {
         // }
 
         let race_seed = projections::race_seed(events);
-        let monsters = projections::monsters(race_seed);
+        let monsters = projections::monsters(events, race_seed);
 
         for bet in input.bets.iter() {
             if !monsters

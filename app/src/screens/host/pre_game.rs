@@ -19,9 +19,7 @@ impl Stat {
 }
 
 #[component]
-fn stat_row(stat: Stat, value: f32) -> impl IntoView {
-    let value = (10. * value / 2.0) as u32;
-
+fn stat_row(stat: Stat, value: i32) -> impl IntoView {
     view! {
         <div class="monster-stats-row">
             <p class:font-speed=stat == Stat::Speed class:font-strength=stat == Stat::Strength>
@@ -50,7 +48,7 @@ fn stat_row(stat: Stat, value: f32) -> impl IntoView {
 }
 
 struct MonsterData {
-    monster: &'static Monster,
+    monster: Monster,
     odds: f32,
     payout: f32,
 }
@@ -60,7 +58,7 @@ pub fn pre_game() -> impl IntoView {
     let events = use_events();
 
     let race_seed = move || projections::race_seed(&events());
-    let monsters = move || projections::monsters(race_seed());
+    let monsters = move || projections::monsters(&events(), race_seed());
 
     let odds = move || projections::pre_computed_odds(&events());
 

@@ -1,11 +1,24 @@
 {
   "cSpell.words": [
+    "bindgen",
+    "Cactoro",
     "color",
+    "consts",
     "despawn",
     "Gltf",
     "Leaderboard",
     "leptos",
-    "opentelemetry"
+    "lerp",
+    "opentelemetry",
+    "powi",
+    "pregame",
+    "Psyblast",
+    "Quat",
+    "Rect",
+    "rngs",
+    "serifx",
+    "srgb",
+    "srgba"
   ],
   "files.exclude": {
     "**/.git": true,

@@ -7,7 +7,11 @@ use macros::serde_wasm_bindgen;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{game_id::GameID, monsters::RaceResults};
+use super::{
+    cards::{Card, Target},
+    game_id::GameID,
+    projections::RaceResults,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Hash)]
 pub struct PlacedBet {
@@ -71,18 +75,49 @@ impl OddsExt for Option<Odds> {
 #[derive(Debug, Clone, PartialEq)]
 #[serde_wasm_bindgen]
 pub enum Event {
-    GameCreated { game_id: GameID },
-    PlayerJoined { session_id: Uuid, name: String },
-    ChangedProfile { session_id: Uuid, name: String },
-    PlayerReady { session_id: Uuid },
-    RoundStarted { time: u32, odds: Option<Odds> },
-    BoughtCard { session_id: Uuid },
-    PlayedCard,
-    BorrowedMoney { session_id: Uuid, amount: u32 },
-    PaidBackMoney { session_id: Uuid, amount: u32 },
+    GameCreated {
+        game_id: GameID,
+    },
+    PlayerJoined {
+        session_id: Uuid,
+        name: String,
+    },
+    ChangedProfile {
+        session_id: Uuid,
+        name: String,
+    },
+    PlayerReady {
+        session_id: Uuid,
+    },
+    RoundStarted {
+        time: u32,
+        odds: Option<Odds>,
+    },
+    BoughtCard {
+        session_id: Uuid,
+        card: Card,
+    },
+    PlayedCard {
+        session_id: Uuid,
+        card: Card,
+        target: Target,
+    },
+    BorrowedMoney {
+        session_id: Uuid,
+        amount: u32,
+    },
+    PaidBackMoney {
+        session_id: Uuid,
+        amount: u32,
+    },
     PlacedBet(PlacedBet),
-    RaceStarted { time: u32 },
-    RaceFinished { time: u32, results: RaceResults },
+    RaceStarted {
+        time: u32,
+    },
+    RaceFinished {
+        time: u32,
+        results: RaceResults,
+    },
     GameFinished,
 }
 

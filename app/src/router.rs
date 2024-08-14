@@ -10,13 +10,13 @@ use leptos_axum::{generate_route_list, LeptosRoutes};
 use shared::models::commands;
 
 use crate::{
+    app,
     handlers::{
         create_game::create_game, forward_command::forward_command, join_game::join_game,
         on_connect::on_connect, register_command::RegisterCommandExt,
     },
     middleware::session_middleware,
     ports::game_state::GameState,
-    screens,
     service::GameService,
 };
 
@@ -39,11 +39,7 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
         )
         .with_state(game_service)
         .layer(axum::middleware::from_fn(session_middleware))
-        .leptos_routes(
-            &leptos_options,
-            generate_route_list(screens::App),
-            screens::App,
-        )
+        .leptos_routes(&leptos_options, generate_route_list(app::App), app::App)
         .layer(axum::middleware::from_fn(|req: Request, next: Next| {
             next.run(req)
         }));
@@ -66,5 +62,7 @@ pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
         .register_command_handler::<commands::ReadyPlayer>()
         .register_command_handler::<commands::PlaceBets>()
         .register_command_handler::<commands::BorrowMoney>()
+        .register_command_handler::<commands::BuyCard>()
+        .register_command_handler::<commands::PlayCard>()
         .with_state(game)
 }

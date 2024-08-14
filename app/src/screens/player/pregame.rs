@@ -2,6 +2,7 @@ use std::cmp::{max, min};
 
 use ev::MouseEvent;
 use leptos::*;
+use leptos_use::use_scroll;
 use uuid::Uuid;
 
 use crate::{
@@ -9,7 +10,8 @@ use crate::{
     utils::{use_events, use_game_id, use_session_id},
 };
 use shared::models::{
-    commands::{borrow_money, place_bets, BorrowMoney, PlaceBets},
+    cards::{Card, Target, TargetKind},
+    commands::{borrow_money, place_bets, play_card, BorrowMoney, BuyCard, PlaceBets, PlayCard},
     monsters::Monster,
     projections,
 };
@@ -73,7 +75,8 @@ pub fn pre_game() -> impl IntoView {
     let untracked_events = events.get_untracked();
 
     // let minimum_bet = projections::minimum_bet(&untracked_events);
-    let monsters = projections::monsters(projections::race_seed(&untracked_events));
+    let monsters =
+        projections::monsters(&untracked_events, projections::race_seed(&untracked_events));
 
     let account_balance = (move || {
         projections::all_account_balances(&events())
@@ -86,7 +89,7 @@ pub fn pre_game() -> impl IntoView {
     let bets = {
         monsters.map(|Monster { name, uuid, .. }| Bet {
             name,
-            monster_id: *uuid,
+            monster_id: uuid,
             amount: create_rw_signal(0),
         })
     };
@@ -155,9 +158,21 @@ pub fn pre_game() -> impl IntoView {
         (read, move || write(!read()))
     };
 
+    let (card_modal, toggle_card_modal) = {
+        let (read, write) = create_signal(false);
+
+        (read, move || write(!read()))
+    };
+
+    let cards = move || projections::cards_in_hand(&events(), player_id);
+
+    let buy_card = create_action(move |input| server_fn::<BuyCard>(game_id, input));
+    let cards_disabled =
+        Signal::derive(move || projections::already_played_card_this_round(&events(), player_id));
+
     view! {
         <div class="pre-game-container">
-            <div class="profile-image">"Profile Image"</div>
+            // <div class="profile-image">"Profile Image"</div>
             <div class="player-info">
                 <h2>{player_name}</h2>
                 <div class="finance">
@@ -169,34 +184,59 @@ pub fn pre_game() -> impl IntoView {
             </div>
             <div class="action-grid">
                 <div class="placeholder-image">
-                    <p class="emoji">"🃏"</p>
+                    <img src="/pkg/icons/spade.svg"/>
                 </div>
                 <div class="placeholder-image">
-                    <p class="emoji">"🦈"</p>
+                    <img src="/pkg/icons/shark.svg"/>
                 </div>
-                <div class="action">
+                <button
+                    class="action"
+                    on:click=move |_| buy_card.dispatch(())
+                    disabled=move || (cards().len() >= 5)
+                >
                     <p>"Buy a card"</p>
                     <p>"(💎 100)"</p>
-                </div>
-                <div class="action" on:click=move |_| toggle_loan_modal()>
+                </button>
+                <button class="action" on:click=move |_| toggle_loan_modal()>
                     "Loan Shark"
-                </div>
-                <div class="action double-width" on:click=move |_| toggle_bets_modal()>
+                </button>
+                <button class="action double-width" on:click=move |_| toggle_bets_modal()>
                     "Place Bet"
-                </div>
+                </button>
             </div>
             <div class="card-line">
-                <div class="card card-two"></div>
-                <div class="card card-three"></div>
-                <div class="card card-four"></div>
+                {move || {
+                    let cards = cards();
+                    let count = cards.len() as i32;
+                    cards
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, card)| {
+                            let rotation = if count % 2 == 0 {
+                                (index as i32 - count / 2) * 25 + 13
+                            } else {
+                                (index as i32 - count / 2) * 25
+                            };
+                            view! {
+                                <CardPreview
+                                    card
+                                    rotation
+                                    on_click=toggle_card_modal
+                                    disabled=cards_disabled
+                                />
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                }}
+
             </div>
         </div>
         <Show when=bets_modal fallback=|| view! {}>
             <div class="pre-game-container blurred">
-                <div class="back-button" on:click=move |_| toggle_bets_modal()>
+                <button class="back-button" on:click=move |_| toggle_bets_modal()>
                     "←"
-                </div>
-                <h2>"Place your Bets"</h2>
+                </button>
+                // <h2>"Place your Bets"</h2>
                 <p>"Available: 💎 " {available_money}</p>
                 <For
                     each=move || bets
@@ -206,13 +246,16 @@ pub fn pre_game() -> impl IntoView {
                     }
                 />
 
-                <div class="action confirm-bets" on:click=move |_| place_bets.dispatch(())>
+                <button class="action confirm-bets" on:click=move |_| place_bets.dispatch(())>
                     "Confirm bets"
-                </div>
+                </button>
             </div>
         </Show>
         <Show when=loan_modal fallback=|| view! {}>
             <LoanModal debt=debt.into_signal() account_balance close=toggle_loan_modal/>
+        </Show>
+        <Show when=card_modal fallback=|| view! {}>
+            <CardModal close=toggle_card_modal/>
         </Show>
     }
 }
@@ -257,11 +300,11 @@ fn loan_modal(
 
     view! {
         <div class="pre-game-container blurred">
-            <div class="back-button" on:click=move |_| close()>
+            <button class="back-button" on:click=move |_| close()>
                 "←"
-            </div>
-            <h1>"Loan shark"</h1>
-            <div class="loan-shark">"🦈"</div>
+            </button>
+            // <h1>"Loan shark"</h1>
+            <div class="loan-shark"></div>
             <p class="bio">"\"I'm a shark, How much do you want to borrow?\""</p>
             <p>"Interest Rate: 5.1%/pr"</p>
             <div class="creature-container">
@@ -279,7 +322,7 @@ fn loan_modal(
                     </button>
                 </div>
             </div>
-            <div class="action confirm-bets" on:click=move |_| borrow_money.dispatch(borrow())>
+            <button class="action confirm-bets" on:click=move |_| borrow_money.dispatch(borrow())>
 
                 {move || {
                     if borrow() >= 0 {
@@ -289,6 +332,171 @@ fn loan_modal(
                     }
                 }}
 
+            </button>
+        </div>
+    }
+}
+
+#[component]
+fn card_preview(
+    card: Card,
+    rotation: i32,
+    on_click: impl Fn() + 'static,
+    disabled: Signal<bool>,
+) -> impl IntoView {
+    view! {
+        <button
+            class="card"
+            style=format!("transform: rotate({rotation}deg)")
+            disabled=disabled
+            on:click=move |_| on_click()
+        >
+            <p>{card.name()}</p>
+            <img src=card.icon()/>
+        </button>
+    }
+}
+
+#[component]
+fn card_main(card: Card) -> impl IntoView {
+    view! {
+        <div class="card-main">
+            <p>{card.name()}</p>
+            <img src=card.icon()/>
+            <p>{card.description()}</p>
+        </div>
+    }
+}
+
+#[component]
+fn card_modal(close: impl Fn() + Copy + 'static) -> impl IntoView {
+    let events = use_events();
+    let player_id = use_session_id();
+    let cards = move || projections::cards_in_hand(&events(), player_id);
+
+    let scroll_ref = create_node_ref::<leptos::html::Div>();
+
+    let scroll = use_scroll(scroll_ref);
+
+    let (target_modal, toggle_target_modal) = {
+        let (read, write) = create_signal(false);
+
+        (read, move || write(!read()))
+    };
+
+    let card = Signal::derive(move || {
+        let index = (((scroll.x)() as f32 - 125.0) / 250.) as usize;
+        cards().get(index).copied()
+    });
+
+    view! {
+        <div class="pre-game-container blurred">
+            <button class="back-button" on:click=move |_| close()>
+                "←"
+            </button>
+            <div ref=scroll_ref class="card-carousel">
+                {move || {
+                    cards().into_iter().map(|card| view! { <CardMain card/> }).collect::<Vec<_>>()
+                }}
+
+            </div>
+            <button
+                class="action"
+                disabled=scroll.is_scrolling
+                on:click=move |_| toggle_target_modal()
+            >
+                "Play Card"
+            </button>
+        </div>
+        {move || match card() {
+            Some(card) if target_modal() => {
+                view! { <TargetModal card close=toggle_target_modal done=close/> }.into_view()
+            }
+            _ => ().into_view(),
+        }}
+    }
+}
+
+#[component]
+fn target_modal(
+    card: Card,
+    close: impl Fn() + Copy + 'static,
+    done: impl Fn() + Copy + 'static,
+) -> impl IntoView {
+    let events = use_events();
+    let game_id = use_game_id();
+    let race_seed = move || projections::race_seed(&events());
+
+    let (target, set_target) = create_signal::<Option<Uuid>>(None);
+
+    let targets = move || match card.target_kind() {
+        TargetKind::Monster => projections::monsters(&events(), race_seed())
+            .into_iter()
+            .map(|monster| {
+                view! {
+                    <button
+                        class="card-target"
+                        class:selected-target=move || target().unwrap_or_default() == monster.uuid
+                        on:click=move |_| set_target(Some(monster.uuid))
+                    >
+                        <p>{monster.name}</p>
+                    </button>
+                }
+                .into_view()
+            })
+            .collect::<Vec<View>>(),
+        TargetKind::Player => projections::players(&events())
+            .into_iter()
+            .map(|(_, player)| {
+                view! {
+                    <button
+                        class="card-target"
+                        class:selected-target=move || {
+                            target().unwrap_or_default() == player.session_id
+                        }
+
+                        on:click=move |_| set_target(Some(player.session_id))
+                    >
+
+                        <p>{player.name}</p>
+                    </button>
+                }
+                .into_view()
+            })
+            .collect::<Vec<View>>(),
+    };
+
+    let play_card = create_action(move |_: &()| async move {
+        let Some(target) = target() else {
+            return;
+        };
+
+        let target = match card.target_kind() {
+            TargetKind::Monster => Target::Monster(target),
+            TargetKind::Player => Target::Player(target),
+        };
+
+        match server_fn::<PlayCard>(game_id, &play_card::Input { card, target }).await {
+            Ok(_) => done(),
+            Err(err) => tracing::error!(?err, "failed to play card"),
+        };
+    });
+
+    view! {
+        <div class="pre-game-container blurred">
+            <button class="back-button" on:click=move |_| close()>
+                "←"
+            </button>
+            <div class="card-target-container">
+                <p>{card.description()}</p>
+                {targets}
+                <button
+                    class="action target-confirm"
+                    disabled=move || target().is_none()
+                    on:click=move |_| play_card.dispatch(())
+                >
+                    "Confirm"
+                </button>
             </div>
         </div>
     }

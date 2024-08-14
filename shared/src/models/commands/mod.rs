@@ -53,6 +53,12 @@ pub use start_round::StartRound;
 pub mod place_bets;
 pub use place_bets::PlaceBets;
 
+pub mod buy_card;
+pub use buy_card::BuyCard;
+
+pub mod play_card;
+pub use play_card::PlayCard;
+
 pub mod start_race;
 pub use start_race::StartRace;
 
@@ -70,6 +76,8 @@ pub enum Command {
     ReadyPlayer(ready_player::Input),
     StartRound(start_round::Input),
     StartRace(start_race::Input),
+    BuyCard(buy_card::Input),
+    PlayCard(play_card::Input),
     PlaceBets(place_bets::Input),
     FinishRace(finish_race::Input),
 }
@@ -88,6 +96,8 @@ impl CommandHandler for Command {
             Command::ChangeProfile(input) => ChangeProfile::handle(session_id, events, input),
             Command::ReadyPlayer(input) => ReadyPlayer::handle(session_id, events, input),
             Command::StartRound(input) => StartRound::handle(session_id, events, input),
+            Command::BuyCard(input) => BuyCard::handle(session_id, events, input),
+            Command::PlayCard(input) => PlayCard::handle(session_id, events, input),
             Command::StartRace(input) => StartRace::handle(session_id, events, input),
             Command::PlaceBets(input) => PlaceBets::handle(session_id, events, input),
             Command::FinishRace(input) => FinishRace::handle(session_id, events, input),

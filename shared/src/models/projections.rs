@@ -1,5 +1,6 @@
 use std::{hash::Hash, time::Duration};
 
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "wasm")]
 use web_time::{SystemTime, UNIX_EPOCH};
 
@@ -8,17 +9,22 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::monsters::MONSTERS;
 
-use rand::Rng;
+use rand::{
+    distributions::{Uniform, WeightedIndex},
+    prelude::Distribution,
+    rngs::StdRng,
+    Rng, SeedableRng,
+};
 
 use super::{
+    cards::{Card, Target},
     events::{Event, Odds, OddsExt, PlacedBet},
     game_id::GameID,
-    monsters::{self, Monster, RaceResults},
+    monsters::{self, Monster},
     processors::start_race::PRE_GAME_TIMEOUT,
 };
 use im::{HashMap, Vector};
-use rand::{rngs::StdRng, SeedableRng};
-use tracing::instrument;
+use tracing::{event, instrument};
 use uuid::Uuid;
 
 pub fn player_count(events: &Vector<Event>) -> usize {
@@ -172,7 +178,7 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
             Event::PlayerJoined { session_id, .. } => {
                 accounts.insert(*session_id, 1000);
             }
-            Event::BoughtCard { session_id } => {
+            Event::BoughtCard { session_id, .. } => {
                 accounts
                     .entry(*session_id)
                     .and_modify(|balance| *balance -= 100);
@@ -219,6 +225,13 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     }
 
     accounts
+}
+
+pub fn account_balance(events: &Vector<Event>, player: Uuid) -> i32 {
+    all_account_balances(events)
+        .get(&player)
+        .copied()
+        .unwrap_or_default()
 }
 
 pub fn last_round(events: &Vector<Event>) -> Option<Vector<Event>> {
@@ -328,23 +341,336 @@ pub fn race_seed(events: &Vector<Event>) -> u32 {
     race_seed_for_round(events, round(events))
 }
 
-pub fn monsters(race_seed: u32) -> [&'static Monster; 3] {
+const DECK: [(usize, Card); 6] = [
+    (10, Card::Poison),
+    (10, Card::TasteTester),
+    (10, Card::ExtraRations),
+    (10, Card::PsyBlast),
+    (10, Card::TinfoilHat),
+    (10, Card::Meditation),
+];
+
+fn bought_cards(events: &Vector<Event>) -> u32 {
+    let mut count = 0;
+
+    for event in events {
+        match event {
+            Event::BoughtCard { .. } => count += 1,
+            _ => {}
+        }
+    }
+
+    count
+}
+
+pub fn draw_card_from_deck(events: &Vector<Event>) -> Card {
+    let dist = WeightedIndex::new(DECK.map(|(weight, _)| weight)).unwrap();
+    let seed = race_seed_for_round(events, bought_cards(events));
+
+    let mut rng = StdRng::seed_from_u64(seed as u64);
+
+    DECK[dist.sample(&mut rng)].1
+}
+
+pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
+    let mut cards = Vec::new();
+
+    for event in events {
+        match event {
+            Event::BoughtCard { session_id, card } if *session_id == player => cards.push(*card),
+            Event::PlayedCard {
+                session_id, card, ..
+            } if *session_id == player => {
+                if let Some(index) = cards.iter().position(|it| it == card) {
+                    cards.remove(index);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    cards
+}
+
+pub fn already_played_card_this_round(events: &Vector<Event>, player: Uuid) -> bool {
+    for event in events.iter().rev() {
+        match event {
+            Event::RoundStarted { .. } => return false,
+            Event::PlayedCard { session_id, .. } if *session_id == player => return true,
+            _ => {}
+        }
+    }
+
+    false
+}
+
+pub fn valid_target_for_card(events: &Vector<Event>, player: Uuid, target: Target) -> bool {
+    match target {
+        Target::Player(player_id) => player != player_id && player_exists(events, player_id),
+        Target::Monster(monster_id) => {
+            let race_seed = race_seed(events);
+            let monsters = monsters(events, race_seed);
+
+            monsters
+                .iter()
+                .find(|monster| monster.uuid == monster_id)
+                .is_some()
+        }
+    }
+}
+
+pub struct PlayedCard {
+    pub card: Card,
+    pub target: Target,
+}
+
+pub fn played_cards(events: &Vector<Event>) -> Vec<PlayedCard> {
+    let mut cards = Vec::new();
+
+    for event in events.iter().rev() {
+        match event {
+            Event::PlayedCard { card, target, .. } => cards.push(PlayedCard {
+                card: *card,
+                target: *target,
+            }),
+            Event::RoundStarted { .. } => return cards,
+            _ => {}
+        }
+    }
+
+    cards
+}
+
+pub fn poisoned(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+    let mut poisoned = false;
+    let mut countered = false;
+
+    for card in cards {
+        match card.target {
+            Target::Monster(monster) if monster == target => {}
+            _ => continue,
+        }
+
+        match card.card {
+            Card::Poison => poisoned = true,
+            Card::TasteTester => countered = true,
+            _ => {}
+        }
+    }
+
+    poisoned && !countered
+}
+
+pub fn extra_rations(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+    let mut extra_rations = false;
+    let mut countered = false;
+
+    for card in cards {
+        match card.target {
+            Target::Monster(monster) if monster == target => {}
+            _ => continue,
+        }
+
+        match card.card {
+            Card::ExtraRations => extra_rations = true,
+            Card::TasteTester => countered = true,
+            _ => {}
+        }
+    }
+
+    extra_rations && !countered
+}
+
+pub fn psyblast(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+    let mut effect = false;
+    let mut countered = false;
+
+    for card in cards {
+        match card.target {
+            Target::Monster(monster) if monster == target => {}
+            _ => continue,
+        }
+
+        match card.card {
+            Card::PsyBlast => effect = true,
+            Card::TinfoilHat => countered = true,
+            _ => {}
+        }
+    }
+
+    effect && !countered
+}
+
+pub fn meditation(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+    let mut effect = false;
+    let mut countered = false;
+
+    for card in cards {
+        match card.target {
+            Target::Monster(monster) if monster == target => {}
+            _ => continue,
+        }
+
+        match card.card {
+            Card::Meditation => effect = true,
+            Card::TinfoilHat => countered = true,
+            _ => {}
+        }
+    }
+
+    effect && !countered
+}
+
+pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
     use rand::seq::SliceRandom;
 
-    let mut rng = rand::rngs::StdRng::seed_from_u64(race_seed as u64);
+    let mut rng = StdRng::seed_from_u64(race_seed as u64);
 
-    MONSTERS
+    let mut monsters: [Monster; 3] = MONSTERS
         .choose_multiple(&mut rng, 3)
+        .copied()
         .collect::<Vec<_>>()
         .try_into()
-        .unwrap()
+        .unwrap();
+
+    let played_cards = played_cards(&events);
+
+    for monster in &mut monsters {
+        if poisoned(&played_cards, monster.uuid) {
+            monster.strength -= 3;
+        }
+
+        if extra_rations(&played_cards, monster.uuid) {
+            monster.strength += 2;
+        }
+
+        if psyblast(&played_cards, monster.uuid) {
+            monster.speed -= 3;
+        }
+
+        if meditation(&played_cards, monster.uuid) {
+            monster.speed += 2;
+        }
+    }
+
+    monsters
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RaceResults {
+    pub first: Uuid,
+    pub second: Uuid,
+    pub third: Uuid,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct Jump {
+    pub monster_id: usize,
+    pub start: f32,
+    pub end: f32,
+    pub distance: f32,
+}
+
+impl PartialOrd for Jump {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for Jump {}
+
+impl Ord for Jump {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.start.partial_cmp(&other.start) {
+            Some(ord) => ord,
+            None => panic!("Failed to compare start times"),
+        }
+    }
+}
+
+const BASE_JUMP_TIME: f32 = 0.2;
+const BASE_JUMP_DISTANCE: f32 = 0.3;
+
+pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
+    let mut rng = StdRng::seed_from_u64(seed as u64);
+
+    let mut jumps = Vec::new();
+
+    for (id, monster) in monsters.iter().enumerate() {
+        let mut distance = 0.;
+        let mut time = 0.;
+
+        let mut jump_time = 0.;
+        let mut jump_distance = 0.;
+        let mut counter = 0;
+
+        let speed = (monster.speed as f32) / 5.;
+        let strength = (monster.strength as f32) / 5.;
+
+        loop {
+            if counter == 0 {
+                counter = Uniform::new(1, 5).sample(&mut rng);
+                jump_time = {
+                    let lower = f32::max(1.25 - speed, 0.0);
+                    let upper = f32::max(2.0 - speed, 0.00);
+
+                    1.3 * (BASE_JUMP_TIME + 0.5 * (lower + rng.gen::<f32>() * (upper - lower)))
+                };
+                jump_distance = {
+                    let lower = f32::max(f32::powi(strength / 2.0, 2), 0.0);
+                    let upper = f32::max(strength, 0.0);
+
+                    0.6 * (BASE_JUMP_DISTANCE + (lower + rng.gen::<f32>() * (upper - lower)))
+                };
+
+                // Confusion
+                // if rng.gen::<f32>() < 0.25 {
+                //     jump_distance *= -1.;
+                // }
+            }
+            counter -= 1;
+
+            distance = f32::min(distance + jump_distance, 10.0);
+
+            jumps.push(Jump {
+                monster_id: id,
+                start: time,
+                end: time + jump_time,
+                distance,
+            });
+
+            time += jump_time;
+
+            if distance >= 10.0 {
+                break;
+            }
+        }
+    }
+
+    jumps.sort();
+
+    let mut finishes = jumps
+        .iter()
+        .filter(|item| item.distance >= 10.)
+        .collect::<Vec<_>>();
+
+    finishes.sort_by(|a, b| a.end.partial_cmp(&b.end).unwrap());
+
+    (
+        RaceResults {
+            first: monsters[finishes[0].monster_id].uuid,
+            second: monsters[finishes[1].monster_id].uuid,
+            third: monsters[finishes[2].monster_id].uuid,
+        },
+        jumps,
+    )
 }
 
 pub fn race_duration(events: &Vector<Event>) -> f32 {
     let race_seed = race_seed(events);
-    let monsters = monsters(race_seed);
+    let monsters = monsters(events, race_seed);
 
-    let (_, jumps) = crate::models::monsters::race(&monsters, race_seed);
+    let (_, jumps) = race(&monsters, race_seed);
 
     jumps.last().unwrap().end
 }
@@ -373,7 +699,7 @@ pub fn time_left_in_pregame(events: &Vector<Event>) -> u64 {
 }
 
 pub fn pre_computed_odds(events: &Vector<Event>) -> Odds {
-    let monsters = monsters(race_seed(events));
+    let monsters = monsters(events, race_seed(events));
 
     events
         .iter()
@@ -393,12 +719,12 @@ pub fn pre_computed_odds(events: &Vector<Event>) -> Odds {
             ])
         })
 }
-pub fn odds(monsters: &[&Monster; 3], seed: u32) -> Odds {
+pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
     let mut wins = HashMap::<Uuid, u32>::new();
     let mut rng = StdRng::seed_from_u64(seed as u64);
 
     for _ in 0..1000 {
-        let (results, _) = monsters::race(monsters, rng.gen::<u32>());
+        let (results, _) = race(monsters, rng.gen::<u32>());
 
         *wins.entry(results.first).or_default() += 1;
     }
@@ -418,12 +744,27 @@ mod tests {
     use uuid::Uuid;
 
     use crate::models::{
+        cards::{Card, Target},
         events::{Event, PlacedBet},
         game_id::GameID,
-        monsters::RaceResults,
+        projections::RaceResults,
     };
 
     use super::all_account_balances;
+
+    use super::{race, MONSTERS};
+    use quickcheck_macros::quickcheck;
+
+    fn init_tracing() {
+        let _ = tracing_subscriber::fmt().pretty().try_init();
+    }
+
+    #[quickcheck]
+    pub fn same_outcome_for_same_seed(seed: u32) -> bool {
+        let monsters = &[MONSTERS[0], MONSTERS[2], MONSTERS[3]];
+
+        race(monsters, seed) == race(monsters, seed)
+    }
 
     #[test]
     fn empty() {
@@ -482,9 +823,18 @@ mod tests {
                 session_id: alice,
                 name: "Alice".to_owned()
             },
-            Event::BoughtCard { session_id: alice },
-            Event::BoughtCard { session_id: alice },
-            Event::BoughtCard { session_id: bob }
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Poison
+            }
         ];
 
         let accounts = all_account_balances(&events);
@@ -666,7 +1016,7 @@ mod tests {
 
         assert_eq!(
             accounts,
-            [(alice, 1200), (bob, 500)]
+            [(alice, 1400), (bob, 500)]
                 .into_iter()
                 .collect::<HashMap<Uuid, i32>>()
         )
@@ -782,7 +1132,10 @@ mod tests {
                 session_id: alice,
                 name: "Alice".to_owned()
             },
-            Event::BoughtCard { session_id: alice },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
                 monster_id: monster_a,
@@ -801,7 +1154,10 @@ mod tests {
                     third: monster_c,
                 }
             },
-            Event::BoughtCard { session_id: bob },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Poison
+            },
             Event::BorrowedMoney {
                 session_id: bob,
                 amount: 500
@@ -856,7 +1212,7 @@ mod tests {
 
         assert_eq!(
             accounts,
-            [(alice, 900), (bob, 1100)]
+            [(alice, 1100), (bob, 1800)]
                 .into_iter()
                 .collect::<HashMap<Uuid, i32>>()
         )
@@ -922,7 +1278,264 @@ mod tests {
 
         assert_eq!(
             winnings,
-            HashMap::from([(alice, 0_i32), (bob, 100), (carol, -100)].as_ref())
+            HashMap::from([(alice, 100), (bob, 200), (carol, -100)].as_ref())
+        );
+    }
+
+    #[test]
+    fn poison_lowers_strength() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
+        ];
+
+        let monsters = super::monsters(&events, 0);
+
+        let mut post_poison_events = events.clone();
+        post_poison_events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::Poison,
+            target: Target::Monster(monsters[0].uuid),
+        });
+
+        let post_poison_monsters = super::monsters(&post_poison_events, 0);
+
+        assert_eq!(monsters[0].strength - 3, post_poison_monsters[0].strength);
+        assert_eq!(monsters[1].strength, post_poison_monsters[1].strength);
+        assert_eq!(monsters[2].strength, post_poison_monsters[2].strength);
+    }
+
+    #[test]
+    fn poison_countered_by_taste_tester() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::TasteTester
+            },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
+        ];
+
+        let monsters = super::monsters(&events, 0);
+
+        let mut post_poison_events = events.clone();
+        post_poison_events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::Poison,
+            target: Target::Monster(monsters[0].uuid),
+        });
+        post_poison_events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::TasteTester,
+            target: Target::Monster(monsters[0].uuid),
+        });
+
+        let post_poison_monsters = super::monsters(&post_poison_events, 0);
+
+        assert_eq!(monsters[0].strength, post_poison_monsters[0].strength);
+        assert_eq!(monsters[1].strength, post_poison_monsters[1].strength);
+        assert_eq!(monsters[2].strength, post_poison_monsters[2].strength);
+    }
+
+    #[test]
+    fn extra_rations_increases_strength() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::ExtraRations
+            },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
+        ];
+
+        let monsters = super::monsters(&events, 0);
+
+        let mut post_rations_events = events.clone();
+        post_rations_events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::ExtraRations,
+            target: Target::Monster(monsters[0].uuid),
+        });
+
+        let post_poison_monsters = super::monsters(&post_rations_events, 0);
+
+        assert_eq!(monsters[0].strength + 2, post_poison_monsters[0].strength);
+        assert_eq!(monsters[1].strength, post_poison_monsters[1].strength);
+        assert_eq!(monsters[2].strength, post_poison_monsters[2].strength);
+    }
+
+    #[test]
+    fn extra_rations_countered_by_taste_tester() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::ExtraRations
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::TasteTester
+            },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
+        ];
+
+        let monsters = super::monsters(&events, 0);
+
+        let mut post_rations_events = events.clone();
+        post_rations_events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::ExtraRations,
+            target: Target::Monster(monsters[0].uuid),
+        });
+        post_rations_events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::TasteTester,
+            target: Target::Monster(monsters[0].uuid),
+        });
+
+        let post_poison_monsters = super::monsters(&post_rations_events, 0);
+
+        assert_eq!(monsters[0].strength, post_poison_monsters[0].strength);
+        assert_eq!(monsters[1].strength, post_poison_monsters[1].strength);
+        assert_eq!(monsters[2].strength, post_poison_monsters[2].strength);
+    }
+
+    #[test]
+    fn cards_in_hand() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::TasteTester
+            },
+        ];
+
+        let cards_in_hand = super::cards_in_hand(&events, alice);
+
+        assert_eq!(cards_in_hand, vec![Card::Poison, Card::TasteTester]);
+    }
+
+    #[test]
+    fn playing_a_card_removes_it_from_hand() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::TasteTester
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::TasteTester
+            },
+            Event::PlayedCard {
+                session_id: alice,
+                card: Card::TasteTester,
+                target: Target::Monster(alice),
+            }
+        ];
+
+        let cards_in_hand = super::cards_in_hand(&events, alice);
+
+        assert_eq!(cards_in_hand, vec![Card::Poison, Card::TasteTester]);
+    }
+
+    #[test]
+    fn drawing_a_card_is_deterministic() {
+        let events = vector![Event::GameCreated {
+            game_id: GameID::random()
+        }];
+
+        assert_eq!(
+            super::draw_card_from_deck(&events),
+            super::draw_card_from_deck(&events)
         );
     }
 }

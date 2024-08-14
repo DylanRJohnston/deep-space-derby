@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, EaseFunction, Tween};
 use rand::{distributions::Uniform, thread_rng, Rng};
-use shared::models::monsters::{Jump, Monster};
+use shared::models::{monsters::Monster, projections::Jump};
 use std::time::Duration;
 
 use bevy::{prelude::*, utils::tracing};
@@ -218,7 +218,7 @@ fn despawn_all_monsters(
 #[derive(Debug, Event)]
 pub struct SpawnMonster {
     pub transform: Transform,
-    pub monster: &'static Monster,
+    pub monster: Monster,
     pub behaviour: MonsterBehaviour,
     pub id: usize,
 }
@@ -227,7 +227,7 @@ pub struct SpawnMonster {
 pub struct MonsterID(pub usize);
 
 #[derive(Debug, Component, Deref)]
-pub struct MonsterRef(pub &'static Monster);
+pub struct MonsterInfo(pub Monster);
 
 fn spawn_monster(
     trigger: Trigger<SpawnMonster>,
@@ -278,7 +278,7 @@ fn spawn_monster(
             start: Start(transform),
             ..default()
         },
-        MonsterRef(monster),
+        MonsterInfo(*monster),
         RaceTimer::default(),
         handle.clone(),
         SceneBundle {

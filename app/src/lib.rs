@@ -6,6 +6,7 @@
 #![feature(trait_alias)]
 #![feature(stmt_expr_attributes)]
 
+pub mod app;
 pub mod components;
 pub mod screens;
 pub mod server_fns;

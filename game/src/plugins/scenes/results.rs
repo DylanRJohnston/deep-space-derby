@@ -92,8 +92,8 @@ fn spawn_monsters(
     commands.trigger(DespawnAllMonsters);
 
     let seed = projections::race_seed(&game_events);
-    let monsters = projections::monsters(seed);
-    let (results, _) = shared::models::monsters::race(&monsters, seed);
+    let monsters = projections::monsters(&game_events, seed);
+    let (results, _) = projections::race(&monsters, seed);
 
     spawn_points
         .into_iter()
@@ -108,7 +108,11 @@ fn spawn_monsters(
                 }
             };
 
-            let Some(monster) = monsters.iter().find(|monster| monster.uuid == uuid) else {
+            let Some(monster) = monsters
+                .iter()
+                .find(|monster| monster.uuid == uuid)
+                .copied()
+            else {
                 tracing::error!(?uuid, "couldn't find monster in race results");
                 return;
             };

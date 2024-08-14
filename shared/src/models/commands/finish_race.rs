@@ -2,7 +2,7 @@ use anyhow::bail;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::models::{events::Event, monsters::race, projections};
+use crate::models::{events::Event, projections};
 
 use super::CommandHandler;
 
@@ -28,8 +28,8 @@ impl CommandHandler for FinishRace {
         }
 
         let race_seed = projections::race_seed(events);
-        let monsters = projections::monsters(race_seed);
-        let (results, _) = race(&monsters, race_seed);
+        let monsters = projections::monsters(events, race_seed);
+        let (results, _) = projections::race(&monsters, race_seed);
 
         Ok(vec![Event::RaceFinished {
             time: Event::now(),
@@ -45,7 +45,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::models::{
-        commands::CommandHandler, events::Event, game_id::GameID, monsters::RaceResults,
+        commands::CommandHandler, events::Event, game_id::GameID, projections::RaceResults,
     };
 
     use super::FinishRace;

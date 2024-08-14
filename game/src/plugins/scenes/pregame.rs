@@ -3,7 +3,7 @@ use shared::models::projections;
 
 use crate::plugins::{
     event_stream::GameEvents,
-    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterRef, SpawnMonster},
+    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterInfo, SpawnMonster},
 };
 
 use super::{SceneMetadata, SceneState};
@@ -76,7 +76,7 @@ fn spawn_monsters(
     commands.trigger(DespawnAllMonsters);
 
     let seed = projections::race_seed(&game_events);
-    let monsters = projections::monsters(seed);
+    let monsters = projections::monsters(&game_events, seed);
 
     spawn_points
         .into_iter()
@@ -84,6 +84,7 @@ fn spawn_monsters(
             let monster = monsters
                 .get(spawn_point.id - 1)
                 .ok_or_else(|| "failed to find race point for monster".to_string())
+                .copied()
                 .unwrap();
 
             commands.trigger(SpawnMonster {
@@ -121,7 +122,7 @@ const FONT_COLOR: Color = Color::linear_rgb(0.0, 0.0, 0.0);
 fn spawn_ui(
     mut commands: Commands,
     camera: Query<(&Camera, &GlobalTransform)>,
-    monsters: Query<(Entity, &MonsterRef, &GlobalTransform), With<MonsterID>>,
+    monsters: Query<(Entity, &MonsterInfo, &GlobalTransform), With<MonsterID>>,
 ) {
     let (camera, camera_transform) = camera.get_single().unwrap();
 

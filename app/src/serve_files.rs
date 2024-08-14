@@ -10,7 +10,7 @@ use leptos::*;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 
-use crate::screens;
+use crate::app;
 
 pub async fn file_and_error_handler(
     State(options): State<LeptosOptions>,
@@ -34,7 +34,7 @@ pub async fn file_and_error_handler(
     if res.status() == StatusCode::OK {
         res.into_response()
     } else {
-        let handler = leptos_axum::render_app_to_stream(options.to_owned(), screens::App);
+        let handler = leptos_axum::render_app_to_stream(options.to_owned(), app::App);
         handler(Request::from_parts(parts, body))
             .await
             .into_response()
