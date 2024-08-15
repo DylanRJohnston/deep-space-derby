@@ -5,6 +5,9 @@ use crate::components::molecules::TextInput;
 
 #[component]
 pub fn join() -> impl IntoView {
+    let param_map = use_query_map();
+    let game_id = param_map.get_untracked().get("code").cloned();
+
     view! {
         <div class="vertical-stack container full-height">
             <div class="headroom"></div>
@@ -14,6 +17,7 @@ pub fn join() -> impl IntoView {
                 <TextInput
                     id="code"
                     name="Lobby Code"
+                    value=game_id
                     pattern="[a-zA-Z0-9]{6}"
                     minlength=6
                     maxlength=6

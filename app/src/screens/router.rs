@@ -49,7 +49,7 @@ pub fn router() -> impl IntoView {
                             <GameConnectionWrapper>
                                 <SendEventsToBevy/>
                                 <GameStateRouter
-                                    lobby=|| {}
+                                    lobby=host::Lobby
                                     pre_game=host::PreGame
                                     race=|| {}
                                     wait=|| {}
