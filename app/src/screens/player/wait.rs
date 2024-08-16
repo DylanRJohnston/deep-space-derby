@@ -18,7 +18,13 @@ pub fn wait() -> impl IntoView {
     view! {
         <div class="pre-game-container space-around">
             <h1>"waiting for other players..."</h1>
-            <div class="countdown">{time}</div>
+            <div class="countdown">
+                {move || match time() {
+                    Some(time) => format!("{time}"),
+                    None => "∞".to_string(),
+                }}
+
+            </div>
             <h2>"Ready"</h2>
         </div>
     }

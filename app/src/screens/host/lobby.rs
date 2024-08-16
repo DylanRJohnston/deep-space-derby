@@ -12,6 +12,7 @@ pub fn lobby() -> impl IntoView {
     let host = location.host().unwrap();
 
     let url = format!("https://{host}/play?code={game_id}");
+    // let url = format!("https://192.168.2.1:8788/play?code={game_id}");
     let url = leptos_router::escape(&url);
     let url = format!(
         "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={url}&color=fff&bgcolor=000"
@@ -23,13 +24,21 @@ pub fn lobby() -> impl IntoView {
         <div class="host-lobby-container">
             <img src=url alt=""/>
             <div style="grid-column: 1; grid-row: 2 / span 4;"></div>
-            <For each=players key=|(key, _)| *key let:info>
-                <div class="host-lobby-player">
-                    <div class="profile-image">"Profile Image"</div>
-                    <h1>{info.1.name}</h1>
-                    <p>{if info.1.ready { "Ready" } else { "Busy" }}</p>
-                </div>
-            </For>
+            {move || {
+                players()
+                    .iter()
+                    .map(|(_, player)| {
+                        view! {
+                            <div class="host-lobby-player">
+                                <div class="profile-image">"Profile Image"</div>
+                                <h1>{player.name.clone()}</h1>
+                                <p>{if player.ready { "Ready" } else { "Busy" }}</p>
+                            </div>
+                        }
+                    })
+                    .collect_view()
+            }}
+
         </div>
     }
 }

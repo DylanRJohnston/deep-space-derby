@@ -5,11 +5,16 @@ use shared::models::{
 };
 
 use crate::plugins::{
+    delayed_command::DelayedCommandExt,
     event_stream::GameEvents,
     monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
+    music::PlayCountdown,
 };
 
-use super::{SceneMetadata, SceneState};
+use super::{
+    pregame::{PreGameCamera, PreGameSpawnPoint},
+    RaceState, SceneMetadata, SceneState,
+};
 
 pub struct RacePlugin;
 
@@ -18,10 +23,11 @@ impl Plugin for RacePlugin {
         app.register_type::<RaceSpawnPoint>()
             .register_type::<RaceStartCamera>()
             .add_systems(Update, spawn_race_spawn_point_on_scene_load)
-            .add_systems(OnEnter(SceneState::Race), init_race)
-            .add_systems(Update, run_race.run_if(in_state(SceneState::Race)))
-            .add_systems(Update, race_camera.run_if(in_state(SceneState::Race)))
-            .observe(reset_race);
+            .add_systems(OnEnter(RaceState::PreRace), init_pre_race)
+            .add_systems(Update, pre_race_timer.run_if(in_state(RaceState::PreRace)))
+            .add_systems(OnEnter(RaceState::Race), init_race)
+            .add_systems(Update, run_race.run_if(in_state(RaceState::Race)))
+            .add_systems(Update, race_camera.run_if(in_state(RaceState::Race)));
 
         #[cfg(feature = "debug")]
         app.add_systems(Update, debug_reset_race);
@@ -60,22 +66,78 @@ pub fn spawn_race_spawn_point_on_scene_load(
     }
 }
 
-#[derive(Debug, Event)]
-struct InitRace;
+fn init_pre_race(
+    mut camera: Query<(&mut Transform, &mut Projection), With<Camera>>,
+    position: Query<&Transform, (With<PreGameCamera>, Without<Camera>)>,
+    spawn_points: Query<(&PreGameSpawnPoint, &Transform), Without<Camera>>,
+    game_events: Res<GameEvents>,
+    mut commands: Commands,
+) {
+    commands.trigger(DespawnAllMonsters);
 
-fn init_race(mut commands: Commands) {
-    commands.trigger(InitRace);
+    let seed = projections::race_seed(&game_events);
+    let monsters = projections::monsters(&game_events, seed);
+
+    spawn_points
+        .into_iter()
+        .for_each(|(spawn_point, transform)| {
+            let monster = monsters
+                .get(spawn_point.id - 1)
+                .ok_or_else(|| "failed to find race point for monster".to_string())
+                .copied()
+                .unwrap();
+
+            commands.trigger(SpawnMonster {
+                transform: *transform,
+                monster,
+                behaviour: MonsterBehaviour::Idle,
+                id: spawn_point.id,
+            })
+        });
+
+    let position = position.get_single().unwrap();
+    let (mut camera, mut projection) = camera.get_single_mut().unwrap();
+
+    camera.translation = position.translation;
+    // Don't know why the rotation coming from blender is fucked up
+    camera.rotation = Quat::from_rotation_z(std::f32::consts::FRAC_PI_2) * position.rotation;
+
+    let Projection::Perspective(projection) = projection.as_mut() else {
+        return;
+    };
+
+    projection.fov = 0.4;
+
+    let pre_race_duration = projections::pre_race_duration(&game_events);
+
+    commands.insert_resource(PreRaceTimer(Timer::new(pre_race_duration, TimerMode::Once)));
+
+    commands.delayed(
+        f32::max(pre_race_duration.as_secs_f32() - 3.0, 0.0),
+        |commands| commands.trigger(PlayCountdown),
+    );
 }
 
-#[cfg(feature = "debug")]
-fn debug_reset_race(keys: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
-    if keys.just_pressed(KeyCode::KeyR) {
-        commands.trigger(InitRace);
+#[derive(Debug, Resource)]
+struct PreRaceTimer(Timer);
+
+fn pre_race_timer(
+    time: Res<Time>,
+    timer: Option<ResMut<PreRaceTimer>>,
+    mut state: ResMut<NextState<RaceState>>,
+) {
+    let Some(mut timer) = timer else {
+        return;
+    };
+
+    if !timer.0.tick(time.delta()).just_finished() {
+        return;
     }
+
+    state.set(RaceState::Race);
 }
 
-fn reset_race(
-    _trigger: Trigger<InitRace>,
+fn init_race(
     position: Query<&Transform, (With<RaceStartCamera>, Without<Camera>)>,
     race_points: Query<(&RaceSpawnPoint, &Transform), Without<Camera>>,
     game_events: Res<GameEvents>,

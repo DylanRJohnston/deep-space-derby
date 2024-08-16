@@ -12,14 +12,14 @@ pub enum Target {
     Monster(Uuid),
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Card {
     Poison,
-    TasteTester,
     ExtraRations,
+    TasteTester,
     PsyBlast,
-    TinfoilHat,
     Meditation,
+    TinfoilHat,
 }
 
 impl Card {

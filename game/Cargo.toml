@@ -5,7 +5,7 @@ edition = "2021"
 
 
 [dependencies]
-bevy = { version = "0.14", features = ["webgpu"] }
+bevy = { version = "0.14", default-features = false }
 bevy-inspector-egui = { version = "0.25", optional = true }
 bevy_asset_loader = { version = "0.21", features = [
   "progress_tracking",
@@ -24,8 +24,37 @@ serde = "1.0.204"
 serde_json = "1.0.120"
 tungstenite = { version = "0.23.0", optional = true, features = ["rustls"] }
 anyhow = "1.0.86"
+bevy_kira_audio = { version = "0.20.0", features = ["ogg"] }
 
 
 [features]
-default = ["bevy/dynamic_linking", "dep:tungstenite"]
+default = ["native", "bevy"]
+bevy = [
+  "bevy/animation",
+  "bevy/bevy_asset",
+  "bevy/bevy_state",
+  "bevy/bevy_color",
+  "bevy/bevy_gilrs",
+  "bevy/bevy_scene",
+  "bevy/bevy_winit",
+  "bevy/bevy_core_pipeline",
+  "bevy/bevy_pbr",
+  "bevy/bevy_gltf",
+  "bevy/bevy_render",
+  "bevy/bevy_sprite",
+  "bevy/bevy_text",
+  "bevy/bevy_ui",
+  "bevy/multi_threaded",
+  "bevy/png",
+  "bevy/hdr",
+  "bevy/x11",
+  "bevy/bevy_gizmos",
+  "bevy/android_shared_stdcxx",
+  "bevy/tonemapping_luts",
+  "bevy/smaa_luts",
+  "bevy/default_font",
+  "bevy/webgpu",
+  "bevy/sysinfo_plugin",
+]
+native = ["bevy/dynamic_linking", "dep:tungstenite"]
 debug = ["dep:bevy-inspector-egui"]

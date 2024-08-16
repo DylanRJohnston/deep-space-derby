@@ -5,8 +5,10 @@ use shared::models::game_id::GameID;
 
 use crate::plugins::{
     animation_link::AnimationLinkPlugin,
+    delayed_command::DelayedCommandPlugin,
     event_stream::{EventStreamPlugin, GameCode},
     monster::MonsterPlugin,
+    music::MusicPlugin,
     planets::PlanetsPlugin,
     scenes::{SceneState, ScenesPlugin},
     skinned_mesh::SkinnedMeshPlugin,
@@ -50,6 +52,8 @@ pub fn start(f: impl FnOnce(&mut App)) {
     .add_plugins(SpectatorPlugin)
     .add_plugins(PlanetsPlugin)
     .add_plugins(SkinnedMeshPlugin)
+    .add_plugins(MusicPlugin)
+    .add_plugins(DelayedCommandPlugin)
     .add_plugins(ProgressPlugin::new(SceneState::Loading).track_assets())
     .add_systems(
         Update,

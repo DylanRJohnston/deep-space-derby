@@ -14,5 +14,5 @@
   ]),
   "skybox": File(path: "cubemap_01/skybox.ktx2"),
   "envmap_diffuse": File(path: "cubemap_01/diffuse_map.ktx2"),
-  "envmap_specular": File(path: "cubemap_01/specular_map.ktx2"),
+  "envmap_specular": File(path: "cubemap_01/specular_map.ktx2")
 })

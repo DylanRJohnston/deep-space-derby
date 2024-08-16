@@ -17,7 +17,7 @@ impl Plugin for EventStreamPlugin {
             .add_systems(Update, reset_event_stream)
             .add_systems(Update, transition_debug);
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
         app.add_systems(Startup, connect_to_server);
     }
 }
@@ -100,7 +100,7 @@ pub fn reset_game_events() -> Result<(), wasm_bindgen::JsError> {
 #[derive(Debug, Resource, Deref)]
 pub struct GameCode(pub GameID);
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
 fn connect_to_server(game_code: Res<GameCode>) {
     use anyhow::Context;
     use bevy::tasks::IoTaskPool;

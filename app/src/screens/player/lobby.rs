@@ -25,7 +25,7 @@ pub fn lobby() -> impl IntoView {
         server_fn::<ChangeProfile>(
             game_id,
             &change_profile::Input {
-                name: name_ref.get().unwrap().value(),
+                name: name_ref.get_untracked().unwrap().value(),
             },
         )
         .await?;
@@ -66,7 +66,7 @@ pub fn lobby() -> impl IntoView {
                         <span>"Waiting for other players..."</span>
                         <div class="profile-image">"Image"</div>
 
-                        <h1>{player().name}</h1>
+                        <h1>{move || player().name}</h1>
                         <span>"Ready"</span>
                     }
                         .into_view()

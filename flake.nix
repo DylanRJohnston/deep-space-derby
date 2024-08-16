@@ -193,7 +193,7 @@
             }
 
             function build_game() {
-              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p game --bin game"
+              echo "cargo build --target wasm32-unknown-unknown --no-default-features --features game/bevy -p game --bin game"
             }
 
             function bindgen() {

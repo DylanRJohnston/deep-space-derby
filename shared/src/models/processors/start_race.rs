@@ -1,6 +1,10 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    time::{Duration, SystemTime, UNIX_EPOCH},
+    usize,
+};
 
 use im::Vector;
+use tracing::instrument;
 
 use crate::models::{commands::Command, events::Event, projections};
 
@@ -16,18 +20,42 @@ impl AlarmProcessor for StartRace {
             return None;
         }
 
+        if projections::time_left_in_pregame(events).is_none() {
+            return None;
+        }
+
         Some(Alarm(Duration::from_secs(PRE_GAME_TIMEOUT as u64)))
     }
 }
 
 impl Processor for StartRace {
+    #[instrument(skip_all)]
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
-        if !matches!(events.last(), Some(Event::PlacedBet(_))) {
+        let last_round_start = events
+            .iter()
+            .rev()
+            .position(|event| matches!(event, Event::RoundStarted { .. }))
+            .unwrap_or(usize::MAX);
+
+        let last_race_start = events
+            .iter()
+            .rev()
+            .position(|event| matches!(event, Event::RaceStarted { .. }))
+            .unwrap_or(usize::MAX);
+
+        if last_race_start < last_round_start {
+            tracing::info!(?last_race_start, ?last_round_start, "race already started");
             return None;
         }
 
         if projections::all_players_have_bet(events) {
+            tracing::info!("all players have bet");
             return Some(Command::StartRace(()));
+        }
+
+        if projections::time_left_in_pregame(events).is_none() {
+            tracing::info!("no timer for this round");
+            return None;
         }
 
         let Some(Event::RoundStarted { time: start, .. }) = events
@@ -35,17 +63,20 @@ impl Processor for StartRace {
             .rev()
             .find(|event| matches!(event, Event::RoundStarted { .. }))
         else {
+            tracing::info!("No round started found");
             return None;
         };
 
         if SystemTime::now()
             >= UNIX_EPOCH
                 + Duration::from_secs(*start as u64)
-                + Duration::from_secs(PRE_GAME_TIMEOUT as u64 - 1)
+                + Duration::from_secs(PRE_GAME_TIMEOUT as u64)
         {
+            tracing::info!("Starting race");
             return Some(Command::StartRace(()));
         }
 
+        tracing::info!("Timer hasn't elapsed yet");
         None
     }
 }

@@ -31,8 +31,8 @@ pub fn creature_card(
         });
     };
 
-    let decrement = move |_| set_bet(amount() - 100);
-    let increment = move |_| set_bet(amount() + 100);
+    let decrement = move |_| set_bet(amount() - 25);
+    let increment = move |_| set_bet(amount() + 25);
 
     let arbitrary_amount = move |ev| {
         set_bet(event_target_value(&ev).parse().unwrap_or_default());
@@ -467,7 +467,7 @@ fn target_modal(
     };
 
     let play_card = create_action(move |_: &()| async move {
-        let Some(target) = target() else {
+        let Some(target) = target.get_untracked() else {
             return;
         };
 

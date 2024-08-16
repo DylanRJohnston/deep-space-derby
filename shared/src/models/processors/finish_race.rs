@@ -14,9 +14,10 @@ impl AlarmProcessor for FinishRace {
             return None;
         }
 
-        let duration = projections::race_duration(events);
+        let duration = projections::pre_race_duration(events)
+            + Duration::from_secs_f32(projections::race_duration(events));
 
-        Some(Alarm(Duration::from_secs_f32(duration)))
+        Some(Alarm(duration))
     }
 }
 
@@ -26,13 +27,10 @@ impl Processor for FinishRace {
             return None;
         };
 
-        let duration = projections::race_duration(events);
+        let duration = projections::pre_race_duration(events)
+            + Duration::from_secs_f32(projections::race_duration(events) - 1.);
 
-        if SystemTime::now()
-            >= UNIX_EPOCH
-                + Duration::from_secs(*start as u64)
-                + Duration::from_secs_f32(duration - 1.)
-        {
+        if SystemTime::now() >= UNIX_EPOCH + Duration::from_secs(*start as u64) + duration {
             return Some(Command::FinishRace(()));
         }
 

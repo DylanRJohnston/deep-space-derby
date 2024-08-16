@@ -1,4 +1,5 @@
 use leptos::*;
+use leptos_use::{use_interval, UseIntervalReturn};
 use shared::models::{events::OddsExt, monsters::Monster, projections};
 
 use crate::utils::use_events;
@@ -75,8 +76,22 @@ pub fn pre_game() -> impl IntoView {
             .collect::<Vec<_>>()
     };
 
+    let UseIntervalReturn { counter, .. } = use_interval(1000);
+
+    let time = move || {
+        counter();
+        projections::time_left_in_pregame(&events())
+    };
+
     view! {
         <div class="host-pre-game-container">
+            <div class="host-pre-game-timer">
+                "Time Left: "
+                {move || match time() {
+                    Some(time) => format!("{time}s"),
+                    None => "∞".to_string(),
+                }}
+            </div>
             <For each=monsters key=|it| it.monster.uuid let:data>
                 <div class="monster-stats-container">
                     <h1>{data.monster.name}</h1>

@@ -109,9 +109,12 @@ impl GameState for FileGameState {
 
             let this = Arc::downgrade(&self.inner);
 
+            tracing::info!(?duration, "setting alarm");
             game.alarm = Some(tokio::spawn(async move {
                 let result: anyhow::Result<()> = try {
                     tokio::time::sleep(duration).await;
+
+                    tracing::info!("waking up from alarm");
 
                     let Some(this) = this.upgrade() else {
                         tracing::warn!("alarm trigger after game state was dropped");
@@ -125,6 +128,8 @@ impl GameState for FileGameState {
                         .or_insert_with(|| Game::from_game_id(game_id));
 
                     let (new_events, alarm) = run_processors(&game.events.vector().await?)?;
+
+                    tracing::info!(?new_events, ?alarm, "alarm events");
 
                     for event in new_events {
                         game.push_event(event).await?;

@@ -1,6 +1,8 @@
 pub mod animation_link;
+pub mod delayed_command;
 pub mod event_stream;
 pub mod monster;
+pub mod music;
 pub mod pallet;
 pub mod planets;
 pub mod scenes;

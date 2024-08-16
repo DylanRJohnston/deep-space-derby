@@ -30,6 +30,14 @@ pub enum SceneState {
     Results,
 }
 
+#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[source(SceneState = SceneState::Race)]
+pub enum RaceState {
+    #[default]
+    PreRace,
+    Race,
+}
+
 pub struct ScenesPlugin;
 
 #[derive(Debug, Component)]
@@ -37,7 +45,8 @@ pub struct SceneMetadata(pub serde_json::Map<String, serde_json::Value>);
 
 impl Plugin for ScenesPlugin {
     fn build(&self, app: &mut App) {
-        app
+        app.init_state::<SceneState>()
+            .add_sub_state::<RaceState>()
             // Don't format me bro
             .add_plugins(LobbyPlugin)
             .add_plugins(RacePlugin)
@@ -45,10 +54,12 @@ impl Plugin for ScenesPlugin {
             .add_plugins(ResultsPlugin)
             .register_type::<GltfExtras>()
             .init_state::<SceneState>()
+            .init_asset::<bevy_kira_audio::AudioSource>()
             .add_loading_state(
                 LoadingState::new(SceneState::Loading)
                     .continue_to_state(SceneState::Spawning)
                     .with_dynamic_assets_file::<StandardDynamicAssetCollection>("all.assets.ron")
+                    .load_collection::<MusicAssets>()
                     .load_collection::<GameAssets>(),
             )
             .add_systems(Update, spawned.run_if(in_state(SceneState::Spawning)))
@@ -99,6 +110,27 @@ pub struct GameAssets {
 
     #[asset(key = "envmap_specular")]
     pub envmap_specular: Handle<Image>,
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct MusicAssets {
+    #[asset(path = "audio/lobby.ogg")]
+    pub music_lobby: Handle<bevy_kira_audio::AudioSource>,
+
+    #[asset(path = "audio/pregame.ogg")]
+    pub music_pregame: Handle<bevy_kira_audio::AudioSource>,
+
+    #[asset(path = "audio/race_alt.ogg")]
+    pub music_race: Handle<bevy_kira_audio::AudioSource>,
+
+    #[asset(path = "audio/results.ogg")]
+    pub music_results: Handle<bevy_kira_audio::AudioSource>,
+
+    #[asset(path = "audio/countdown.ogg")]
+    pub countdown: Handle<bevy_kira_audio::AudioSource>,
+
+    #[asset(path = "audio/crowd.ogg")]
+    pub crowd: Handle<bevy_kira_audio::AudioSource>,
 }
 
 fn scene_setup(

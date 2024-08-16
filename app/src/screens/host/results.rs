@@ -48,7 +48,11 @@ pub fn results() -> impl IntoView {
 
     view! {
         <div class="host-results-container">
-            <div class="results-container" class:invisible=timer.is_pending>
+            <div
+                class="results-container"
+                class:invisible=timer.is_pending
+                class:two-columns=move || (leaderboard().len() > 7)
+            >
                 <h1>"Player Leaderboard"</h1>
 
                 {move || {

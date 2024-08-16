@@ -51,7 +51,7 @@ pub fn router() -> impl IntoView {
                                 <GameStateRouter
                                     lobby=host::Lobby
                                     pre_game=host::PreGame
-                                    race=|| {}
+                                    race=host::Race
                                     wait=|| {}
                                     summary=host::Results
                                 />

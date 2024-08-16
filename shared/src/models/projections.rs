@@ -419,36 +419,43 @@ pub fn valid_target_for_card(events: &Vector<Event>, player: Uuid, target: Targe
     }
 }
 
-pub struct PlayedCard {
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
+pub struct PlayedMonsterCard {
     pub card: Card,
-    pub target: Target,
+    pub monster_id: Uuid,
 }
 
-pub fn played_cards(events: &Vector<Event>) -> Vec<PlayedCard> {
+pub fn unique_played_monster_cards(events: &Vector<Event>) -> Vec<PlayedMonsterCard> {
     let mut cards = Vec::new();
 
-    for event in events.iter().rev() {
+    for event in events.iter() {
         match event {
-            Event::PlayedCard { card, target, .. } => cards.push(PlayedCard {
+            Event::PlayedCard {
+                card,
+                target: Target::Monster(monster_id),
+                ..
+            } => cards.push(PlayedMonsterCard {
                 card: *card,
-                target: *target,
+                monster_id: *monster_id,
             }),
-            Event::RoundStarted { .. } => return cards,
+            Event::RaceFinished { .. } => cards.clear(),
             _ => {}
         }
     }
 
+    cards.sort();
+    cards.dedup();
+
     cards
 }
 
-pub fn poisoned(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+pub fn poisoned(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
     let mut poisoned = false;
     let mut countered = false;
 
     for card in cards {
-        match card.target {
-            Target::Monster(monster) if monster == target => {}
-            _ => continue,
+        if card.monster_id != target {
+            continue;
         }
 
         match card.card {
@@ -461,14 +468,13 @@ pub fn poisoned(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
     poisoned && !countered
 }
 
-pub fn extra_rations(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+pub fn extra_rations(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
     let mut extra_rations = false;
     let mut countered = false;
 
     for card in cards {
-        match card.target {
-            Target::Monster(monster) if monster == target => {}
-            _ => continue,
+        if card.monster_id != target {
+            continue;
         }
 
         match card.card {
@@ -481,14 +487,13 @@ pub fn extra_rations(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
     extra_rations && !countered
 }
 
-pub fn psyblast(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+pub fn psyblast(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
     let mut effect = false;
     let mut countered = false;
 
     for card in cards {
-        match card.target {
-            Target::Monster(monster) if monster == target => {}
-            _ => continue,
+        if card.monster_id != target {
+            continue;
         }
 
         match card.card {
@@ -501,14 +506,13 @@ pub fn psyblast(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
     effect && !countered
 }
 
-pub fn meditation(cards: &Vec<PlayedCard>, target: Uuid) -> bool {
+pub fn meditation(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
     let mut effect = false;
     let mut countered = false;
 
     for card in cards {
-        match card.target {
-            Target::Monster(monster) if monster == target => {}
-            _ => continue,
+        if card.monster_id != target {
+            continue;
         }
 
         match card.card {
@@ -533,7 +537,7 @@ pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
         .try_into()
         .unwrap();
 
-    let played_cards = played_cards(&events);
+    let played_cards = unique_played_monster_cards(&events);
 
     for monster in &mut monsters {
         if poisoned(&played_cards, monster.uuid) {
@@ -554,6 +558,12 @@ pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
     }
 
     monsters
+}
+
+pub fn pre_race_duration(events: &Vector<Event>) -> Duration {
+    let played_card = unique_played_monster_cards(&events).len() as u64;
+
+    Duration::from_secs(3 + 4 * played_card)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -675,17 +685,21 @@ pub fn race_duration(events: &Vector<Event>) -> f32 {
     jumps.last().unwrap().end
 }
 
-pub fn time_left_in_pregame(events: &Vector<Event>) -> u64 {
-    let Some(start) = events
+pub fn time_left_in_pregame(events: &Vector<Event>) -> Option<u64> {
+    if events
         .iter()
-        .rev()
-        .find_map(|event| match event {
-            Event::RoundStarted { time: start, .. } => Some(start),
-            _ => None,
-        })
-        .copied()
-    else {
-        return 0;
+        .filter(|event| matches!(event, Event::RoundStarted { .. }))
+        .count()
+        <= 1
+    {
+        return None;
+    }
+
+    let Some(start) = events.iter().rev().find_map(|event| match event {
+        Event::RoundStarted { time, .. } => Some(*time),
+        _ => None,
+    }) else {
+        return None;
     };
 
     match (UNIX_EPOCH
@@ -693,8 +707,8 @@ pub fn time_left_in_pregame(events: &Vector<Event>) -> u64 {
         + Duration::from_secs(PRE_GAME_TIMEOUT as u64))
     .duration_since(SystemTime::now())
     {
-        Ok(it) => it.as_secs(),
-        Err(_) => 0,
+        Ok(it) => Some(it.as_secs()),
+        Err(_) => Some(0),
     }
 }
 
