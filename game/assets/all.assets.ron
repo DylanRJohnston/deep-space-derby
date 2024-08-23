@@ -12,7 +12,7 @@
     "library/Monster_Yeti.glb",
     "library/Spectator.glb",
   ]),
-  "skybox": File(path: "cubemap_01/skybox.ktx2"),
-  "envmap_diffuse": File(path: "cubemap_01/diffuse_map.ktx2"),
-  "envmap_specular": File(path: "cubemap_01/specular_map.ktx2")
+  "skybox": File(path: "cubemap_01/skybox_rgb9e5.ktx2"),
+  "envmap_diffuse": File(path: "cubemap_01/diffuse_map_rgb9e5.ktx2"),
+  "envmap_specular": File(path: "cubemap_01/specular_map_rgb9e5.ktx2")
 })

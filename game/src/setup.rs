@@ -1,12 +1,11 @@
 use bevy::{asset::AssetMetaCheck, prelude::*, window::WindowResolution};
 use bevy_tweening::TweeningPlugin;
 use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
-use shared::models::game_id::GameID;
 
 use crate::plugins::{
     animation_link::AnimationLinkPlugin,
     delayed_command::DelayedCommandPlugin,
-    event_stream::{EventStreamPlugin, GameCode},
+    event_stream::EventStreamPlugin,
     monster::MonsterPlugin,
     music::MusicPlugin,
     planets::PlanetsPlugin,
@@ -26,8 +25,9 @@ pub fn start(f: impl FnOnce(&mut App)) {
 
     #[cfg(not(target_arch = "wasm32"))]
     if let Some(game_id) = std::env::args().nth(1) {
-        let game_id = GameID::try_from(game_id.as_str()).expect("failed to parse game_id");
-        app.insert_resource(GameCode(game_id));
+        let game_id = shared::models::game_id::GameID::try_from(game_id.as_str())
+            .expect("failed to parse game_id");
+        app.insert_resource(crate::plugins::event_stream::GameCode(game_id));
     }
 
     app.add_plugins(

@@ -3,8 +3,6 @@ use std::{cell::RefCell, time::Duration};
 use bevy::{prelude::*, utils::tracing};
 use bevy_kira_audio::prelude::*;
 
-use crate::plugins::scenes::lobby;
-
 use super::scenes::{MusicAssets, RaceState, SceneState};
 
 #[derive(Debug, Resource)]
@@ -61,18 +59,18 @@ fn update_audio(
 
     let audio_instances = RefCell::new(audio_instances.as_mut());
 
-    let play = |handle: &Option<Handle<AudioInstance>>| {
-        if let Some(audio) = handle {
-            audio_instances
-                .borrow_mut()
-                .get_mut(audio)
-                .unwrap()
-                .resume(AudioTween::new(
-                    Duration::from_secs_f32(0.5),
-                    AudioEasing::InOutPowi(2),
-                ));
-        }
-    };
+    // let play = |handle: &Option<Handle<AudioInstance>>| {
+    //     if let Some(audio) = handle {
+    //         audio_instances
+    //             .borrow_mut()
+    //             .get_mut(audio)
+    //             .unwrap()
+    //             .resume(AudioTween::new(
+    //                 Duration::from_secs_f32(0.5),
+    //                 AudioEasing::InOutPowi(2),
+    //             ));
+    //     }
+    // };
 
     let pause = |handle: &Option<Handle<AudioInstance>>| {
         if let Some(audio) = handle {
@@ -81,7 +79,7 @@ fn update_audio(
                 .get_mut(audio)
                 .unwrap()
                 .pause(AudioTween::new(
-                    Duration::from_secs_f32(1.0),
+                    Duration::from_secs_f32(0.1),
                     AudioEasing::OutPowi(2),
                 ));
         }
@@ -94,7 +92,7 @@ fn update_audio(
                 .get_mut(audio)
                 .unwrap()
                 .stop(AudioTween::new(
-                    Duration::from_secs_f32(1.0),
+                    Duration::from_secs_f32(0.1),
                     AudioEasing::OutPowi(2),
                 ));
         }
@@ -112,7 +110,7 @@ fn update_audio(
                         .get_mut(audio)
                         .unwrap()
                         .resume(AudioTween::new(
-                            Duration::from_secs_f32(0.5),
+                            Duration::from_secs_f32(0.1),
                             AudioEasing::InPowi(2),
                         ));
                 }
@@ -121,7 +119,7 @@ fn update_audio(
                         music_channel
                             .play(game_assets.music_lobby.clone())
                             .fade_in(AudioTween::new(
-                                Duration::from_secs_f32(0.5),
+                                Duration::from_secs_f32(0.1),
                                 AudioEasing::InPowi(2),
                             ))
                             .looped()
@@ -143,7 +141,7 @@ fn update_audio(
                         .get_mut(audio)
                         .unwrap()
                         .resume(AudioTween::new(
-                            Duration::from_secs_f32(0.5),
+                            Duration::from_secs_f32(0.1),
                             AudioEasing::InPowi(2),
                         ));
                 }
@@ -152,7 +150,7 @@ fn update_audio(
                         music_channel
                             .play(game_assets.music_pregame.clone())
                             .fade_in(AudioTween::new(
-                                Duration::from_secs_f32(0.5),
+                                Duration::from_secs_f32(0.1),
                                 AudioEasing::InPowi(2),
                             ))
                             .looped()
@@ -168,29 +166,22 @@ fn update_audio(
         }
         SceneState::Race => {
             match race_state.unwrap().get() {
-                RaceState::PreRace => match handles.crowd.as_ref() {
-                    Some(audio) => {
-                        audio_instances.borrow_mut().get_mut(audio).unwrap().resume(
-                            AudioTween::new(Duration::from_secs_f32(1.0), AudioEasing::InPowi(2)),
-                        );
-                    }
-                    None => {
-                        handles.crowd = Some(
-                            music_channel
-                                .play(game_assets.crowd.clone())
-                                .fade_in(AudioTween::new(
-                                    Duration::from_secs_f32(1.0),
-                                    AudioEasing::InPowi(2),
-                                ))
-                                .looped()
-                                .handle(),
-                        );
-                    }
-                },
+                RaceState::PreRace => {
+                    handles.crowd = Some(
+                        music_channel
+                            .play(game_assets.crowd.clone())
+                            .fade_in(AudioTween::new(
+                                Duration::from_secs_f32(0.1),
+                                AudioEasing::InPowi(2),
+                            ))
+                            .looped()
+                            .handle(),
+                    );
+                }
                 RaceState::Race => match handles.race.as_ref() {
                     Some(audio) => {
                         audio_instances.borrow_mut().get_mut(audio).unwrap().resume(
-                            AudioTween::new(Duration::from_secs_f32(0.5), AudioEasing::InPowi(2)),
+                            AudioTween::new(Duration::from_secs_f32(0.1), AudioEasing::InPowi(2)),
                         );
                     }
                     None => {
@@ -198,7 +189,7 @@ fn update_audio(
                             music_channel
                                 .play(game_assets.music_race.clone())
                                 .fade_in(AudioTween::new(
-                                    Duration::from_secs_f32(0.5),
+                                    Duration::from_secs_f32(0.1),
                                     AudioEasing::InPowi(2),
                                 ))
                                 .looped()
@@ -211,7 +202,6 @@ fn update_audio(
             pause(&handles.lobby);
             pause(&handles.pregame);
             pause(&handles.results);
-            // pause(&handles.crowd);
         }
         SceneState::Results => {
             match handles.results.as_ref() {
@@ -221,7 +211,7 @@ fn update_audio(
                         .get_mut(audio)
                         .unwrap()
                         .resume(AudioTween::new(
-                            Duration::from_secs(1),
+                            Duration::from_secs_f32(0.1),
                             AudioEasing::InPowi(2),
                         ));
                 }
@@ -242,7 +232,6 @@ fn update_audio(
             pause(&handles.lobby);
             pause(&handles.pregame);
             pause(&handles.race);
-            // pause(&handles.crowd);
         }
     }
 }

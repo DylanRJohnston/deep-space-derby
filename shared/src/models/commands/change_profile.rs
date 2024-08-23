@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::models::{events::Event, projections};
+use crate::models::{
+    events::Event,
+    projections::{self, PlayerInfo},
+};
 
 use super::{CommandHandler, API};
 
@@ -40,10 +43,13 @@ impl CommandHandler for ChangeProfile {
             bail!("cannot modify profile after game has started");
         }
 
-        Ok(vec![Event::ChangedProfile {
-            session_id,
-            name: input.name,
-        }])
+        match projections::player_info(events, session_id) {
+            Some(PlayerInfo { name, .. }) if name == input.name => Ok(vec![]),
+            _ => Ok(vec![Event::ChangedProfile {
+                session_id,
+                name: input.name,
+            }]),
+        }
     }
 }
 

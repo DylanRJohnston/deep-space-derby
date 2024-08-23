@@ -12,7 +12,7 @@
 
     nix-filter.url = "github:numtide/nix-filter";
   };
-  outputs = { nixpkgs, flake-utils, naersk, rust-overlay, nix-filter, ... }:
+  outputs = { nixpkgs, flake-utils, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         wasm-bindgen-cli-update = final: prev: {
@@ -30,49 +30,8 @@
         toolchain = pkgs.rust-bin.nightly.latest.complete.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
-
-        naersk' = pkgs.callPackage naersk {
-          cargo = toolchain;
-          rustc = toolchain;
-        };
-
-        buildWorkspacePackage = pname:
-          naersk'.buildPackage {
-            inherit pname;
-
-            CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-            cargoBuildOptions = options: options ++ [ "-p" pname ];
-            copyLibs = true;
-
-            src = nix-filter {
-              root = ./.;
-
-              include = [
-                ./Cargo.toml
-                ./Cargo.lock
-
-                ./client/Cargo.toml
-                ./client/src/main.rs
-
-                ./server/Cargo.toml
-                ./server/src/lib.rs
-
-                ./core/Cargo.toml
-                ./core/src/lib.rs
-
-                pname
-              ];
-            };
-          };
       in rec {
         packages = {
-          client-wasm = buildWorkspacePackage "client";
-          server-wasm = buildWorkspacePackage "server";
-
-          wasm-bindgen = pkgs.writeShellScriptBin "wasm-bindgen" ''
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $1 --out-name index --target bundler --out-dir $2 --no-typescript
-          '';
-
           build-site = pkgs.writeShellScriptBin "site" ''
             set -x
             set -o nounset
@@ -83,146 +42,110 @@
             cp -r assets/* site/
             cp -r game/assets site/assets
 
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin client --features app/hydrate
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game          
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr,app/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin client --features app/hydrate,app/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game --features game/wasm
 
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/worker.wasm --no-typescript --out-name index --target bundler --out-dir ./site    
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/client.wasm --no-typescript --out-name index --target web     --out-dir ./site/pkg
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --out-name game  --target web     --out-dir ./site/pkg
           '';
 
-          dev-wrangler = pkgs.writeShellScriptBin "dev" ''
+          dev-clean = pkgs.writeShellScriptBin "dev-clean" ''
             set -x
             set -o nounset
             set -o errexit
             set -o pipefail
 
             rm -rf site/*
-            cp -r assets/* site/
             ln -s ../game/assets site/assets
-
-            export RUST_LOG=info
-
-            WORKER_TARGET="./target/wasm32-unknown-unknown/debug/worker.wasm"
-            CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
-            GAME_TARGET="./target/wasm32-unknown-unknown/release/game.wasm"
-
-            #entr can't execute bash functions, so we do a little bash metaprogramming
-            function build() {
-              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin $1 --features app/$2"
-            }
-
-            function build_worker() {
-              echo "$(build worker ssr)"
-            }
-
-            function build_client() {
-              echo "$(build client hydrate)"
-            }
-
-            function build_game() {
-              echo "cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game"
-            }
-
-            function bindgen() {
-              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --keep-debug --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
-            }
-
-            function bindgen_worker() {
-                echo "$(bindgen $WORKER_TARGET index bundler ./site)"
-            }
-
-            function bindgen_client() {
-                echo "$(bindgen $CLIENT_TARGET index web ./site/pkg)"
-            }
-
-            function bindgen_game() {
-              echo "$(bindgen $GAME_TARGET game web ./site/pkg)"
-            }
-
-            # Need to build things synchronously first so they're available for wangler
-            $(build_client)
-            $(bindgen_client)
-
-            $(build_worker)
-            $(bindgen_worker)
-
-            $(build_game)
-            $(bindgen_game)
-
-            find app | ${pkgs.entr}/bin/entr -n $(build_worker) &
-            find app | ${pkgs.entr}/bin/entr -n $(build_client) &
-            find game | ${pkgs.entr}/bin/entr -n $(build_game) &
-
-            echo $WORKER_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_worker) &
-            echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
-            echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
-
-            find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
-
-            find site | grep -Ev '(pkg|_worker.js)' | ${pkgs.entr}/bin/entr touch site/_worker.js &
-
-            wrangler pages dev site --local-protocol https --compatibility-date=2023-10-30 &
-
-            wait
           '';
 
-          dev = pkgs.writeShellScriptBin "dev" ''
+          dev-copy-assets = pkgs.writeShellScriptBin "dev-copy-assets" ''
             set -x
             set -o nounset
             set -o errexit
             set -o pipefail
 
-            rm -rf site/*
             cp -r assets/* site/
-            ln -s ../game/assets site/assets
+          '';
 
-            export RUST_LOG=info
+          dev-build-client = pkgs.writeShellScriptBin "dev-build-client" ''
+            set -o nounset
+            set -o errexit
+            set -o pipefail
 
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
+
+            cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin client --features app/hydrate,app/wasm
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $CLIENT_TARGET --no-typescript --out-name index --target web --out-dir ./site/pkg
+
+            echo "############### FINISHED BUILDING CLIENT ###############"
+          '';
+
+          dev-build-game = pkgs.writeShellScriptBin "dev-build-game" ''
+            set -o nounset
+            set -o errexit
+            set -o pipefail
+
             GAME_TARGET="./target/wasm32-unknown-unknown/debug/game.wasm"
 
-            #entr can't execute bash functions, so we do a little bash metaprogramming
-            function build() {
-              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin $1 --features app/$2"
-            }
+            cargo build --target wasm32-unknown-unknown --no-default-features -p game --bin game --features game/wasm
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $GAME_TARGET --no-typescript --out-name game --target web --out-dir ./site/pkg
 
-            function build_client() {
-              echo "$(build client hydrate)"
-            }
+            echo "############### FINISHED BUILDING GAME ###############"
+          '';
 
-            function build_game() {
-              echo "cargo build --target wasm32-unknown-unknown --no-default-features --features game/bevy -p game --bin game"
-            }
+          dev-run-native-server =
+            pkgs.writeShellScriptBin "dev-run-native-server" ''
+              set -o nounset
+              set -o errexit
+              set -o pipefail
 
-            function bindgen() {
-              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
-            }
+              RUST_LOG=info cargo run --package app --bin server
+            '';
 
-            function bindgen_client() {
-                echo "$(bindgen $CLIENT_TARGET index web ./site/pkg)"
-            }
+          dev-run-wrangler-server =
+            pkgs.writeShellScriptBin "dev-run-wrangler-server" ''
+              set -o nounset
+              set -o errexit
+              set -o pipefail
 
-            function bindgen_game() {
-              echo "$(bindgen $GAME_TARGET game web ./site/pkg)"
-            }
+              cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin worker --features app/ssr,app/wasm
+              ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/debug/worker.wasm --keep-debug --no-typescript --out-name index --target bundler --out-dir ./site
+              wrangler pages dev site --ip 0.0.0.0 --local-protocol https --compatibility-date=2023-10-30
+            '';
 
-            find {app,shared} | ${pkgs.entr}/bin/entr -n $(build_client) &
-            echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
+          dev-mprocs-config = pkgs.writeText "mprocs.dev.yaml" ''
+            procs:
+              clean: ${packages.dev-clean}/bin/dev-clean
+              assets: find assets | entr -r ${packages.dev-copy-assets}/bin/dev-copy-assets
+              client: find {app,shared} | entr -n ${packages.dev-build-client}/bin/dev-build-client
+              game: find {game,shared} | entr -n ${packages.dev-build-game}/bin/dev-build-game
+              server: find {app,shared} | entr -rn ${packages.dev-run-native-server}/bin/dev-run-native-server
+          '';
 
-            find {game,shared} | ${pkgs.entr}/bin/entr -n $(build_game) &
-            echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
+          dev-wrangler-mprocs-config =
+            pkgs.writeText "mprocs.wrangler.dev.yaml" ''
+              procs:
+                clean: ${packages.dev-clean}/bin/dev-clean
+                assets: find assets | entr -r ${packages.dev-copy-assets}/bin/dev-copy-assets
+                client: find {app,shared} | entr -n ${packages.dev-build-client}/bin/dev-build-client
+                game: find {game,shared} | entr -n ${packages.dev-build-game}/bin/dev-build-game
+                server: find {app,shared} | entr -rn ${packages.dev-run-wrangler-server}/bin/dev-run-wrangler-server
+            '';
 
-            find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
+          dev = pkgs.writeShellScriptBin "dev" ''
+            ${pkgs.mprocs}/bin/mprocs --config ${packages.dev-mprocs-config}
+          '';
 
-            find {app,shared} | ${pkgs.entr}/bin/entr -rn cargo run --package app --bin server &
-
-            wait
+          dev-wrangler = pkgs.writeShellScriptBin "dev-wrangler" ''
+            ${pkgs.mprocs}/bin/mprocs --config ${packages.dev-wrangler-mprocs-config}
           '';
         };
 
         devShell = with pkgs;
+          with packages;
           mkShell {
             buildInputs = [
               toolchain
@@ -236,6 +159,16 @@
               cargo-leptos
               leptosfmt
               twiggy
+              mprocs
+              dev-clean
+              dev-copy-assets
+              dev-build-client
+              dev-build-game
+              dev-run-native-server
+              dev-run-wrangler-server
+              dev
+              dev-wrangler
+              binaryen
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";

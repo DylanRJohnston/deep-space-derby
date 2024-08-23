@@ -1,5 +1,5 @@
 use im::vector::Vector;
-use leptos::{provide_context, use_context, ReadSignal, ServerFnError, Signal};
+use leptos::{provide_context, use_context, ReadSignal, Signal};
 use shared::models::{events::Event, game_id::GameID};
 
 #[derive(Debug, Clone, PartialEq)]

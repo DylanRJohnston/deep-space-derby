@@ -45,7 +45,6 @@ macros = { path = "../macros" }
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
 rand = "0.8.5"
-reqwest = { version = "0.11.27", features = ["blocking"] }
 serde = "1.0.195"
 serde_json = "1.0.111"
 serde-wasm-bindgen = "0.6.3"
@@ -59,11 +58,12 @@ uuid = { version = "1.7.0", features = ["v4", "js", "serde"] }
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.39"
 web-sys = { version = "0.3.67", features = ["HtmlDocument"] }
-worker = { version = "0.3.1", features = ["http", "axum"] }
-worker-macros = { version = "0.3.1", features = ["http"] }
+worker = { version = "0.3.1", features = ["http", "axum"], optional = true }
+worker-macros = { version = "0.3.1", features = ["http"], optional = true }
 
 [features]
 default = ["ssr", "native"]
+wasm = ["dep:worker", "dep:worker-macros", "shared/wasm"]
 native = [
   "dep:tokio",
   "dep:tower-http",

@@ -15,12 +15,14 @@ pub fn summary() -> impl IntoView {
             .unwrap_or_default()
     };
 
-    let winnings = move || {
+    let debt = Memo::new(move |_| projections::debt(&events(), player_id));
+
+    let winnings = Memo::new(move |_| {
         projections::winnings(&events())
             .get(&player_id)
             .copied()
             .unwrap_or_default()
-    };
+    });
 
     let symbol = move || if winnings() >= 0 { "+" } else { "-" };
     let image = move || if winnings() >= 0 { "📈" } else { "📉" };
@@ -31,7 +33,14 @@ pub fn summary() -> impl IntoView {
                 <h1>"Payout"</h1>
                 <div class="payout-image">{image}</div>
                 <div class="payout-amount">{symbol} "  💎" {move || winnings().abs()}</div>
-                <div class="payout-balance">"Funds: 💎 " {balance}</div>
+                <div class="payout-table">
+                    <div>"Funds:"</div>
+                    <div>"💎 " {balance}</div>
+                    <div>"Debt:"</div>
+                    <div>"💎 " {debt}</div>
+                    <div>"Score:"</div>
+                    <div>"💎 " {move || balance() - (debt() as i32)}</div>
+                </div>
             </div>
         </div>
     }

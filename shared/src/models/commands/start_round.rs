@@ -1,10 +1,11 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use anyhow::bail;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::models::{events::Event, projections};
+use crate::{
+    models::{events::Event, projections},
+    time::*,
+};
 
 use super::CommandHandler;
 

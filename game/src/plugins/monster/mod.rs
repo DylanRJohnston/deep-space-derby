@@ -4,7 +4,7 @@ use rand::{distributions::Uniform, thread_rng, Rng};
 use shared::models::{monsters::Monster, projections::Jump};
 use std::time::Duration;
 
-use bevy::{prelude::*, utils::tracing};
+use bevy::prelude::*;
 
 use super::{
     animation_link::{AnimationLink, AnimationRoot},
@@ -133,7 +133,6 @@ pub fn run_timers(
         Or<(Changed<MonsterBehaviour>, Added<NamedAnimations>)>,
     >,
     mut anim_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
-    time: Res<Time>,
 ) {
     for (entity, start, anim_link, animations, monster, transform) in &mut query {
         let (mut player, mut transition) = anim_players.get_mut(anim_link.0).unwrap();

@@ -3,6 +3,7 @@ use std::{convert::Infallible, fmt::Display};
 use axum::{http::StatusCode, response::IntoResponse};
 
 pub enum ErrWrapper {
+    #[cfg(feature = "wasm")]
     Worker(worker::Error),
     Axum(axum::http::Error),
     Json(serde_json::Error),
@@ -10,6 +11,7 @@ pub enum ErrWrapper {
     Raw(String),
 }
 
+#[cfg(feature = "wasm")]
 impl From<worker::Error> for ErrWrapper {
     fn from(value: worker::Error) -> Self {
         ErrWrapper::Worker(value)
@@ -49,6 +51,7 @@ impl From<Infallible> for ErrWrapper {
 impl Display for ErrWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            #[cfg(feature = "wasm")]
             ErrWrapper::Worker(err) => err.fmt(f),
             ErrWrapper::Axum(err) => err.fmt(f),
             ErrWrapper::Json(err) => err.fmt(f),
@@ -61,6 +64,7 @@ impl Display for ErrWrapper {
 impl IntoResponse for ErrWrapper {
     fn into_response(self) -> axum::response::Response {
         match self {
+            #[cfg(feature = "wasm")]
             ErrWrapper::Worker(err) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
             }

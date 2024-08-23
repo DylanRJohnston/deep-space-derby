@@ -4,13 +4,17 @@
 #![feature(impl_trait_in_fn_trait_return)]
 #![feature(more_qualified_paths)]
 
+#[cfg(target_arch = "wasm32")]
 use std::io;
 
+#[cfg(target_arch = "wasm32")]
 use worker::{console_log, event};
 
+#[cfg(target_arch = "wasm32")]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct ConsoleWriter(Vec<u8>);
 
+#[cfg(target_arch = "wasm32")]
 impl io::Write for ConsoleWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         console_log!("{}", std::str::from_utf8(buf).unwrap());
@@ -23,6 +27,7 @@ impl io::Write for ConsoleWriter {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 #[event(start)]
 pub fn start() {
     console_error_panic_hook::set_once();

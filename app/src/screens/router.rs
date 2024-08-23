@@ -1,11 +1,10 @@
-use std::cell::Cell;
-
+use html::summary;
 use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
 
 use crate::{
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
-    utils::{reset_game_events, send_game_event, use_events, use_session_id},
+    utils::{send_game_event, use_events, use_session_id},
 };
 use shared::models::{events::Event, projections};
 
@@ -158,7 +157,6 @@ where
         GameState::PreGame => pre_game().into_view(),
         GameState::Race => race().into_view(),
         GameState::Wait => wait().into_view(),
-        GameState::Summary => summary().into_view(),
-        GameState::FinalScreen => todo!(),
+        GameState::Summary | GameState::FinalScreen => summary().into_view(),
     }
 }

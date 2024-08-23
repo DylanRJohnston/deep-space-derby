@@ -24,7 +24,15 @@ pub fn join() -> impl IntoView {
                     title="6 alpha-numerical characters e.g. ABC123"
                     uppercase=true
                 />
-                <input type="text" name="name" prop:value="Bob" hidden/>
+                <TextInput
+                    id="name"
+                    name="Name"
+                    pattern="[a-zA-Z]{1,10}"
+                    minlength=1
+                    maxlength=10
+                    title="player name between 1-10 characters long"
+                    value=None
+                />
                 <input class="button" type="submit" value="Join"/>
             </Form>
         </div>

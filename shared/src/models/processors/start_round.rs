@@ -1,10 +1,9 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
 use im::Vector;
 
-use crate::models::{commands::Command, events::Event};
-
 use super::{Alarm, AlarmProcessor, Processor};
+use crate::models::projections;
+use crate::models::{commands::Command, events::Event};
+use crate::time::*;
 
 pub struct StartRound;
 
@@ -13,6 +12,10 @@ pub const SUMMARY_DURATION: f32 = 15.0;
 impl AlarmProcessor for StartRound {
     fn alarm(&self, events: &Vector<Event>) -> Option<Alarm> {
         if !matches!(events.last(), Some(Event::RaceFinished { .. })) {
+            return None;
+        }
+
+        if projections::game_finished(events) {
             return None;
         }
 
@@ -25,6 +28,10 @@ impl Processor for StartRound {
         let Some(Event::RaceFinished { time, .. }) = events.last() else {
             return None;
         };
+
+        if projections::game_finished(events) {
+            return None;
+        }
 
         if SystemTime::now()
             >= UNIX_EPOCH

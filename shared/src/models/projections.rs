@@ -1,13 +1,8 @@
 use std::{hash::Hash, time::Duration};
 
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "wasm")]
-use web_time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(not(feature = "wasm"))]
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use crate::models::monsters::MONSTERS;
+use crate::{models::monsters::MONSTERS, time::*};
 
 use rand::{
     distributions::{Uniform, WeightedIndex},
@@ -20,11 +15,11 @@ use super::{
     cards::{Card, Target},
     events::{Event, Odds, OddsExt, PlacedBet},
     game_id::GameID,
-    monsters::{self, Monster},
+    monsters::Monster,
     processors::start_race::PRE_GAME_TIMEOUT,
 };
 use im::{HashMap, Vector};
-use tracing::{event, instrument};
+use tracing::instrument;
 use uuid::Uuid;
 
 pub fn player_count(events: &Vector<Event>) -> usize {
@@ -158,6 +153,10 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     let players = players(events);
     let bets = placed_bets(events);
 
+    if players.is_empty() {
+        return false;
+    }
+
     for player in players.keys() {
         if !bets.contains_key(player) {
             return false;
@@ -284,23 +283,32 @@ pub fn winnings(events: &Vector<Event>) -> HashMap<Uuid, i32> {
     winnings
 }
 
-pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
-    let mut debt = 0;
+pub fn all_debt(events: &Vector<Event>) -> HashMap<Uuid, u32> {
+    let mut debt = HashMap::new();
 
     for event in events {
         match event {
-            Event::BorrowedMoney { session_id, amount } if *session_id == player_id => {
-                debt += amount
+            Event::BorrowedMoney { session_id, amount } => {
+                *debt.entry(*session_id).or_default() += *amount
             }
-            Event::PaidBackMoney { session_id, amount } if *session_id == player_id => {
-                debt -= amount
+            Event::PaidBackMoney { session_id, amount } => {
+                *debt.entry(*session_id).or_default() -= *amount
             }
-            Event::RaceFinished { .. } => debt = ((debt as f32) * 1.051) as u32,
+            Event::RaceFinished { .. } => debt
+                .iter_mut()
+                .for_each(|(_, amount)| *amount = ((*amount as f32) * 1.051) as u32),
             _ => {}
-        };
+        }
     }
 
     debt
+}
+
+pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
+    all_debt(events)
+        .get(&player_id)
+        .copied()
+        .unwrap_or_default()
 }
 
 #[instrument(skip_all)]
@@ -438,7 +446,7 @@ pub fn unique_played_monster_cards(events: &Vector<Event>) -> Vec<PlayedMonsterC
                 card: *card,
                 monster_id: *monster_id,
             }),
-            Event::RaceFinished { .. } => cards.clear(),
+            Event::RoundStarted { .. } => cards.clear(),
             _ => {}
         }
     }
@@ -566,7 +574,21 @@ pub fn pre_race_duration(events: &Vector<Event>) -> Duration {
     Duration::from_secs(3 + 4 * played_card)
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub fn game_finished(events: &Vector<Event>) -> bool {
+    let mut rounds = 0;
+
+    for event in events.iter() {
+        match event {
+            Event::RaceFinished { .. } => rounds += 1,
+            Event::GameFinished => return true,
+            _ => {}
+        }
+    }
+
+    rounds >= 10
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct RaceResults {
     pub first: Uuid,
     pub second: Uuid,
@@ -749,6 +771,16 @@ pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
             wins.get(&monster.uuid).copied().unwrap_or_default() as f32 / 1000.,
         )
     }))
+}
+
+pub fn results(events: &Vector<Event>) -> Option<RaceResults> {
+    for event in events.iter().rev() {
+        if let Event::RaceFinished { results, .. } = event {
+            return Some(*results);
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]

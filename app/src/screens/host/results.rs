@@ -1,12 +1,10 @@
 use leptos::*;
 use shared::models::projections;
-use uuid::Uuid;
 
 use crate::utils::use_events;
 
 struct LeaderboardInfo {
     name: String,
-    uuid: Uuid,
     balance: i32,
     winnings: i32,
 }
@@ -21,11 +19,13 @@ pub fn results() -> impl IntoView {
     let players = move || projections::players(&events());
     let balances = move || projections::all_account_balances(&events());
     let winnings = move || projections::winnings(&events());
+    let debt = move || projections::all_debt(&events());
 
     let leaderboard = move || {
         let players = players();
         let winnings = winnings();
         let balances = balances();
+        let debt = debt();
 
         tracing::info!(?winnings);
 
@@ -34,8 +34,8 @@ pub fn results() -> impl IntoView {
             .filter_map(|(key, value)| {
                 Some(LeaderboardInfo {
                     name: value.name,
-                    uuid: value.session_id,
-                    balance: balances.get(&key).copied().unwrap_or_default(),
+                    balance: balances.get(&key).copied().unwrap_or_default()
+                        - debt.get(&key).copied().unwrap_or_default() as i32,
                     winnings: winnings.get(&key).copied().unwrap_or_default(),
                 })
             })
@@ -46,6 +46,8 @@ pub fn results() -> impl IntoView {
         info
     };
 
+    let game_is_finished = move || projections::game_finished(&events());
+
     view! {
         <div class="host-results-container">
             <div
@@ -53,7 +55,9 @@ pub fn results() -> impl IntoView {
                 class:invisible=timer.is_pending
                 class:two-columns=move || (leaderboard().len() > 7)
             >
-                <h1>"Player Leaderboard"</h1>
+                <h1>
+                    {move || if game_is_finished() { "Final Score" } else { "Player Leaderboard" }}
+                </h1>
 
                 {move || {
                     leaderboard()

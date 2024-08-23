@@ -1,7 +1,4 @@
-use std::{
-    ops::Deref,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::ops::Deref;
 
 use macros::serde_wasm_bindgen;
 use serde::{Deserialize, Serialize};
@@ -12,6 +9,8 @@ use super::{
     game_id::GameID,
     projections::RaceResults,
 };
+
+use crate::time::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Hash)]
 pub struct PlacedBet {

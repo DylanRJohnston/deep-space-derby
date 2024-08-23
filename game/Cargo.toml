@@ -28,7 +28,8 @@ bevy_kira_audio = { version = "0.20.0", features = ["ogg"] }
 
 
 [features]
-default = ["native", "bevy"]
+default = ["native"]
+wasm = ["bevy", "shared/wasm"]
 bevy = [
   "bevy/animation",
   "bevy/bevy_asset",
@@ -56,5 +57,5 @@ bevy = [
   "bevy/webgpu",
   "bevy/sysinfo_plugin",
 ]
-native = ["bevy/dynamic_linking", "dep:tungstenite"]
+native = ["bevy", "bevy/dynamic_linking", "dep:tungstenite"]
 debug = ["dep:bevy-inspector-egui"]

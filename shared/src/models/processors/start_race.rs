@@ -1,14 +1,12 @@
-use std::{
-    time::{Duration, SystemTime, UNIX_EPOCH},
-    usize,
-};
+use std::usize;
 
 use im::Vector;
 use tracing::instrument;
 
-use crate::models::{commands::Command, events::Event, projections};
-
 use super::{Alarm, AlarmProcessor, Processor};
+use crate::models::projections;
+use crate::models::{commands::Command, events::Event};
+use crate::time::*;
 
 pub const PRE_GAME_TIMEOUT: u32 = 90;
 
@@ -83,7 +81,7 @@ impl Processor for StartRace {
 
 #[cfg(test)]
 mod test {
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use crate::time::*;
 
     use im::Vector;
     use uuid::Uuid;

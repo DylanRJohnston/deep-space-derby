@@ -248,8 +248,7 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
                 GameEvent::GameCreated { .. } => SceneState::Lobby,
                 GameEvent::RoundStarted { .. } => SceneState::PreGame,
                 GameEvent::RaceStarted { .. } => SceneState::Race,
-                GameEvent::RaceFinished { .. } => SceneState::Results,
-                GameEvent::GameFinished => SceneState::Lobby,
+                GameEvent::RaceFinished { .. } | GameEvent::GameFinished => SceneState::Results,
                 _ => None?,
             })
         })

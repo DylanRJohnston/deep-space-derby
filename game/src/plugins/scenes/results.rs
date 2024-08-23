@@ -3,10 +3,10 @@ use shared::models::projections;
 
 use crate::plugins::{
     event_stream::GameEvents,
-    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
+    monster::{DespawnAllMonsters, MonsterBehaviour, SpawnMonster},
 };
 
-use super::{pregame::PreGameCamera, SceneMetadata, SceneState};
+use super::{SceneMetadata, SceneState};
 
 pub struct ResultsPlugin;
 
@@ -93,7 +93,7 @@ fn spawn_monsters(
 
     let seed = projections::race_seed(&game_events);
     let monsters = projections::monsters(&game_events, seed);
-    let (results, _) = projections::race(&monsters, seed);
+    let results = projections::results(&game_events).unwrap();
 
     spawn_points
         .into_iter()

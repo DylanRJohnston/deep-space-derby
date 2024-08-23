@@ -38,11 +38,8 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
             any(forward_command::<S>),
         )
         .with_state(game_service)
-        .layer(axum::middleware::from_fn(session_middleware))
         .leptos_routes(&leptos_options, generate_route_list(app::App), app::App)
-        .layer(axum::middleware::from_fn(|req: Request, next: Next| {
-            next.run(req)
-        }));
+        .layer(axum::middleware::from_fn(session_middleware));
 
     #[cfg(not(target_arch = "wasm32"))]
     let router = router.fallback(crate::serve_files::file_and_error_handler);

@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use shared::models::{
-    monsters::{self},
-    projections::{self, Jump},
-};
+use shared::models::projections::{self, Jump};
 
 use crate::plugins::{
     delayed_command::DelayedCommandExt,
@@ -13,7 +10,7 @@ use crate::plugins::{
 
 use super::{
     pregame::{PreGameCamera, PreGameSpawnPoint},
-    RaceState, SceneMetadata, SceneState,
+    RaceState, SceneMetadata,
 };
 
 pub struct RacePlugin;

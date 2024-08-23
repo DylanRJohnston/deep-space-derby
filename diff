@@ -1,0 +1,2586 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index ce027a2..a2fa86b 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -214,7 +214,6 @@ dependencies = [
+  "quickcheck",
+  "quickcheck_macros",
+  "rand",
+- "reqwest",
+  "serde",
+  "serde-wasm-bindgen 0.6.5",
+  "serde_json",
+@@ -465,9 +464,9 @@ dependencies = [
+  "bytes",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "http-body-util",
+- "hyper 1.4.1",
++ "hyper",
+  "hyper-util",
+  "itoa",
+  "matchit",
+@@ -500,7 +499,7 @@ dependencies = [
+  "bytes",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "http-body-util",
+  "mime",
+  "pin-project-lite",
+@@ -523,7 +522,7 @@ dependencies = [
+  "cookie",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "http-body-util",
+  "mime",
+  "pin-project-lite",
+@@ -556,13 +555,13 @@ dependencies = [
+  "bytes",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "http-body-util",
+- "hyper 1.4.1",
++ "hyper",
+  "hyper-util",
+  "pin-project-lite",
+  "rustls",
+- "rustls-pemfile 2.1.2",
++ "rustls-pemfile",
+  "rustls-pki-types",
+  "tokio",
+  "tokio-rustls",
+@@ -2089,7 +2088,7 @@ dependencies = [
+  "bitflags 1.3.2",
+  "core-foundation",
+  "core-graphics-types",
+- "foreign-types 0.5.0",
++ "foreign-types",
+  "libc",
+ ]
+ 
+@@ -2612,15 +2611,6 @@ version = "1.0.7"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+ 
+-[[package]]
+-name = "foreign-types"
+-version = "0.3.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
+-dependencies = [
+- "foreign-types-shared 0.1.1",
+-]
+-
+ [[package]]
+ name = "foreign-types"
+ version = "0.5.0"
+@@ -2628,7 +2618,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "d737d9aa519fb7b749cbc3b962edcf310a8dd1f4b67c91c4f83975dbdd17d965"
+ dependencies = [
+  "foreign-types-macros",
+- "foreign-types-shared 0.3.1",
++ "foreign-types-shared",
+ ]
+ 
+ [[package]]
+@@ -2642,12 +2632,6 @@ dependencies = [
+  "syn 2.0.72",
+ ]
+ 
+-[[package]]
+-name = "foreign-types-shared"
+-version = "0.1.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
+-
+ [[package]]
+ name = "foreign-types-shared"
+ version = "0.3.1"
+@@ -3095,25 +3079,6 @@ dependencies = [
+  "svg_fmt",
+ ]
+ 
+-[[package]]
+-name = "h2"
+-version = "0.3.26"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
+-dependencies = [
+- "bytes",
+- "fnv",
+- "futures-core",
+- "futures-sink",
+- "futures-util",
+- "http 0.2.12",
+- "indexmap",
+- "slab",
+- "tokio",
+- "tokio-util",
+- "tracing",
+-]
+-
+ [[package]]
+ name = "h2"
+ version = "0.4.5"
+@@ -3249,17 +3214,6 @@ dependencies = [
+  "itoa",
+ ]
+ 
+-[[package]]
+-name = "http-body"
+-version = "0.4.6"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
+-dependencies = [
+- "bytes",
+- "http 0.2.12",
+- "pin-project-lite",
+-]
+-
+ [[package]]
+ name = "http-body"
+ version = "1.0.1"
+@@ -3279,7 +3233,7 @@ dependencies = [
+  "bytes",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "pin-project-lite",
+ ]
+ 
+@@ -3301,30 +3255,6 @@ version = "1.0.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
+ 
+-[[package]]
+-name = "hyper"
+-version = "0.14.30"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a152ddd61dfaec7273fe8419ab357f33aee0d914c5f4efbf0d96fa749eea5ec9"
+-dependencies = [
+- "bytes",
+- "futures-channel",
+- "futures-core",
+- "futures-util",
+- "h2 0.3.26",
+- "http 0.2.12",
+- "http-body 0.4.6",
+- "httparse",
+- "httpdate",
+- "itoa",
+- "pin-project-lite",
+- "socket2",
+- "tokio",
+- "tower-service",
+- "tracing",
+- "want",
+-]
+-
+ [[package]]
+ name = "hyper"
+ version = "1.4.1"
+@@ -3334,9 +3264,9 @@ dependencies = [
+  "bytes",
+  "futures-channel",
+  "futures-util",
+- "h2 0.4.5",
++ "h2",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "httparse",
+  "httpdate",
+  "itoa",
+@@ -3345,19 +3275,6 @@ dependencies = [
+  "tokio",
+ ]
+ 
+-[[package]]
+-name = "hyper-tls"
+-version = "0.5.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
+-dependencies = [
+- "bytes",
+- "hyper 0.14.30",
+- "native-tls",
+- "tokio",
+- "tokio-native-tls",
+-]
+-
+ [[package]]
+ name = "hyper-util"
+ version = "0.1.6"
+@@ -3367,8 +3284,8 @@ dependencies = [
+  "bytes",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
+- "hyper 1.4.1",
++ "http-body",
++ "hyper",
+  "pin-project-lite",
+  "tokio",
+ ]
+@@ -3510,12 +3427,6 @@ dependencies = [
+  "mach2",
+ ]
+ 
+-[[package]]
+-name = "ipnet"
+-version = "2.9.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
+-
+ [[package]]
+ name = "itertools"
+ version = "0.12.1"
+@@ -4084,7 +3995,7 @@ dependencies = [
+  "bitflags 2.6.0",
+  "block",
+  "core-graphics-types",
+- "foreign-types 0.5.0",
++ "foreign-types",
+  "log",
+  "objc",
+  "paste",
+@@ -4205,23 +4116,6 @@ dependencies = [
+  "unicode-ident",
+ ]
+ 
+-[[package]]
+-name = "native-tls"
+-version = "0.2.12"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a8614eb2c83d59d1c8cc974dd3f920198647674a0a035e1af1fa58707e317466"
+-dependencies = [
+- "libc",
+- "log",
+- "openssl",
+- "openssl-probe",
+- "openssl-sys",
+- "schannel",
+- "security-framework",
+- "security-framework-sys",
+- "tempfile",
+-]
+-
+ [[package]]
+ name = "ndk"
+ version = "0.8.0"
+@@ -4635,50 +4529,6 @@ version = "1.19.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+ 
+-[[package]]
+-name = "openssl"
+-version = "0.10.66"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9529f4786b70a3e8c61e11179af17ab6188ad8d0ded78c5529441ed39d4bd9c1"
+-dependencies = [
+- "bitflags 2.6.0",
+- "cfg-if",
+- "foreign-types 0.3.2",
+- "libc",
+- "once_cell",
+- "openssl-macros",
+- "openssl-sys",
+-]
+-
+-[[package]]
+-name = "openssl-macros"
+-version = "0.1.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
+-dependencies = [
+- "proc-macro2",
+- "quote",
+- "syn 2.0.72",
+-]
+-
+-[[package]]
+-name = "openssl-probe"
+-version = "0.1.5"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+-
+-[[package]]
+-name = "openssl-sys"
+-version = "0.9.103"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7f9e8deee91df40a943c71b917e5874b951d32a802526c85721ce3b776c929d6"
+-dependencies = [
+- "cc",
+- "libc",
+- "pkg-config",
+- "vcpkg",
+-]
+-
+ [[package]]
+ name = "orbclient"
+ version = "0.3.47"
+@@ -5162,46 +5012,6 @@ version = "1.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
+ 
+-[[package]]
+-name = "reqwest"
+-version = "0.11.27"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dd67538700a17451e7cba03ac727fb961abb7607553461627b97de0b89cf4a62"
+-dependencies = [
+- "base64 0.21.7",
+- "bytes",
+- "encoding_rs",
+- "futures-core",
+- "futures-util",
+- "h2 0.3.26",
+- "http 0.2.12",
+- "http-body 0.4.6",
+- "hyper 0.14.30",
+- "hyper-tls",
+- "ipnet",
+- "js-sys",
+- "log",
+- "mime",
+- "native-tls",
+- "once_cell",
+- "percent-encoding",
+- "pin-project-lite",
+- "rustls-pemfile 1.0.4",
+- "serde",
+- "serde_json",
+- "serde_urlencoded",
+- "sync_wrapper 0.1.2",
+- "system-configuration",
+- "tokio",
+- "tokio-native-tls",
+- "tower-service",
+- "url",
+- "wasm-bindgen",
+- "wasm-bindgen-futures",
+- "web-sys",
+- "winreg",
+-]
+-
+ [[package]]
+ name = "ring"
+ version = "0.17.8"
+@@ -5301,15 +5111,6 @@ dependencies = [
+  "zeroize",
+ ]
+ 
+-[[package]]
+-name = "rustls-pemfile"
+-version = "1.0.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
+-dependencies = [
+- "base64 0.21.7",
+-]
+-
+ [[package]]
+ name = "rustls-pemfile"
+ version = "2.1.2"
+@@ -5369,15 +5170,6 @@ dependencies = [
+  "winapi-util",
+ ]
+ 
+-[[package]]
+-name = "schannel"
+-version = "0.1.23"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fbc91545643bcf3a0bbb6569265615222618bdf33ce4ffbbd13c4bbd4c093534"
+-dependencies = [
+- "windows-sys 0.52.0",
+-]
+-
+ [[package]]
+ name = "scoped-tls"
+ version = "1.0.1"
+@@ -5403,29 +5195,6 @@ dependencies = [
+  "tiny-skia",
+ ]
+ 
+-[[package]]
+-name = "security-framework"
+-version = "2.11.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "897b2245f0b511c87893af39b033e5ca9cce68824c4d7e7630b5a1d339658d02"
+-dependencies = [
+- "bitflags 2.6.0",
+- "core-foundation",
+- "core-foundation-sys",
+- "libc",
+- "security-framework-sys",
+-]
+-
+-[[package]]
+-name = "security-framework-sys"
+-version = "2.11.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "75da29fe9b9b08fe9d6b22b5b4bcbc75d8db3aa31e639aa56bb62e9d46bfceaf"
+-dependencies = [
+- "core-foundation-sys",
+- "libc",
+-]
+-
+ [[package]]
+ name = "self_cell"
+ version = "1.0.4"
+@@ -5572,7 +5341,7 @@ dependencies = [
+  "gloo-net",
+  "http 1.1.0",
+  "http-body-util",
+- "hyper 1.4.1",
++ "hyper",
+  "inventory",
+  "js-sys",
+  "once_cell",
+@@ -5929,27 +5698,6 @@ dependencies = [
+  "windows 0.52.0",
+ ]
+ 
+-[[package]]
+-name = "system-configuration"
+-version = "0.5.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ba3a3adc5c275d719af8cb4272ea1c4a6d668a777f37e115f6d11ddbc1c8e0e7"
+-dependencies = [
+- "bitflags 1.3.2",
+- "core-foundation",
+- "system-configuration-sys",
+-]
+-
+-[[package]]
+-name = "system-configuration-sys"
+-version = "0.5.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
+-dependencies = [
+- "core-foundation-sys",
+- "libc",
+-]
+-
+ [[package]]
+ name = "taffy"
+ version = "0.5.2"
+@@ -5963,19 +5711,6 @@ dependencies = [
+  "slotmap",
+ ]
+ 
+-[[package]]
+-name = "tempfile"
+-version = "3.11.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b8fcd239983515c23a32fb82099f97d0b11b8c72f654ed659363a95c3dad7a53"
+-dependencies = [
+- "cfg-if",
+- "fastrand",
+- "once_cell",
+- "rustix",
+- "windows-sys 0.52.0",
+-]
+-
+ [[package]]
+ name = "termcolor"
+ version = "1.4.1"
+@@ -6124,16 +5859,6 @@ dependencies = [
+  "syn 2.0.72",
+ ]
+ 
+-[[package]]
+-name = "tokio-native-tls"
+-version = "0.3.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bbae76ab933c85776efabc971569dd6119c580d8f5d448769dec1764bf796ef2"
+-dependencies = [
+- "native-tls",
+- "tokio",
+-]
+-
+ [[package]]
+ name = "tokio-rustls"
+ version = "0.26.0"
+@@ -6243,7 +5968,7 @@ dependencies = [
+  "bytes",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "http-body-util",
+  "http-range-header",
+  "httpdate",
+@@ -6343,12 +6068,6 @@ dependencies = [
+  "wasm-bindgen",
+ ]
+ 
+-[[package]]
+-name = "try-lock"
+-version = "0.2.5"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+-
+ [[package]]
+ name = "ttf-parser"
+ version = "0.24.0"
+@@ -6530,12 +6249,6 @@ version = "0.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
+ 
+-[[package]]
+-name = "vcpkg"
+-version = "0.2.15"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
+-
+ [[package]]
+ name = "vec_map"
+ version = "0.8.2"
+@@ -6558,15 +6271,6 @@ dependencies = [
+  "winapi-util",
+ ]
+ 
+-[[package]]
+-name = "want"
+-version = "0.3.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
+-dependencies = [
+- "try-lock",
+-]
+-
+ [[package]]
+ name = "wasi"
+ version = "0.11.0+wasi-snapshot-preview1"
+@@ -7385,16 +7089,6 @@ dependencies = [
+  "memchr",
+ ]
+ 
+-[[package]]
+-name = "winreg"
+-version = "0.50.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
+-dependencies = [
+- "cfg-if",
+- "windows-sys 0.48.0",
+-]
+-
+ [[package]]
+ name = "worker"
+ version = "0.3.2"
+@@ -7408,7 +7102,7 @@ dependencies = [
+  "futures-channel",
+  "futures-util",
+  "http 1.1.0",
+- "http-body 1.0.1",
++ "http-body",
+  "js-sys",
+  "matchit",
+  "pin-project",
+diff --git a/app/Cargo.toml b/app/Cargo.toml
+index 7a380ba..974d5bf 100644
+--- a/app/Cargo.toml
++++ b/app/Cargo.toml
+@@ -45,7 +45,6 @@ macros = { path = "../macros" }
+ quickcheck = "1.0.3"
+ quickcheck_macros = "1.0.0"
+ rand = "0.8.5"
+-reqwest = { version = "0.11.27", features = ["blocking"] }
+ serde = "1.0.195"
+ serde_json = "1.0.111"
+ serde-wasm-bindgen = "0.6.3"
+@@ -59,11 +58,12 @@ uuid = { version = "1.7.0", features = ["v4", "js", "serde"] }
+ wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+ wasm-bindgen-futures = "0.4.39"
+ web-sys = { version = "0.3.67", features = ["HtmlDocument"] }
+-worker = { version = "0.3.1", features = ["http", "axum"] }
+-worker-macros = { version = "0.3.1", features = ["http"] }
++worker = { version = "0.3.1", features = ["http", "axum"], optional = true }
++worker-macros = { version = "0.3.1", features = ["http"], optional = true }
+ 
+ [features]
+ default = ["ssr", "native"]
++wasm = ["dep:worker", "dep:worker-macros", "shared/wasm"]
+ native = [
+   "dep:tokio",
+   "dep:tower-http",
+diff --git a/app/src/bin/worker.rs b/app/src/bin/worker.rs
+index fe6bb72..a558803 100644
+--- a/app/src/bin/worker.rs
++++ b/app/src/bin/worker.rs
+@@ -4,13 +4,17 @@
+ #![feature(impl_trait_in_fn_trait_return)]
+ #![feature(more_qualified_paths)]
+ 
++#[cfg(target_arch = "wasm32")]
+ use std::io;
+ 
++#[cfg(target_arch = "wasm32")]
+ use worker::{console_log, event};
+ 
++#[cfg(target_arch = "wasm32")]
+ #[derive(Debug, Clone, PartialEq, Default)]
+ pub struct ConsoleWriter(Vec<u8>);
+ 
++#[cfg(target_arch = "wasm32")]
+ impl io::Write for ConsoleWriter {
+     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+         console_log!("{}", std::str::from_utf8(buf).unwrap());
+@@ -23,6 +27,7 @@ impl io::Write for ConsoleWriter {
+     }
+ }
+ 
++#[cfg(target_arch = "wasm32")]
+ #[event(start)]
+ pub fn start() {
+     console_error_panic_hook::set_once();
+diff --git a/app/src/handlers/on_connect.rs b/app/src/handlers/on_connect.rs
+index 4f9525d..9ad801f 100644
+--- a/app/src/handlers/on_connect.rs
++++ b/app/src/handlers/on_connect.rs
+@@ -1,57 +1,72 @@
+-use axum::{
+-    extract::State,
+-    response::{IntoResponse, Response},
+-};
+-use tracing::instrument;
+-
+-use crate::{
+-    extractors::GameCode,
+-    ports::game_state::GameState,
+-    service::InternalServerError,
+-};
+-
+ #[cfg(target_arch = "wasm32")]
+-#[instrument(skip_all, err)]
+-pub async fn on_connect<G: GameState>(
+-    State(game_state): State<G>,
+-    SessionID(_session_id): SessionID,
+-    GameCode { code }: GameCode,
+-) -> Result<Response, InternalServerError> {
+-    let pair = game_state.accept_web_socket(code)?;
+-
+-    for event in game_state.events(code).await?.into_iter() {
+-        pair.server.send(&event)?;
+-    }
++mod wasm {
++    use axum::{extract::State, response::Response};
++    use tracing::instrument;
++
++    use crate::{
++        extractors::{GameCode, SessionID},
++        ports::game_state::GameState,
++        service::InternalServerError,
++    };
++
++    // #[instrument(skip_all, err)]
++    pub async fn on_connect<G: GameState>(
++        State(game_state): State<G>,
++        SessionID(_session_id): SessionID,
++        GameCode { code }: GameCode,
++    ) -> Result<Response, InternalServerError> {
++        let pair = game_state.accept_web_socket(code)?;
+ 
+-    let response = Response::builder()
+-        .status(101)
+-        .extension(pair.client)
+-        .body(axum::body::Body::empty());
++        for event in game_state.events(code).await?.into_iter() {
++            pair.server.send(&event)?;
++        }
+ 
+-    Ok(response?)
++        let response = Response::builder()
++            .status(101)
++            .extension(pair.client)
++            .body(axum::body::Body::empty());
++
++        Ok(response?)
++    }
+ }
+ 
++#[cfg(target_arch = "wasm32")]
++pub use wasm::on_connect;
++
+ #[cfg(not(target_arch = "wasm32"))]
+-#[instrument(skip_all, err)]
+-pub async fn on_connect<G: GameState>(
+-    ws: axum::extract::WebSocketUpgrade,
+-    State(game_state): State<G>,
+-    GameCode { code }: GameCode,
+-) -> Result<Response, InternalServerError> {
+-    Ok(ws
+-        .on_upgrade(move |mut ws| async move {
+-            let result: anyhow::Result<()> = try {
+-                for event in game_state.events(code).await?.into_iter() {
+-                    let message = serde_json::to_string(&event)?;
+-                    ws.send(message.into()).await?;
+-                }
++mod native {
++    use axum::{
++        extract::State,
++        response::{IntoResponse, Response},
++    };
++    use tracing::instrument;
++
++    use crate::{extractors::GameCode, ports::game_state::GameState, service::InternalServerError};
+ 
+-                game_state.accept_web_socket(code, ws).await?;
+-            };
++    #[instrument(skip_all, err)]
++    pub async fn on_connect<G: GameState>(
++        ws: axum::extract::WebSocketUpgrade,
++        State(game_state): State<G>,
++        GameCode { code }: GameCode,
++    ) -> Result<Response, InternalServerError> {
++        Ok(ws
++            .on_upgrade(move |mut ws| async move {
++                let result: anyhow::Result<()> = try {
++                    for event in game_state.events(code).await?.into_iter() {
++                        let message = serde_json::to_string(&event)?;
++                        ws.send(message.into()).await?;
++                    }
+ 
+-            if let Err(err) = result {
+-                tracing::error!(?err, "error upgrading websocket")
+-            }
+-        })
+-        .into_response())
++                    game_state.accept_web_socket(code, ws).await?;
++                };
++
++                if let Err(err) = result {
++                    tracing::error!(?err, "error upgrading websocket")
++                }
++            })
++            .into_response())
++    }
+ }
++
++#[cfg(not(target_arch = "wasm32"))]
++pub use native::on_connect;
+diff --git a/app/src/router.rs b/app/src/router.rs
+index b3462ec..ee2f2a2 100644
+--- a/app/src/router.rs
++++ b/app/src/router.rs
+@@ -38,11 +38,8 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
+             any(forward_command::<S>),
+         )
+         .with_state(game_service)
+-        .layer(axum::middleware::from_fn(session_middleware))
+         .leptos_routes(&leptos_options, generate_route_list(app::App), app::App)
+-        .layer(axum::middleware::from_fn(|req: Request, next: Next| {
+-            next.run(req)
+-        }));
++        .layer(axum::middleware::from_fn(session_middleware));
+ 
+     #[cfg(not(target_arch = "wasm32"))]
+     let router = router.fallback(crate::serve_files::file_and_error_handler);
+diff --git a/app/src/screens/host/results.rs b/app/src/screens/host/results.rs
+index 683de79..2aa4126 100644
+--- a/app/src/screens/host/results.rs
++++ b/app/src/screens/host/results.rs
+@@ -1,12 +1,10 @@
+ use leptos::*;
+ use shared::models::projections;
+-use uuid::Uuid;
+ 
+ use crate::utils::use_events;
+ 
+ struct LeaderboardInfo {
+     name: String,
+-    uuid: Uuid,
+     balance: i32,
+     winnings: i32,
+ }
+@@ -21,11 +19,13 @@ pub fn results() -> impl IntoView {
+     let players = move || projections::players(&events());
+     let balances = move || projections::all_account_balances(&events());
+     let winnings = move || projections::winnings(&events());
++    let debt = move || projections::all_debt(&events());
+ 
+     let leaderboard = move || {
+         let players = players();
+         let winnings = winnings();
+         let balances = balances();
++        let debt = debt();
+ 
+         tracing::info!(?winnings);
+ 
+@@ -34,8 +34,8 @@ pub fn results() -> impl IntoView {
+             .filter_map(|(key, value)| {
+                 Some(LeaderboardInfo {
+                     name: value.name,
+-                    uuid: value.session_id,
+-                    balance: balances.get(&key).copied().unwrap_or_default(),
++                    balance: balances.get(&key).copied().unwrap_or_default()
++                        - debt.get(&key).copied().unwrap_or_default() as i32,
+                     winnings: winnings.get(&key).copied().unwrap_or_default(),
+                 })
+             })
+@@ -46,6 +46,8 @@ pub fn results() -> impl IntoView {
+         info
+     };
+ 
++    let game_is_finished = move || projections::game_finished(&events());
++
+     view! {
+         <div class="host-results-container">
+             <div
+@@ -53,7 +55,9 @@ pub fn results() -> impl IntoView {
+                 class:invisible=timer.is_pending
+                 class:two-columns=move || (leaderboard().len() > 7)
+             >
+-                <h1>"Player Leaderboard"</h1>
++                <h1>
++                    {move || if game_is_finished() { "Final Score" } else { "Player Leaderboard" }}
++                </h1>
+ 
+                 {move || {
+                     leaderboard()
+diff --git a/app/src/screens/player/join.rs b/app/src/screens/player/join.rs
+index 5f08bf1..bd76a81 100644
+--- a/app/src/screens/player/join.rs
++++ b/app/src/screens/player/join.rs
+@@ -24,7 +24,15 @@ pub fn join() -> impl IntoView {
+                     title="6 alpha-numerical characters e.g. ABC123"
+                     uppercase=true
+                 />
+-                <input type="text" name="name" prop:value="Bob" hidden/>
++                <TextInput
++                    id="name"
++                    name="Name"
++                    pattern="[a-zA-Z]{1,10}"
++                    minlength=1
++                    maxlength=10
++                    title="player name between 1-10 characters long"
++                    value=None
++                />
+                 <input class="button" type="submit" value="Join"/>
+             </Form>
+         </div>
+diff --git a/app/src/screens/player/summary.rs b/app/src/screens/player/summary.rs
+index bafdc3e..615e26f 100644
+--- a/app/src/screens/player/summary.rs
++++ b/app/src/screens/player/summary.rs
+@@ -15,12 +15,14 @@ pub fn summary() -> impl IntoView {
+             .unwrap_or_default()
+     };
+ 
+-    let winnings = move || {
++    let debt = Memo::new(move |_| projections::debt(&events(), player_id));
++
++    let winnings = Memo::new(move |_| {
+         projections::winnings(&events())
+             .get(&player_id)
+             .copied()
+             .unwrap_or_default()
+-    };
++    });
+ 
+     let symbol = move || if winnings() >= 0 { "+" } else { "-" };
+     let image = move || if winnings() >= 0 { "📈" } else { "📉" };
+@@ -31,7 +33,14 @@ pub fn summary() -> impl IntoView {
+                 <h1>"Payout"</h1>
+                 <div class="payout-image">{image}</div>
+                 <div class="payout-amount">{symbol} "  💎" {move || winnings().abs()}</div>
+-                <div class="payout-balance">"Funds: 💎 " {balance}</div>
++                <div class="payout-table">
++                    <div>"Funds:"</div>
++                    <div>"💎 " {balance}</div>
++                    <div>"Debt:"</div>
++                    <div>"💎 " {debt}</div>
++                    <div>"Score:"</div>
++                    <div>"💎 " {move || balance() - (debt() as i32)}</div>
++                </div>
+             </div>
+         </div>
+     }
+diff --git a/app/src/screens/router.rs b/app/src/screens/router.rs
+index 6bc2092..9a61dd3 100644
+--- a/app/src/screens/router.rs
++++ b/app/src/screens/router.rs
+@@ -1,11 +1,10 @@
+-use std::cell::Cell;
+-
++use html::summary;
+ use leptos::*;
+ use leptos_router::{Route, Router as LeptosRouter, Routes};
+ 
+ use crate::{
+     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
+-    utils::{reset_game_events, send_game_event, use_events, use_session_id},
++    utils::{send_game_event, use_events, use_session_id},
+ };
+ use shared::models::{events::Event, projections};
+ 
+@@ -158,7 +157,6 @@ where
+         GameState::PreGame => pre_game().into_view(),
+         GameState::Race => race().into_view(),
+         GameState::Wait => wait().into_view(),
+-        GameState::Summary => summary().into_view(),
+-        GameState::FinalScreen => todo!(),
++        GameState::Summary | GameState::FinalScreen => summary().into_view(),
+     }
+ }
+diff --git a/app/src/serve_files.rs b/app/src/serve_files.rs
+index e7ebb29..c9bec6a 100644
+--- a/app/src/serve_files.rs
++++ b/app/src/serve_files.rs
+@@ -54,6 +54,7 @@ async fn get_static_file(
+         .await
+     {
+         Ok(res) => Ok(res.into_response()),
++        #[allow(unreachable_patterns)]
+         Err(err) => Err((
+             StatusCode::INTERNAL_SERVER_ERROR,
+             format!("Error serving files: {err}"),
+diff --git a/app/src/utils/err_wrapper.rs b/app/src/utils/err_wrapper.rs
+index 7b80bc2..a875539 100644
+--- a/app/src/utils/err_wrapper.rs
++++ b/app/src/utils/err_wrapper.rs
+@@ -3,6 +3,7 @@ use std::{convert::Infallible, fmt::Display};
+ use axum::{http::StatusCode, response::IntoResponse};
+ 
+ pub enum ErrWrapper {
++    #[cfg(feature = "wasm")]
+     Worker(worker::Error),
+     Axum(axum::http::Error),
+     Json(serde_json::Error),
+@@ -10,6 +11,7 @@ pub enum ErrWrapper {
+     Raw(String),
+ }
+ 
++#[cfg(feature = "wasm")]
+ impl From<worker::Error> for ErrWrapper {
+     fn from(value: worker::Error) -> Self {
+         ErrWrapper::Worker(value)
+@@ -49,6 +51,7 @@ impl From<Infallible> for ErrWrapper {
+ impl Display for ErrWrapper {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         match self {
++            #[cfg(feature = "wasm")]
+             ErrWrapper::Worker(err) => err.fmt(f),
+             ErrWrapper::Axum(err) => err.fmt(f),
+             ErrWrapper::Json(err) => err.fmt(f),
+@@ -61,6 +64,7 @@ impl Display for ErrWrapper {
+ impl IntoResponse for ErrWrapper {
+     fn into_response(self) -> axum::response::Response {
+         match self {
++            #[cfg(feature = "wasm")]
+             ErrWrapper::Worker(err) => {
+                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
+             }
+diff --git a/app/src/utils/use_websocket.rs b/app/src/utils/use_websocket.rs
+index d49edc8..fd772b8 100644
+--- a/app/src/utils/use_websocket.rs
++++ b/app/src/utils/use_websocket.rs
+@@ -1,5 +1,5 @@
+ use im::vector::Vector;
+-use leptos::{provide_context, use_context, ReadSignal, ServerFnError, Signal};
++use leptos::{provide_context, use_context, ReadSignal, Signal};
+ use shared::models::{events::Event, game_id::GameID};
+ 
+ #[derive(Debug, Clone, PartialEq)]
+diff --git a/assets/pkg/style.css b/assets/pkg/style.css
+index 328cbae..067f088 100644
+--- a/assets/pkg/style.css
++++ b/assets/pkg/style.css
+@@ -626,8 +626,14 @@ input[type="number"] {
+   font-size: 40px;
+ }
+ 
+-.payout-balance {
++.payout-table {
++  display: grid;
++  grid-template-columns: auto auto;
++  justify-items: right;
++  align-items: center;
+   font-size: 30px;
++  row-gap: 0.25em;
++  column-gap: 0.5em;
+ }
+ 
+ .server-status {
+@@ -857,10 +863,10 @@ div .two-columns {
+   padding: 3em;
+ 
+   display: grid;
+-  grid-template-columns: auto repeat(7, 200px);
++  grid-template-columns: auto repeat(7, 1fr);
+   grid-auto-rows: minmax(1fr, 300px);
+   gap: 1em;
+-  justify-items: start;
++  justify-items: center;
+   align-items: center;
+ }
+ 
+diff --git a/flake.nix b/flake.nix
+index f1d2e5a..e622a50 100644
+--- a/flake.nix
++++ b/flake.nix
+@@ -12,7 +12,7 @@
+ 
+     nix-filter.url = "github:numtide/nix-filter";
+   };
+-  outputs = { nixpkgs, flake-utils, naersk, rust-overlay, nix-filter, ... }:
++  outputs = { nixpkgs, flake-utils, rust-overlay, ... }:
+     flake-utils.lib.eachDefaultSystem (system:
+       let
+         wasm-bindgen-cli-update = final: prev: {
+@@ -30,49 +30,8 @@
+         toolchain = pkgs.rust-bin.nightly.latest.complete.override {
+           targets = [ "wasm32-unknown-unknown" ];
+         };
+-
+-        naersk' = pkgs.callPackage naersk {
+-          cargo = toolchain;
+-          rustc = toolchain;
+-        };
+-
+-        buildWorkspacePackage = pname:
+-          naersk'.buildPackage {
+-            inherit pname;
+-
+-            CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+-            cargoBuildOptions = options: options ++ [ "-p" pname ];
+-            copyLibs = true;
+-
+-            src = nix-filter {
+-              root = ./.;
+-
+-              include = [
+-                ./Cargo.toml
+-                ./Cargo.lock
+-
+-                ./client/Cargo.toml
+-                ./client/src/main.rs
+-
+-                ./server/Cargo.toml
+-                ./server/src/lib.rs
+-
+-                ./core/Cargo.toml
+-                ./core/src/lib.rs
+-
+-                pname
+-              ];
+-            };
+-          };
+       in rec {
+         packages = {
+-          client-wasm = buildWorkspacePackage "client";
+-          server-wasm = buildWorkspacePackage "server";
+-
+-          wasm-bindgen = pkgs.writeShellScriptBin "wasm-bindgen" ''
+-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $1 --out-name index --target bundler --out-dir $2 --no-typescript
+-          '';
+-
+           build-site = pkgs.writeShellScriptBin "site" ''
+             set -x
+             set -o nounset
+@@ -83,146 +42,110 @@
+             cp -r assets/* site/
+             cp -r game/assets site/assets
+ 
+-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr
+-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin client --features app/hydrate
+-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game          
++            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr,app/wasm
++            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin client --features app/hydrate,app/wasm
++            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game --features game/wasm
+ 
+             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/worker.wasm --no-typescript --out-name index --target bundler --out-dir ./site    
+             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/client.wasm --no-typescript --out-name index --target web     --out-dir ./site/pkg
+             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --out-name game  --target web     --out-dir ./site/pkg
+           '';
+ 
+-          dev-wrangler = pkgs.writeShellScriptBin "dev" ''
++          dev-clean = pkgs.writeShellScriptBin "dev-clean" ''
+             set -x
+             set -o nounset
+             set -o errexit
+             set -o pipefail
+ 
+             rm -rf site/*
+-            cp -r assets/* site/
+             ln -s ../game/assets site/assets
+-
+-            export RUST_LOG=info
+-
+-            WORKER_TARGET="./target/wasm32-unknown-unknown/debug/worker.wasm"
+-            CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
+-            GAME_TARGET="./target/wasm32-unknown-unknown/release/game.wasm"
+-
+-            #entr can't execute bash functions, so we do a little bash metaprogramming
+-            function build() {
+-              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin $1 --features app/$2"
+-            }
+-
+-            function build_worker() {
+-              echo "$(build worker ssr)"
+-            }
+-
+-            function build_client() {
+-              echo "$(build client hydrate)"
+-            }
+-
+-            function build_game() {
+-              echo "cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game"
+-            }
+-
+-            function bindgen() {
+-              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --keep-debug --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
+-            }
+-
+-            function bindgen_worker() {
+-                echo "$(bindgen $WORKER_TARGET index bundler ./site)"
+-            }
+-
+-            function bindgen_client() {
+-                echo "$(bindgen $CLIENT_TARGET index web ./site/pkg)"
+-            }
+-
+-            function bindgen_game() {
+-              echo "$(bindgen $GAME_TARGET game web ./site/pkg)"
+-            }
+-
+-            # Need to build things synchronously first so they're available for wangler
+-            $(build_client)
+-            $(bindgen_client)
+-
+-            $(build_worker)
+-            $(bindgen_worker)
+-
+-            $(build_game)
+-            $(bindgen_game)
+-
+-            find app | ${pkgs.entr}/bin/entr -n $(build_worker) &
+-            find app | ${pkgs.entr}/bin/entr -n $(build_client) &
+-            find game | ${pkgs.entr}/bin/entr -n $(build_game) &
+-
+-            echo $WORKER_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_worker) &
+-            echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
+-            echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
+-
+-            find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
+-
+-            find site | grep -Ev '(pkg|_worker.js)' | ${pkgs.entr}/bin/entr touch site/_worker.js &
+-
+-            wrangler pages dev site --local-protocol https --compatibility-date=2023-10-30 &
+-
+-            wait
+           '';
+ 
+-          dev = pkgs.writeShellScriptBin "dev" ''
++          dev-copy-assets = pkgs.writeShellScriptBin "dev-copy-assets" ''
+             set -x
+             set -o nounset
+             set -o errexit
+             set -o pipefail
+ 
+-            rm -rf site/*
+             cp -r assets/* site/
+-            ln -s ../game/assets site/assets
++          '';
+ 
+-            export RUST_LOG=info
++          dev-build-client = pkgs.writeShellScriptBin "dev-build-client" ''
++            set -o nounset
++            set -o errexit
++            set -o pipefail
+ 
+             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
+-            GAME_TARGET="./target/wasm32-unknown-unknown/debug/game.wasm"
+-
+-            #entr can't execute bash functions, so we do a little bash metaprogramming
+-            function build() {
+-              echo "cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin $1 --features app/$2"
+-            }
+ 
+-            function build_client() {
+-              echo "$(build client hydrate)"
+-            }
++            cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin client --features app/hydrate,app/wasm
++            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $CLIENT_TARGET --no-typescript --out-name index --target web --out-dir ./site/pkg
+ 
+-            function build_game() {
+-              echo "cargo build --target wasm32-unknown-unknown --no-default-features --features game/bevy -p game --bin game"
+-            }
++            echo "############### FINISHED BUILDING CLIENT ###############"
++          '';
+ 
+-            function bindgen() {
+-              echo "${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen --no-typescript $1 --out-name $2 --target $3 --out-dir $4"
+-            }
++          dev-build-game = pkgs.writeShellScriptBin "dev-build-game" ''
++            set -o nounset
++            set -o errexit
++            set -o pipefail
+ 
+-            function bindgen_client() {
+-                echo "$(bindgen $CLIENT_TARGET index web ./site/pkg)"
+-            }
++            GAME_TARGET="./target/wasm32-unknown-unknown/debug/game.wasm"
+ 
+-            function bindgen_game() {
+-              echo "$(bindgen $GAME_TARGET game web ./site/pkg)"
+-            }
++            cargo build --target wasm32-unknown-unknown --no-default-features -p game --bin game --features game/wasm
++            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $GAME_TARGET --no-typescript --out-name game --target web --out-dir ./site/pkg
+ 
+-            find {app,shared} | ${pkgs.entr}/bin/entr -n $(build_client) &
+-            echo $CLIENT_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_client) &
++            echo "############### FINISHED BUILDING GAME ###############"
++          '';
+ 
+-            find {game,shared} | ${pkgs.entr}/bin/entr -n $(build_game) &
+-            echo $GAME_TARGET | ${pkgs.entr}/bin/entr -n $(bindgen_game) &
++          dev-run-native-server =
++            pkgs.writeShellScriptBin "dev-run-native-server" ''
++              set -o nounset
++              set -o errexit
++              set -o pipefail
++
++              RUST_LOG=info cargo run --package app --bin server
++            '';
++
++          dev-run-wrangler-server =
++            pkgs.writeShellScriptBin "dev-run-wrangler-server" ''
++              set -o nounset
++              set -o errexit
++              set -o pipefail
++
++              cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin worker --features app/ssr,app/wasm
++              ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/debug/worker.wasm --keep-debug --no-typescript --out-name index --target bundler --out-dir ./site
++              wrangler pages dev site --ip 0.0.0.0 --local-protocol https --compatibility-date=2023-10-30
++            '';
++
++          dev-mprocs-config = pkgs.writeText "mprocs.dev.yaml" ''
++            procs:
++              clean: ${packages.dev-clean}/bin/dev-clean
++              assets: find assets | entr -r ${packages.dev-copy-assets}/bin/dev-copy-assets
++              client: find {app,shared} | entr -n ${packages.dev-build-client}/bin/dev-build-client
++              game: find {game,shared} | entr -n ${packages.dev-build-game}/bin/dev-build-game
++              server: find {app,shared} | entr -rn ${packages.dev-run-native-server}/bin/dev-run-native-server
++          '';
+ 
+-            find assets | ${pkgs.entr}/bin/entr cp -r assets/* site &
++          dev-wrangler-mprocs-config =
++            pkgs.writeText "mprocs.wrangler.dev.yaml" ''
++              procs:
++                clean: ${packages.dev-clean}/bin/dev-clean
++                assets: find assets | entr -r ${packages.dev-copy-assets}/bin/dev-copy-assets
++                client: find {app,shared} | entr -n ${packages.dev-build-client}/bin/dev-build-client
++                game: find {game,shared} | entr -n ${packages.dev-build-game}/bin/dev-build-game
++                server: find {app,shared} | entr -rn ${packages.dev-run-wrangler-server}/bin/dev-run-wrangler-server
++            '';
+ 
+-            find {app,shared} | ${pkgs.entr}/bin/entr -rn cargo run --package app --bin server &
++          dev = pkgs.writeShellScriptBin "dev" ''
++            ${pkgs.mprocs}/bin/mprocs --config ${packages.dev-mprocs-config}
++          '';
+ 
+-            wait
++          dev-wrangler = pkgs.writeShellScriptBin "dev-wrangler" ''
++            ${pkgs.mprocs}/bin/mprocs --config ${packages.dev-wrangler-mprocs-config}
+           '';
+         };
+ 
+         devShell = with pkgs;
++          with packages;
+           mkShell {
+             buildInputs = [
+               toolchain
+@@ -236,6 +159,16 @@
+               cargo-leptos
+               leptosfmt
+               twiggy
++              mprocs
++              dev-clean
++              dev-copy-assets
++              dev-build-client
++              dev-build-game
++              dev-run-native-server
++              dev-run-wrangler-server
++              dev
++              dev-wrangler
++              binaryen
+             ];
+ 
+             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
+diff --git a/game/Cargo.toml b/game/Cargo.toml
+index d929680..979d9c3 100644
+--- a/game/Cargo.toml
++++ b/game/Cargo.toml
+@@ -28,7 +28,8 @@ bevy_kira_audio = { version = "0.20.0", features = ["ogg"] }
+ 
+ 
+ [features]
+-default = ["native", "bevy"]
++default = ["native"]
++wasm = ["bevy", "shared/wasm"]
+ bevy = [
+   "bevy/animation",
+   "bevy/bevy_asset",
+@@ -56,5 +57,5 @@ bevy = [
+   "bevy/webgpu",
+   "bevy/sysinfo_plugin",
+ ]
+-native = ["bevy/dynamic_linking", "dep:tungstenite"]
++native = ["bevy", "bevy/dynamic_linking", "dep:tungstenite"]
+ debug = ["dep:bevy-inspector-egui"]
+diff --git a/game/assets/.DS_Store b/game/assets/.DS_Store
+index 4adfb16..78b63b4 100644
+Binary files a/game/assets/.DS_Store and b/game/assets/.DS_Store differ
+diff --git a/game/assets/all.assets.ron b/game/assets/all.assets.ron
+index 577f7bd..22babce 100644
+--- a/game/assets/all.assets.ron
++++ b/game/assets/all.assets.ron
+@@ -12,7 +12,7 @@
+     "library/Monster_Yeti.glb",
+     "library/Spectator.glb",
+   ]),
+-  "skybox": File(path: "cubemap_01/skybox.ktx2"),
+-  "envmap_diffuse": File(path: "cubemap_01/diffuse_map.ktx2"),
+-  "envmap_specular": File(path: "cubemap_01/specular_map.ktx2")
++  "skybox": File(path: "cubemap_01/skybox_rgb9e5.ktx2"),
++  "envmap_diffuse": File(path: "cubemap_01/diffuse_map_rgb9e5.ktx2"),
++  "envmap_specular": File(path: "cubemap_01/specular_map_rgb9e5.ktx2")
+ })
+diff --git a/game/assets/cubemap_01/diffuse_map.ktx2 b/game/assets/cubemap_01/diffuse_map.ktx2
+deleted file mode 100644
+index 13f2354..0000000
+Binary files a/game/assets/cubemap_01/diffuse_map.ktx2 and /dev/null differ
+diff --git a/game/assets/cubemap_01/skybox.ktx2 b/game/assets/cubemap_01/skybox.ktx2
+deleted file mode 100644
+index 1629ebd..0000000
+Binary files a/game/assets/cubemap_01/skybox.ktx2 and /dev/null differ
+diff --git a/game/assets/cubemap_01/specular_map.ktx2 b/game/assets/cubemap_01/specular_map.ktx2
+deleted file mode 100644
+index 8e74356..0000000
+Binary files a/game/assets/cubemap_01/specular_map.ktx2 and /dev/null differ
+diff --git a/game/src/plugins/monster/mod.rs b/game/src/plugins/monster/mod.rs
+index c620939..a9516e3 100644
+--- a/game/src/plugins/monster/mod.rs
++++ b/game/src/plugins/monster/mod.rs
+@@ -4,7 +4,7 @@ use rand::{distributions::Uniform, thread_rng, Rng};
+ use shared::models::{monsters::Monster, projections::Jump};
+ use std::time::Duration;
+ 
+-use bevy::{prelude::*, utils::tracing};
++use bevy::prelude::*;
+ 
+ use super::{
+     animation_link::{AnimationLink, AnimationRoot},
+@@ -133,7 +133,6 @@ pub fn run_timers(
+         Or<(Changed<MonsterBehaviour>, Added<NamedAnimations>)>,
+     >,
+     mut anim_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
+-    time: Res<Time>,
+ ) {
+     for (entity, start, anim_link, animations, monster, transform) in &mut query {
+         let (mut player, mut transition) = anim_players.get_mut(anim_link.0).unwrap();
+diff --git a/game/src/plugins/music.rs b/game/src/plugins/music.rs
+index 49ede2e..23bef17 100644
+--- a/game/src/plugins/music.rs
++++ b/game/src/plugins/music.rs
+@@ -3,8 +3,6 @@ use std::{cell::RefCell, time::Duration};
+ use bevy::{prelude::*, utils::tracing};
+ use bevy_kira_audio::prelude::*;
+ 
+-use crate::plugins::scenes::lobby;
+-
+ use super::scenes::{MusicAssets, RaceState, SceneState};
+ 
+ #[derive(Debug, Resource)]
+@@ -61,18 +59,18 @@ fn update_audio(
+ 
+     let audio_instances = RefCell::new(audio_instances.as_mut());
+ 
+-    let play = |handle: &Option<Handle<AudioInstance>>| {
+-        if let Some(audio) = handle {
+-            audio_instances
+-                .borrow_mut()
+-                .get_mut(audio)
+-                .unwrap()
+-                .resume(AudioTween::new(
+-                    Duration::from_secs_f32(0.5),
+-                    AudioEasing::InOutPowi(2),
+-                ));
+-        }
+-    };
++    // let play = |handle: &Option<Handle<AudioInstance>>| {
++    //     if let Some(audio) = handle {
++    //         audio_instances
++    //             .borrow_mut()
++    //             .get_mut(audio)
++    //             .unwrap()
++    //             .resume(AudioTween::new(
++    //                 Duration::from_secs_f32(0.5),
++    //                 AudioEasing::InOutPowi(2),
++    //             ));
++    //     }
++    // };
+ 
+     let pause = |handle: &Option<Handle<AudioInstance>>| {
+         if let Some(audio) = handle {
+@@ -81,7 +79,7 @@ fn update_audio(
+                 .get_mut(audio)
+                 .unwrap()
+                 .pause(AudioTween::new(
+-                    Duration::from_secs_f32(1.0),
++                    Duration::from_secs_f32(0.1),
+                     AudioEasing::OutPowi(2),
+                 ));
+         }
+@@ -94,7 +92,7 @@ fn update_audio(
+                 .get_mut(audio)
+                 .unwrap()
+                 .stop(AudioTween::new(
+-                    Duration::from_secs_f32(1.0),
++                    Duration::from_secs_f32(0.1),
+                     AudioEasing::OutPowi(2),
+                 ));
+         }
+@@ -112,7 +110,7 @@ fn update_audio(
+                         .get_mut(audio)
+                         .unwrap()
+                         .resume(AudioTween::new(
+-                            Duration::from_secs_f32(0.5),
++                            Duration::from_secs_f32(0.1),
+                             AudioEasing::InPowi(2),
+                         ));
+                 }
+@@ -121,7 +119,7 @@ fn update_audio(
+                         music_channel
+                             .play(game_assets.music_lobby.clone())
+                             .fade_in(AudioTween::new(
+-                                Duration::from_secs_f32(0.5),
++                                Duration::from_secs_f32(0.1),
+                                 AudioEasing::InPowi(2),
+                             ))
+                             .looped()
+@@ -143,7 +141,7 @@ fn update_audio(
+                         .get_mut(audio)
+                         .unwrap()
+                         .resume(AudioTween::new(
+-                            Duration::from_secs_f32(0.5),
++                            Duration::from_secs_f32(0.1),
+                             AudioEasing::InPowi(2),
+                         ));
+                 }
+@@ -152,7 +150,7 @@ fn update_audio(
+                         music_channel
+                             .play(game_assets.music_pregame.clone())
+                             .fade_in(AudioTween::new(
+-                                Duration::from_secs_f32(0.5),
++                                Duration::from_secs_f32(0.1),
+                                 AudioEasing::InPowi(2),
+                             ))
+                             .looped()
+@@ -168,29 +166,22 @@ fn update_audio(
+         }
+         SceneState::Race => {
+             match race_state.unwrap().get() {
+-                RaceState::PreRace => match handles.crowd.as_ref() {
+-                    Some(audio) => {
+-                        audio_instances.borrow_mut().get_mut(audio).unwrap().resume(
+-                            AudioTween::new(Duration::from_secs_f32(1.0), AudioEasing::InPowi(2)),
+-                        );
+-                    }
+-                    None => {
+-                        handles.crowd = Some(
+-                            music_channel
+-                                .play(game_assets.crowd.clone())
+-                                .fade_in(AudioTween::new(
+-                                    Duration::from_secs_f32(1.0),
+-                                    AudioEasing::InPowi(2),
+-                                ))
+-                                .looped()
+-                                .handle(),
+-                        );
+-                    }
+-                },
++                RaceState::PreRace => {
++                    handles.crowd = Some(
++                        music_channel
++                            .play(game_assets.crowd.clone())
++                            .fade_in(AudioTween::new(
++                                Duration::from_secs_f32(0.1),
++                                AudioEasing::InPowi(2),
++                            ))
++                            .looped()
++                            .handle(),
++                    );
++                }
+                 RaceState::Race => match handles.race.as_ref() {
+                     Some(audio) => {
+                         audio_instances.borrow_mut().get_mut(audio).unwrap().resume(
+-                            AudioTween::new(Duration::from_secs_f32(0.5), AudioEasing::InPowi(2)),
++                            AudioTween::new(Duration::from_secs_f32(0.1), AudioEasing::InPowi(2)),
+                         );
+                     }
+                     None => {
+@@ -198,7 +189,7 @@ fn update_audio(
+                             music_channel
+                                 .play(game_assets.music_race.clone())
+                                 .fade_in(AudioTween::new(
+-                                    Duration::from_secs_f32(0.5),
++                                    Duration::from_secs_f32(0.1),
+                                     AudioEasing::InPowi(2),
+                                 ))
+                                 .looped()
+@@ -211,7 +202,6 @@ fn update_audio(
+             pause(&handles.lobby);
+             pause(&handles.pregame);
+             pause(&handles.results);
+-            // pause(&handles.crowd);
+         }
+         SceneState::Results => {
+             match handles.results.as_ref() {
+@@ -221,7 +211,7 @@ fn update_audio(
+                         .get_mut(audio)
+                         .unwrap()
+                         .resume(AudioTween::new(
+-                            Duration::from_secs(1),
++                            Duration::from_secs_f32(0.1),
+                             AudioEasing::InPowi(2),
+                         ));
+                 }
+@@ -242,7 +232,6 @@ fn update_audio(
+             pause(&handles.lobby);
+             pause(&handles.pregame);
+             pause(&handles.race);
+-            // pause(&handles.crowd);
+         }
+     }
+ }
+diff --git a/game/src/plugins/scenes.rs b/game/src/plugins/scenes.rs
+index 5b10b63..a137483 100644
+--- a/game/src/plugins/scenes.rs
++++ b/game/src/plugins/scenes.rs
+@@ -248,8 +248,7 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
+                 GameEvent::GameCreated { .. } => SceneState::Lobby,
+                 GameEvent::RoundStarted { .. } => SceneState::PreGame,
+                 GameEvent::RaceStarted { .. } => SceneState::Race,
+-                GameEvent::RaceFinished { .. } => SceneState::Results,
+-                GameEvent::GameFinished => SceneState::Lobby,
++                GameEvent::RaceFinished { .. } | GameEvent::GameFinished => SceneState::Results,
+                 _ => None?,
+             })
+         })
+diff --git a/game/src/plugins/scenes/pregame.rs b/game/src/plugins/scenes/pregame.rs
+index 94e632a..0963449 100644
+--- a/game/src/plugins/scenes/pregame.rs
++++ b/game/src/plugins/scenes/pregame.rs
+@@ -1,9 +1,9 @@
+-use bevy::{prelude::*, text::TextLayoutInfo, utils::tracing};
++use bevy::prelude::*;
+ use shared::models::projections;
+ 
+ use crate::plugins::{
+     event_stream::GameEvents,
+-    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterInfo, SpawnMonster},
++    monster::{DespawnAllMonsters, MonsterBehaviour, SpawnMonster},
+ };
+ 
+ use super::{SceneMetadata, SceneState};
+@@ -113,241 +113,3 @@ fn init_pregame(
+ 
+     projection.fov = 0.4;
+ }
+-
+-#[derive(Debug, Component)]
+-struct StatID(Entity);
+-
+-const FONT_COLOR: Color = Color::linear_rgb(0.0, 0.0, 0.0);
+-
+-fn spawn_ui(
+-    mut commands: Commands,
+-    camera: Query<(&Camera, &GlobalTransform)>,
+-    monsters: Query<(Entity, &MonsterInfo, &GlobalTransform), With<MonsterID>>,
+-) {
+-    let (camera, camera_transform) = camera.get_single().unwrap();
+-
+-    commands
+-        .spawn((
+-            StateScoped(SceneState::PreGame),
+-            NodeBundle {
+-                style: Style {
+-                    width: Val::Percent(100.),
+-                    height: Val::Percent(75.),
+-                    justify_content: JustifyContent::SpaceEvenly,
+-                    align_items: AlignItems::End,
+-                    ..default()
+-                },
+-                ..default()
+-            },
+-        ))
+-        .with_children(|container| {
+-            for (id, details, monster) in &monsters {
+-                let Some(position) =
+-                    camera.world_to_viewport(camera_transform, monster.translation())
+-                else {
+-                    return;
+-                };
+-
+-                container
+-                    .spawn(NodeBundle {
+-                        style: Style {
+-                            // position_type: PositionType::Absolute,
+-                            flex_direction: FlexDirection::Column,
+-                            row_gap: Val::Px(8.),
+-                            align_items: AlignItems::Stretch,
+-                            padding: UiRect::all(Val::Px(16.0)),
+-                            width: Val::Px(500.),
+-                            ..default()
+-                        },
+-                        border_radius: BorderRadius::all(Val::Px(16.0)),
+-                        background_color: Color::srgba_u8(0xff, 0xff, 0xff, 0x77).into(),
+-                        ..default()
+-                    })
+-                    .with_children(|container| {
+-                        let mut row = |f: &mut dyn FnMut(&mut ChildBuilder)| {
+-                            container
+-                                .spawn(NodeBundle {
+-                                    style: Style {
+-                                        justify_content: JustifyContent::Center,
+-                                        align_items: AlignItems::Center,
+-                                        ..default()
+-                                    },
+-                                    ..default()
+-                                })
+-                                .with_children(|container| {
+-                                    f(container);
+-                                });
+-                        };
+-
+-                        row(&mut |container| {
+-                            container.spawn(TextBundle {
+-                                text: Text::from_section(
+-                                    details.name,
+-                                    TextStyle {
+-                                        font_size: 40.0,
+-                                        color: FONT_COLOR,
+-                                        ..default()
+-                                    },
+-                                ),
+-                                ..default()
+-                            });
+-                        });
+-
+-                        let odds_text_style = TextStyle {
+-                            color: FONT_COLOR,
+-                            font_size: 32.,
+-                            ..default()
+-                        };
+-
+-                        row(&mut |container| {
+-                            // odds
+-                            container
+-                                .spawn(NodeBundle {
+-                                    style: Style {
+-                                        margin: UiRect::right(Val::Auto),
+-                                        ..default()
+-                                    },
+-                                    ..default()
+-                                })
+-                                .with_children(|container| {
+-                                    container.spawn(TextBundle {
+-                                        text: Text::from_section("Odds: ", odds_text_style.clone()),
+-                                        ..default()
+-                                    });
+-                                    container.spawn(TextBundle {
+-                                        text: Text::from_section("33%", odds_text_style.clone()),
+-                                        ..default()
+-                                    });
+-                                });
+-
+-                            // Payout
+-                            container
+-                                .spawn(NodeBundle {
+-                                    style: Style { ..default() },
+-                                    ..default()
+-                                })
+-                                .with_children(|container| {
+-                                    container.spawn(TextBundle {
+-                                        text: Text::from_section(
+-                                            "Payout: ",
+-                                            odds_text_style.clone(),
+-                                        ),
+-                                        ..default()
+-                                    });
+-                                    container.spawn(TextBundle {
+-                                        text: Text::from_section("3.0x", odds_text_style.clone()),
+-                                        ..default()
+-                                    });
+-                                });
+-                        });
+-
+-                        // Odds
+-
+-                        let stats_text_style = TextStyle {
+-                            font_size: 32.,
+-                            color: FONT_COLOR,
+-                            ..default()
+-                        };
+-
+-                        // Speed
+-                        let mut stats_row = |name: &str, amount: f32, color: Color| {
+-                            row(&mut |container| {
+-                                container
+-                                    .spawn(NodeBundle {
+-                                        style: Style {
+-                                            width: Val::Percent(33.),
+-                                            ..default()
+-                                        },
+-                                        ..default()
+-                                    })
+-                                    .with_children(|container| {
+-                                        container.spawn(TextBundle {
+-                                            text: Text::from_section(
+-                                                format!("{name}:"),
+-                                                stats_text_style.clone(),
+-                                            ),
+-                                            ..default()
+-                                        });
+-                                    });
+-
+-                                container
+-                                    .spawn(NodeBundle {
+-                                        style: Style {
+-                                            flex_grow: 1.0,
+-                                            ..default()
+-                                        },
+-                                        ..default()
+-                                    })
+-                                    .with_children(|container| {
+-                                        container.spawn(NodeBundle {
+-                                            style: Style {
+-                                                width: Val::Percent(100.),
+-                                                height: Val::Px(28.),
+-                                                position_type: PositionType::Absolute,
+-                                                ..default()
+-                                            },
+-                                            border_radius: BorderRadius::all(Val::Px(8.)),
+-                                            background_color: Color::srgb_u8(0x6b, 0x71, 0x79)
+-                                                .into(),
+-                                            ..default()
+-                                        });
+-
+-                                        container.spawn(NodeBundle {
+-                                            style: Style {
+-                                                width: Val::Percent(100. * amount),
+-                                                height: Val::Px(28.),
+-                                                border: UiRect::all(Val::Px(4.)),
+-                                                ..default()
+-                                            },
+-                                            border_radius: BorderRadius::all(Val::Px(8.)),
+-                                            border_color: Color::srgb_u8(0x6b, 0x71, 0x79).into(),
+-                                            background_color: BackgroundColor::from(color),
+-                                            ..default()
+-                                        });
+-
+-                                        for i in 1..9 {
+-                                            container.spawn(NodeBundle {
+-                                                style: Style {
+-                                                    height: Val::Px(28.),
+-                                                    position_type: PositionType::Absolute,
+-                                                    left: Val::Percent((i as f32) * 10.),
+-                                                    border: UiRect::all(Val::Px(2.)),
+-                                                    ..default()
+-                                                },
+-                                                border_color: Color::srgb_u8(0x6b, 0x71, 0x79)
+-                                                    .into(),
+-                                                ..default()
+-                                            });
+-                                        }
+-                                    });
+-                            });
+-                        };
+-
+-                        stats_row("Speed", 0.5, Color::srgb_u8(0x97, 0xd9, 0x48));
+-                        // stats_row("Strength", 0.5, Color::srgb_u8(0xec, 0x6a, 0x45));
+-                        stats_row("Strength", 0.5, Color::srgb_u8(0xdc, 0x47, 0x3c));
+-                    });
+-                // });
+-            }
+-        });
+-}
+-
+-fn update_ui_position(
+-    camera: Query<(&Camera, &GlobalTransform)>,
+-    monsters: Query<&GlobalTransform>,
+-    mut ui_nodes: Query<(&mut Style, &StatID)>,
+-) {
+-    // let (camera, camera_transform) = camera.get_single().unwrap();
+-
+-    // for (mut style, StatID(entity)) in &mut ui_nodes {
+-    //     let monster = monsters.get(*entity).unwrap();
+-
+-    //     let Some(position) = camera.world_to_viewport(camera_transform, monster.translation())
+-    //     else {
+-    //         continue;
+-    //     };
+-
+-    //     style.top = Val::Px(position.y);
+-    //     style.left = Val::Px(position.x);
+-    // }
+-}
+diff --git a/game/src/plugins/scenes/race.rs b/game/src/plugins/scenes/race.rs
+index 9f45f13..4b2d8d4 100644
+--- a/game/src/plugins/scenes/race.rs
++++ b/game/src/plugins/scenes/race.rs
+@@ -1,8 +1,5 @@
+ use bevy::prelude::*;
+-use shared::models::{
+-    monsters::{self},
+-    projections::{self, Jump},
+-};
++use shared::models::projections::{self, Jump};
+ 
+ use crate::plugins::{
+     delayed_command::DelayedCommandExt,
+@@ -13,7 +10,7 @@ use crate::plugins::{
+ 
+ use super::{
+     pregame::{PreGameCamera, PreGameSpawnPoint},
+-    RaceState, SceneMetadata, SceneState,
++    RaceState, SceneMetadata,
+ };
+ 
+ pub struct RacePlugin;
+diff --git a/game/src/plugins/scenes/results.rs b/game/src/plugins/scenes/results.rs
+index 65a4186..1c5d31d 100644
+--- a/game/src/plugins/scenes/results.rs
++++ b/game/src/plugins/scenes/results.rs
+@@ -3,10 +3,10 @@ use shared::models::projections;
+ 
+ use crate::plugins::{
+     event_stream::GameEvents,
+-    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
++    monster::{DespawnAllMonsters, MonsterBehaviour, SpawnMonster},
+ };
+ 
+-use super::{pregame::PreGameCamera, SceneMetadata, SceneState};
++use super::{SceneMetadata, SceneState};
+ 
+ pub struct ResultsPlugin;
+ 
+@@ -93,7 +93,7 @@ fn spawn_monsters(
+ 
+     let seed = projections::race_seed(&game_events);
+     let monsters = projections::monsters(&game_events, seed);
+-    let (results, _) = projections::race(&monsters, seed);
++    let results = projections::results(&game_events).unwrap();
+ 
+     spawn_points
+         .into_iter()
+diff --git a/game/src/setup.rs b/game/src/setup.rs
+index 8324c43..7a2b751 100644
+--- a/game/src/setup.rs
++++ b/game/src/setup.rs
+@@ -1,12 +1,11 @@
+ use bevy::{asset::AssetMetaCheck, prelude::*, window::WindowResolution};
+ use bevy_tweening::TweeningPlugin;
+ use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
+-use shared::models::game_id::GameID;
+ 
+ use crate::plugins::{
+     animation_link::AnimationLinkPlugin,
+     delayed_command::DelayedCommandPlugin,
+-    event_stream::{EventStreamPlugin, GameCode},
++    event_stream::EventStreamPlugin,
+     monster::MonsterPlugin,
+     music::MusicPlugin,
+     planets::PlanetsPlugin,
+@@ -26,8 +25,9 @@ pub fn start(f: impl FnOnce(&mut App)) {
+ 
+     #[cfg(not(target_arch = "wasm32"))]
+     if let Some(game_id) = std::env::args().nth(1) {
+-        let game_id = GameID::try_from(game_id.as_str()).expect("failed to parse game_id");
+-        app.insert_resource(GameCode(game_id));
++        let game_id = shared::models::game_id::GameID::try_from(game_id.as_str())
++            .expect("failed to parse game_id");
++        app.insert_resource(crate::plugins::event_stream::GameCode(game_id));
+     }
+ 
+     app.add_plugins(
+diff --git a/shared/src/lib.rs b/shared/src/lib.rs
+index ecfbde7..447c574 100644
+--- a/shared/src/lib.rs
++++ b/shared/src/lib.rs
+@@ -1,2 +1,3 @@
+ #![feature(slice_as_chunks)]
+ pub mod models;
++pub mod time;
+diff --git a/shared/src/models/commands/change_profile.rs b/shared/src/models/commands/change_profile.rs
+index fcf2493..849f3af 100644
+--- a/shared/src/models/commands/change_profile.rs
++++ b/shared/src/models/commands/change_profile.rs
+@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
+ use tracing::instrument;
+ use uuid::Uuid;
+ 
+-use crate::models::{events::Event, projections};
++use crate::models::{
++    events::Event,
++    projections::{self, PlayerInfo},
++};
+ 
+ use super::{CommandHandler, API};
+ 
+@@ -40,10 +43,13 @@ impl CommandHandler for ChangeProfile {
+             bail!("cannot modify profile after game has started");
+         }
+ 
+-        Ok(vec![Event::ChangedProfile {
+-            session_id,
+-            name: input.name,
+-        }])
++        match projections::player_info(events, session_id) {
++            Some(PlayerInfo { name, .. }) if name == input.name => Ok(vec![]),
++            _ => Ok(vec![Event::ChangedProfile {
++                session_id,
++                name: input.name,
++            }]),
++        }
+     }
+ }
+ 
+diff --git a/shared/src/models/commands/mod.rs b/shared/src/models/commands/mod.rs
+deleted file mode 100644
+index da70add..0000000
+--- a/shared/src/models/commands/mod.rs
++++ /dev/null
+@@ -1,106 +0,0 @@
+-use std::fmt::Display;
+-
+-use im::Vector;
+-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+-use uuid::Uuid;
+-
+-use super::{events::Event, game_id::GameID};
+-
+-#[derive(Debug)]
+-pub enum Effect {
+-    Alarm(i64),
+-    SoftCommand(fn(&Vector<Event>) -> Option<Event>),
+-}
+-
+-pub trait CommandHandler {
+-    type Input: Serialize + DeserializeOwned + std::fmt::Debug + Send + Sync + 'static;
+-
+-    fn handle(
+-        session_id: Uuid,
+-        events: &Vector<Event>,
+-        input: Self::Input,
+-    ) -> anyhow::Result<Vec<Event>>;
+-}
+-
+-pub trait API {
+-    fn url(game_id: impl Display) -> String;
+-
+-    #[allow(unused_variables)]
+-    fn redirect(game_id: impl Display) -> Option<String> {
+-        None
+-    }
+-}
+-
+-pub trait GameCode {
+-    fn game_code(&self) -> GameID;
+-}
+-
+-pub mod create_game;
+-pub use create_game::CreateGame;
+-
+-pub mod join_game;
+-pub use join_game::JoinGame;
+-
+-pub mod change_profile;
+-pub use change_profile::ChangeProfile;
+-
+-pub mod ready_player;
+-pub use ready_player::ReadyPlayer;
+-
+-pub mod start_round;
+-pub use start_round::StartRound;
+-
+-pub mod place_bets;
+-pub use place_bets::PlaceBets;
+-
+-pub mod buy_card;
+-pub use buy_card::BuyCard;
+-
+-pub mod play_card;
+-pub use play_card::PlayCard;
+-
+-pub mod start_race;
+-pub use start_race::StartRace;
+-
+-pub mod finish_race;
+-pub use finish_race::FinishRace;
+-
+-pub mod borrow_money;
+-pub use borrow_money::BorrowMoney;
+-
+-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+-pub enum Command {
+-    CreateGame(create_game::Input),
+-    JoinGame(join_game::Input),
+-    ChangeProfile(change_profile::Input),
+-    ReadyPlayer(ready_player::Input),
+-    StartRound(start_round::Input),
+-    StartRace(start_race::Input),
+-    BuyCard(buy_card::Input),
+-    PlayCard(play_card::Input),
+-    PlaceBets(place_bets::Input),
+-    FinishRace(finish_race::Input),
+-}
+-
+-impl CommandHandler for Command {
+-    type Input = Self;
+-
+-    fn handle(
+-        session_id: Uuid,
+-        events: &Vector<Event>,
+-        input: Self::Input,
+-    ) -> anyhow::Result<Vec<Event>> {
+-        match input {
+-            Command::CreateGame(input) => CreateGame::handle(session_id, events, input),
+-            Command::JoinGame(input) => JoinGame::handle(session_id, events, input),
+-            Command::ChangeProfile(input) => ChangeProfile::handle(session_id, events, input),
+-            Command::ReadyPlayer(input) => ReadyPlayer::handle(session_id, events, input),
+-            Command::StartRound(input) => StartRound::handle(session_id, events, input),
+-            Command::BuyCard(input) => BuyCard::handle(session_id, events, input),
+-            Command::PlayCard(input) => PlayCard::handle(session_id, events, input),
+-            Command::StartRace(input) => StartRace::handle(session_id, events, input),
+-            Command::PlaceBets(input) => PlaceBets::handle(session_id, events, input),
+-            Command::FinishRace(input) => FinishRace::handle(session_id, events, input),
+-        }
+-    }
+-}
+diff --git a/shared/src/models/commands/start_race.rs b/shared/src/models/commands/start_race.rs
+index 4fc8686..a5140b3 100644
+--- a/shared/src/models/commands/start_race.rs
++++ b/shared/src/models/commands/start_race.rs
+@@ -1,12 +1,10 @@
+-use std::time::{SystemTime, UNIX_EPOCH};
+-
+ use anyhow::bail;
+ use tracing::instrument;
+ use uuid::Uuid;
+ 
+-use crate::models::events::Event;
+-
+ use super::CommandHandler;
++use crate::models::events::Event;
++use crate::time::*;
+ 
+ pub type Input = ();
+ 
+diff --git a/shared/src/models/commands/start_round.rs b/shared/src/models/commands/start_round.rs
+index 3ac48f1..c9c5cb6 100644
+--- a/shared/src/models/commands/start_round.rs
++++ b/shared/src/models/commands/start_round.rs
+@@ -1,10 +1,11 @@
+-use std::time::{SystemTime, UNIX_EPOCH};
+-
+ use anyhow::bail;
+ use tracing::instrument;
+ use uuid::Uuid;
+ 
+-use crate::models::{events::Event, projections};
++use crate::{
++    models::{events::Event, projections},
++    time::*,
++};
+ 
+ use super::CommandHandler;
+ 
+diff --git a/shared/src/models/events.rs b/shared/src/models/events.rs
+index ecd5a53..d1f14b5 100644
+--- a/shared/src/models/events.rs
++++ b/shared/src/models/events.rs
+@@ -1,7 +1,4 @@
+-use std::{
+-    ops::Deref,
+-    time::{SystemTime, UNIX_EPOCH},
+-};
++use std::ops::Deref;
+ 
+ use macros::serde_wasm_bindgen;
+ use serde::{Deserialize, Serialize};
+@@ -13,6 +10,8 @@ use super::{
+     projections::RaceResults,
+ };
+ 
++use crate::time::*;
++
+ #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Hash)]
+ pub struct PlacedBet {
+     pub session_id: Uuid,
+diff --git a/shared/src/models/monsters.rs b/shared/src/models/monsters.rs
+index 27bf825..49ac10c 100644
+--- a/shared/src/models/monsters.rs
++++ b/shared/src/models/monsters.rs
+@@ -1,9 +1,3 @@
+-use rand::{
+-    distributions::{Distribution, Uniform},
+-    rngs::StdRng,
+-    Rng, SeedableRng,
+-};
+-use serde::{Deserialize, Serialize};
+ use uuid::Uuid;
+ 
+ #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+diff --git a/shared/src/models/processors/finish_race.rs b/shared/src/models/processors/finish_race.rs
+index 45a55e3..cd0ac0d 100644
+--- a/shared/src/models/processors/finish_race.rs
++++ b/shared/src/models/processors/finish_race.rs
+@@ -1,10 +1,8 @@
+-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+-
+ use im::Vector;
+ 
+-use crate::models::{commands::Command, events::Event, projections};
+-
+ use super::{Alarm, AlarmProcessor, Processor};
++use crate::models::{commands::Command, events::Event, projections};
++use crate::time::*;
+ 
+ pub struct FinishRace;
+ 
+diff --git a/shared/src/models/processors/mod.rs b/shared/src/models/processors/mod.rs
+deleted file mode 100644
+index a85bef9..0000000
+--- a/shared/src/models/processors/mod.rs
++++ /dev/null
+@@ -1,194 +0,0 @@
+-use std::time::Duration;
+-
+-use anyhow::Result;
+-use finish_race::FinishRace;
+-use im::Vector;
+-use start_game::StartGame;
+-use start_race::StartRace;
+-use start_round::StartRound;
+-
+-use super::{
+-    commands::{Command, CommandHandler},
+-    events::Event,
+-};
+-
+-pub mod finish_race;
+-pub mod start_game;
+-pub mod start_race;
+-pub mod start_round;
+-
+-const PROCESSORS: [&'static dyn Processor; 4] = [&StartGame, &StartRace, &FinishRace, &StartRound];
+-const ALARMS: [&'static dyn AlarmProcessor; 3] = [&StartRace, &FinishRace, &StartRound];
+-
+-pub trait Processor: Send + Sync + 'static {
+-    fn process(&self, events: &Vector<Event>) -> Option<Command>;
+-}
+-
+-pub trait AlarmProcessor: Send + Send + 'static {
+-    fn alarm(&self, events: &Vector<Event>) -> Option<Alarm>;
+-}
+-
+-#[derive(Debug, Clone, Copy, PartialEq)]
+-pub struct Alarm(pub Duration);
+-
+-pub fn run_processors(events: &Vector<Event>) -> Result<(Vec<Event>, Option<Alarm>)> {
+-    let mut events = events.clone();
+-    let mut output = vec![];
+-    let mut output_alarm = None;
+-
+-    'outer: loop {
+-        for processor in PROCESSORS {
+-            let Some(command) = processor.process(&events) else {
+-                continue;
+-            };
+-
+-            for event in Command::handle(uuid::Uuid::nil(), &events, command)? {
+-                events.push_back(event.clone());
+-                output.push(event);
+-            }
+-
+-            // A processor triggered a command, start from the beginning again
+-            continue 'outer;
+-        }
+-
+-        for alarm in ALARMS {
+-            let Some(alarm) = alarm.alarm(&events) else {
+-                continue;
+-            };
+-
+-            if output_alarm.is_some() {
+-                tracing::warn!("multiple alarms output in a single processor step");
+-            }
+-
+-            output_alarm = Some(alarm);
+-        }
+-
+-        // No processor triggered a command, stop now
+-        break;
+-    }
+-
+-    Ok((output, output_alarm))
+-}
+-
+-#[cfg(test)]
+-mod test {
+-    use std::time::Duration;
+-
+-    use anyhow::bail;
+-    use im::Vector;
+-    use uuid::Uuid;
+-
+-    use crate::models::{
+-        events::Event,
+-        game_id::GameID,
+-        processors::{run_processors, Alarm},
+-    };
+-
+-    #[test]
+-    fn processor_trigger() -> anyhow::Result<()> {
+-        let a = Uuid::new_v4();
+-
+-        let events = Vector::from_iter([
+-            Event::GameCreated {
+-                game_id: GameID::random(),
+-            },
+-            Event::PlayerJoined {
+-                session_id: a,
+-                name: "Test".into(),
+-            },
+-            Event::PlayerReady { session_id: a },
+-        ]);
+-
+-        if !matches!(
+-            &run_processors(&events)?.0[..],
+-            [Event::RoundStarted { .. }]
+-        ) {
+-            bail!("didn't match");
+-        };
+-
+-        Ok(())
+-    }
+-
+-    #[test]
+-    fn pre_game_timeout() -> anyhow::Result<()> {
+-        let a = Uuid::new_v4();
+-
+-        let events = Vector::from_iter([
+-            Event::GameCreated {
+-                game_id: GameID::random(),
+-            },
+-            Event::PlayerJoined {
+-                session_id: a,
+-                name: "Test".into(),
+-            },
+-            Event::PlayerReady { session_id: a },
+-            Event::RoundStarted {
+-                time: 0,
+-                odds: None,
+-            },
+-        ]);
+-
+-        assert_eq!(
+-            Some(Alarm(Duration::from_secs_f32(90.))),
+-            run_processors(&events)?.1
+-        );
+-
+-        Ok(())
+-    }
+-
+-    #[test]
+-    fn race_alarm_set() -> anyhow::Result<()> {
+-        let a = Uuid::new_v4();
+-
+-        let events = Vector::from_iter([
+-            Event::GameCreated {
+-                game_id: GameID::random(),
+-            },
+-            Event::PlayerJoined {
+-                session_id: a,
+-                name: "Test".into(),
+-            },
+-            Event::PlayerReady { session_id: a },
+-            Event::start_round_now(),
+-            Event::start_race_now(),
+-        ]);
+-
+-        if !matches!(run_processors(&events)?.1, Some(Alarm(_))) {
+-            bail!("race alarm didn't set");
+-        }
+-
+-        Ok(())
+-    }
+-
+-    #[test]
+-    fn race_finishes_automatically() -> anyhow::Result<()> {
+-        let a = Uuid::new_v4();
+-
+-        let now = Event::now();
+-
+-        let events = Vector::from_iter([
+-            Event::GameCreated {
+-                game_id: GameID::random(),
+-            },
+-            Event::PlayerJoined {
+-                session_id: a,
+-                name: "Test".into(),
+-            },
+-            Event::PlayerReady { session_id: a },
+-            Event::RoundStarted {
+-                time: now,
+-                odds: None,
+-            },
+-            Event::RaceStarted { time: now - 60 },
+-        ]);
+-
+-        if !matches!(
+-            &run_processors(&events)?.0[..],
+-            [Event::RaceFinished { .. }]
+-        ) {
+-            bail!("race didn't finish");
+-        }
+-
+-        Ok(())
+-    }
+-}
+diff --git a/shared/src/models/processors/start_race.rs b/shared/src/models/processors/start_race.rs
+index 853935e..7f8c64b 100644
+--- a/shared/src/models/processors/start_race.rs
++++ b/shared/src/models/processors/start_race.rs
+@@ -1,14 +1,12 @@
+-use std::{
+-    time::{Duration, SystemTime, UNIX_EPOCH},
+-    usize,
+-};
++use std::usize;
+ 
+ use im::Vector;
+ use tracing::instrument;
+ 
+-use crate::models::{commands::Command, events::Event, projections};
+-
+ use super::{Alarm, AlarmProcessor, Processor};
++use crate::models::projections;
++use crate::models::{commands::Command, events::Event};
++use crate::time::*;
+ 
+ pub const PRE_GAME_TIMEOUT: u32 = 90;
+ 
+@@ -83,7 +81,7 @@ impl Processor for StartRace {
+ 
+ #[cfg(test)]
+ mod test {
+-    use std::time::{SystemTime, UNIX_EPOCH};
++    use crate::time::*;
+ 
+     use im::Vector;
+     use uuid::Uuid;
+diff --git a/shared/src/models/processors/start_round.rs b/shared/src/models/processors/start_round.rs
+index 250fd56..713ee12 100644
+--- a/shared/src/models/processors/start_round.rs
++++ b/shared/src/models/processors/start_round.rs
+@@ -1,10 +1,9 @@
+-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+-
+ use im::Vector;
+ 
+-use crate::models::{commands::Command, events::Event};
+-
+ use super::{Alarm, AlarmProcessor, Processor};
++use crate::models::projections;
++use crate::models::{commands::Command, events::Event};
++use crate::time::*;
+ 
+ pub struct StartRound;
+ 
+@@ -16,6 +15,10 @@ impl AlarmProcessor for StartRound {
+             return None;
+         }
+ 
++        if projections::game_finished(events) {
++            return None;
++        }
++
+         Some(Alarm(Duration::from_secs_f32(SUMMARY_DURATION)))
+     }
+ }
+@@ -26,6 +29,10 @@ impl Processor for StartRound {
+             return None;
+         };
+ 
++        if projections::game_finished(events) {
++            return None;
++        }
++
+         if SystemTime::now()
+             >= UNIX_EPOCH
+                 + Duration::from_secs(*time as u64)
+diff --git a/shared/src/models/projections.rs b/shared/src/models/projections.rs
+index 3ac54f8..38db7fc 100644
+--- a/shared/src/models/projections.rs
++++ b/shared/src/models/projections.rs
+@@ -1,13 +1,8 @@
+ use std::{hash::Hash, time::Duration};
+ 
+ use serde::{Deserialize, Serialize};
+-#[cfg(feature = "wasm")]
+-use web_time::{SystemTime, UNIX_EPOCH};
+ 
+-#[cfg(not(feature = "wasm"))]
+-use std::time::{SystemTime, UNIX_EPOCH};
+-
+-use crate::models::monsters::MONSTERS;
++use crate::{models::monsters::MONSTERS, time::*};
+ 
+ use rand::{
+     distributions::{Uniform, WeightedIndex},
+@@ -20,11 +15,11 @@ use super::{
+     cards::{Card, Target},
+     events::{Event, Odds, OddsExt, PlacedBet},
+     game_id::GameID,
+-    monsters::{self, Monster},
++    monsters::Monster,
+     processors::start_race::PRE_GAME_TIMEOUT,
+ };
+ use im::{HashMap, Vector};
+-use tracing::{event, instrument};
++use tracing::instrument;
+ use uuid::Uuid;
+ 
+ pub fn player_count(events: &Vector<Event>) -> usize {
+@@ -158,6 +153,10 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
+     let players = players(events);
+     let bets = placed_bets(events);
+ 
++    if players.is_empty() {
++        return false;
++    }
++
+     for player in players.keys() {
+         if !bets.contains_key(player) {
+             return false;
+@@ -284,25 +283,34 @@ pub fn winnings(events: &Vector<Event>) -> HashMap<Uuid, i32> {
+     winnings
+ }
+ 
+-pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
+-    let mut debt = 0;
++pub fn all_debt(events: &Vector<Event>) -> HashMap<Uuid, u32> {
++    let mut debt = HashMap::new();
+ 
+     for event in events {
+         match event {
+-            Event::BorrowedMoney { session_id, amount } if *session_id == player_id => {
+-                debt += amount
++            Event::BorrowedMoney { session_id, amount } => {
++                *debt.entry(*session_id).or_default() += *amount
+             }
+-            Event::PaidBackMoney { session_id, amount } if *session_id == player_id => {
+-                debt -= amount
++            Event::PaidBackMoney { session_id, amount } => {
++                *debt.entry(*session_id).or_default() -= *amount
+             }
+-            Event::RaceFinished { .. } => debt = ((debt as f32) * 1.051) as u32,
++            Event::RaceFinished { .. } => debt
++                .iter_mut()
++                .for_each(|(_, amount)| *amount = ((*amount as f32) * 1.051) as u32),
+             _ => {}
+-        };
++        }
+     }
+ 
+     debt
+ }
+ 
++pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
++    all_debt(events)
++        .get(&player_id)
++        .copied()
++        .unwrap_or_default()
++}
++
+ #[instrument(skip_all)]
+ pub fn game_id(events: &Vector<Event>) -> GameID {
+     match events.get(0) {
+@@ -438,7 +446,7 @@ pub fn unique_played_monster_cards(events: &Vector<Event>) -> Vec<PlayedMonsterC
+                 card: *card,
+                 monster_id: *monster_id,
+             }),
+-            Event::RaceFinished { .. } => cards.clear(),
++            Event::RoundStarted { .. } => cards.clear(),
+             _ => {}
+         }
+     }
+@@ -566,7 +574,21 @@ pub fn pre_race_duration(events: &Vector<Event>) -> Duration {
+     Duration::from_secs(3 + 4 * played_card)
+ }
+ 
+-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
++pub fn game_finished(events: &Vector<Event>) -> bool {
++    let mut rounds = 0;
++
++    for event in events.iter() {
++        match event {
++            Event::RaceFinished { .. } => rounds += 1,
++            Event::GameFinished => return true,
++            _ => {}
++        }
++    }
++
++    rounds >= 10
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+ pub struct RaceResults {
+     pub first: Uuid,
+     pub second: Uuid,
+@@ -751,6 +773,16 @@ pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
+     }))
+ }
+ 
++pub fn results(events: &Vector<Event>) -> Option<RaceResults> {
++    for event in events.iter().rev() {
++        if let Event::RaceFinished { results, .. } = event {
++            return Some(*results);
++        }
++    }
++
++    None
++}
++
+ #[cfg(test)]
+ mod tests {
+ 
+diff --git a/wrangler.toml b/wrangler.toml
+index 071fcef..47c3be9 100644
+--- a/wrangler.toml
++++ b/wrangler.toml
+@@ -1,6 +1,9 @@
+ name = "deep-space-derby"
+ compatibility_date = "2023-10-30"
+ 
++[limits]
++cpu_ms = 200
++
+ [durable_objects]
+ bindings = [{ name = "GAME", class_name = "Game" }]
+ 

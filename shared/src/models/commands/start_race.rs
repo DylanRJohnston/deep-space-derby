@@ -1,12 +1,10 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use anyhow::bail;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::models::events::Event;
-
 use super::CommandHandler;
+use crate::models::events::Event;
+use crate::time::*;
 
 pub type Input = ();
 
