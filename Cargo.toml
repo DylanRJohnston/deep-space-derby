@@ -7,8 +7,8 @@ shared = { path = "./shared", version = "0.1.0" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
-opt-level = 's'
-strip = true
+opt-level = 1
+# strip = true
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
@@ -17,4 +17,4 @@ opt-level = 3
 [profile.release]
 lto = true
 opt-level = 's'
-strip = true
+# strip = true

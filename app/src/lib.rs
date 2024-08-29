@@ -18,6 +18,8 @@ pub mod adapters;
 pub mod extractors;
 #[cfg(feature = "ssr")]
 pub mod handlers;
+#[cfg(feature = "hydrate")]
+pub mod hydrate;
 #[cfg(feature = "ssr")]
 pub mod middleware;
 #[cfg(feature = "ssr")]

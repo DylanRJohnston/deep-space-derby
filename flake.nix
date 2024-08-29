@@ -42,13 +42,14 @@
             cp -r assets/* site/
             cp -r game/assets site/assets
 
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr,app/wasm
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin client --features app/hydrate,app/wasm
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game --features game/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --lib        --features app/hydrate,app/wasm
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/app.wasm    --no-typescript --remove-name-section --remove-producers-section --out-name index --target web     --out-dir ./site/pkg
 
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/worker.wasm --no-typescript --out-name index --target bundler --out-dir ./site    
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/client.wasm --no-typescript --out-name index --target web     --out-dir ./site/pkg
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --out-name game  --target web     --out-dir ./site/pkg
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr,app/wasm
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/worker.wasm --no-typescript --remove-name-section --remove-producers-section --out-name index --target bundler --out-dir ./site
+
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game   --features game/wasm
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --remove-name-section --remove-producers-section --out-name game  --target web     --out-dir ./site/pkg
           '';
 
           dev-clean = pkgs.writeShellScriptBin "dev-clean" ''
@@ -75,9 +76,9 @@
             set -o errexit
             set -o pipefail
 
-            CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/client.wasm"
+            CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/app.wasm"
 
-            cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin client --features app/hydrate,app/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features -p app --lib --features app/hydrate,app/wasm
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $CLIENT_TARGET --no-typescript --out-name index --target web --out-dir ./site/pkg
 
             echo "############### FINISHED BUILDING CLIENT ###############"

@@ -1,6 +1,6 @@
 use std::io;
 
-use app::app;
+use crate::app;
 use leptos::{leptos_dom::logging::console_log, mount_to_body};
 use wasm_bindgen::prelude::wasm_bindgen;
 
