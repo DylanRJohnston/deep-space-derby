@@ -8,16 +8,24 @@ use tracing::instrument;
 
 use crate::{
     adapters::event_log::file::FileEventLog,
-    ports::{event_log::EventLog, game_state::GameState},
+    ports::{
+        event_log::EventLog,
+        game_state::{GameDirectory, GameState},
+    },
 };
 
-struct Game {
+struct InnerGame {
     events: FileEventLog,
     sockets: Vec<WebSocket>,
     alarm: Option<JoinHandle<()>>,
 }
 
-impl Game {
+#[derive(Clone)]
+pub struct Game {
+    inner: Arc<Mutex<InnerGame>>,
+}
+
+impl InnerGame {
     async fn push_event(&mut self, event: Event) -> Result<()> {
         self.events.push(event.clone()).await?;
 
@@ -43,49 +51,48 @@ impl Game {
 impl Game {
     fn from_game_id(game_id: GameID) -> Self {
         Self {
-            events: FileEventLog::from_game_id(game_id),
-            sockets: vec![],
-            alarm: None,
+            inner: Arc::new(Mutex::new(InnerGame {
+                events: FileEventLog::from_game_id(game_id),
+                sockets: vec![],
+                alarm: None,
+            })),
         }
     }
 }
 
 #[derive(Clone, Default)]
-pub struct FileGameState {
+pub struct FileGameDirectory {
     inner: Arc<Mutex<HashMap<GameID, Game>>>,
 }
 
-impl GameState for FileGameState {
-    async fn events(&self, game_id: GameID) -> Result<im::Vector<Event>> {
+impl GameDirectory for FileGameDirectory {
+    type GameState = Game;
+
+    async fn get(&self, game_id: GameID) -> Self::GameState {
         self.inner
             .lock()
             .await
             .entry(game_id)
             .or_insert_with(|| Game::from_game_id(game_id))
-            .events
-            .vector()
-            .await
+            .clone()
+    }
+}
+
+impl GameState for Game {
+    async fn events(&self) -> Result<im::Vector<Event>> {
+        self.inner.lock().await.events.vector().await
     }
 
-    async fn push_event(&self, game_id: GameID, event: Event) -> Result<()> {
+    async fn push_event(&self, event: Event) -> Result<()> {
         let mut lock_guard = self.inner.lock().await;
-        let game = lock_guard
-            .entry(game_id)
-            .or_insert_with(|| Game::from_game_id(game_id));
 
-        game.push_event(event).await?;
+        lock_guard.push_event(event).await?;
 
         Ok(())
     }
 
-    async fn accept_web_socket(&self, game_id: GameID, ws: WebSocket) -> Result<()> {
-        self.inner
-            .lock()
-            .await
-            .entry(game_id)
-            .or_insert_with(|| Game::from_game_id(game_id))
-            .sockets
-            .push(ws);
+    async fn accept_web_socket(&self, ws: WebSocket) -> Result<()> {
+        self.inner.lock().await.sockets.push(ws);
 
         Ok(())
     }
@@ -93,15 +100,10 @@ impl GameState for FileGameState {
     #[instrument(skip(self))]
     fn set_alarm(
         &self,
-        game_id: GameID,
         duration: Duration,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>> {
         Box::pin(async move {
-            let mut lock_guard = self.inner.lock().await;
-
-            let game = lock_guard
-                .entry(game_id)
-                .or_insert_with(|| Game::from_game_id(game_id));
+            let mut game = self.inner.lock().await;
 
             if let Some(handle) = game.alarm.take() {
                 handle.abort();
@@ -121,11 +123,7 @@ impl GameState for FileGameState {
                         return;
                     };
 
-                    let mut lock_guard = this.lock().await;
-
-                    let game = lock_guard
-                        .entry(game_id)
-                        .or_insert_with(|| Game::from_game_id(game_id));
+                    let mut game = this.lock().await;
 
                     let (new_events, alarm) = run_processors(&game.events.vector().await?)?;
 
@@ -136,12 +134,10 @@ impl GameState for FileGameState {
                     }
 
                     game.alarm = None;
-                    drop(lock_guard);
+                    drop(game);
 
                     if let Some(alarm) = alarm {
-                        FileGameState { inner: this }
-                            .set_alarm(game_id, alarm.0)
-                            .await?;
+                        Game { inner: this }.set_alarm(alarm.0).await?;
                     }
                 };
 

@@ -1,6 +1,7 @@
 body {
   display: block;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: scroll;
   margin: 0px;
   background-color: #03193f;
   font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
@@ -223,9 +224,8 @@ canvas {
 }
 
 .pre-game-container {
-  position: absolute;
   width: 100%;
-  min-height: 100dvh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -409,6 +409,7 @@ h2 {
   scroll-snap-align: center;
 
   font-size: 24px;
+  color: #eee;
 }
 
 .card-main > img {
@@ -520,10 +521,8 @@ h2 {
 }
 
 .loan-shark {
-  aspect-ratio: 1 / 1;
-
-  flex-grow: 1;
-  flex-shrink: 1;
+  width: 250px;
+  height: 250px;
 
   /* 
   -webkit-backdrop-filter: blur(8px);

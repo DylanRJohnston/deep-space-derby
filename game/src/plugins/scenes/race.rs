@@ -1,10 +1,10 @@
 use bevy::prelude::*;
-use shared::models::projections::{self, Jump};
+use shared::models::projections::{self, Jump, RaceResults};
 
 use crate::plugins::{
     delayed_command::DelayedCommandExt,
     event_stream::GameEvents,
-    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, SpawnMonster},
+    monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterInfo, SpawnMonster},
     music::PlayCountdown,
 };
 
@@ -152,9 +152,9 @@ fn init_race(
 
     let seed = projections::race_seed(&game_events);
     let monsters = projections::monsters(&game_events, seed);
-    let (_, jump) = projections::race(&monsters, seed);
+    let (results, jump) = projections::race(&monsters, seed);
 
-    commands.insert_resource(Race(jump));
+    commands.insert_resource(Race((results, jump)));
 
     race_points
         .into_iter()
@@ -181,7 +181,7 @@ pub struct RaceTimer {
 }
 
 #[derive(Debug, Resource, Deref, DerefMut)]
-struct Race(Vec<Jump>);
+struct Race((RaceResults, Vec<Jump>));
 
 impl Default for RaceTimer {
     fn default() -> Self {
@@ -195,22 +195,30 @@ impl Default for RaceTimer {
 fn run_race(
     race: Res<Race>,
     time: Res<Time>,
-    mut monsters: Query<(&MonsterID, &mut MonsterBehaviour, &mut RaceTimer)>,
+    mut monsters: Query<(
+        &MonsterID,
+        &MonsterInfo,
+        &mut MonsterBehaviour,
+        &mut RaceTimer,
+    )>,
 ) {
-    for (id, mut behaviour_timer, mut race_timer) in &mut monsters {
+    for (id, monster_info, mut behaviour_timer, mut race_timer) in &mut monsters {
         if !race_timer.timer.tick(time.delta()).just_finished() {
             continue;
         }
 
         let Some(jump) = race
             .0
+             .1
             .iter()
             .filter(|jump| jump.monster_id == (**id - 1))
             .nth(race_timer.index)
         else {
-            if *behaviour_timer != MonsterBehaviour::Dancing {
-                *behaviour_timer = MonsterBehaviour::Dancing;
-            }
+            // if race.0 .0.first == monster_info.uuid {
+            *behaviour_timer = MonsterBehaviour::Dancing;
+            // } else {
+            // *behaviour_timer = MonsterBehaviour::Dead;
+            // }
 
             continue;
         };

@@ -13,7 +13,7 @@ pub enum Effect {
 }
 
 pub trait CommandHandler {
-    type Input: Serialize + DeserializeOwned + std::fmt::Debug + Send + Sync + 'static;
+    type Input: Serialize + DeserializeOwned + std::fmt::Debug + Send + 'static;
 
     fn handle(
         session_id: Uuid,

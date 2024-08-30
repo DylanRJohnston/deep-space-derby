@@ -10,7 +10,7 @@ use worker::{durable_object, Env, State, Storage, WebSocketPair};
 
 use crate::adapters::event_log::durable_object::DurableObjectKeyValue;
 use crate::ports::event_log::EventLog;
-use crate::ports::game_state::GameState;
+use crate::ports::game_state::{GameDirectory, GameState};
 use crate::router::into_game_router;
 
 #[derive(Clone)]
@@ -44,19 +44,17 @@ impl DurableObject for Game {
 
     pub async fn alarm(&mut self) -> worker::Result<worker::Response> {
         let events = self.events.vector().await.map_err(|err| err.to_string())?;
-        // TODO: Remove this, GameState should be produced by a factory that takes GameID instead;
-        let _game_id = GameID::random();
 
         let (events, alarm) = run_processors(&events).map_err(|err| err.to_string())?;
 
         for event in events {
-            self.push_event(_game_id, event)
+            self.push_event(event)
                 .await
                 .map_err(|err| err.to_string())?;
         }
 
         if let Some(Alarm(duration)) = alarm {
-            self.set_alarm(_game_id, duration)
+            self.set_alarm(duration)
                 .await
                 .map_err(|err| err.to_string())?;
         }
@@ -67,11 +65,11 @@ impl DurableObject for Game {
 
 // DurableObject Game State Can Ignore the GameID parameter as there is one per game
 impl GameState for Game {
-    async fn events(&self, _: GameID) -> anyhow::Result<im::Vector<Event>> {
+    async fn events(&self) -> anyhow::Result<im::Vector<Event>> {
         SendFuture::new(async { Ok(self.events.vector().await?) }).await
     }
 
-    async fn push_event(&self, _: GameID, event: Event) -> anyhow::Result<()> {
+    async fn push_event(&self, event: Event) -> anyhow::Result<()> {
         SendFuture::new(async {
             self.events.push(event.clone()).await;
 
@@ -84,7 +82,7 @@ impl GameState for Game {
         .await
     }
 
-    fn accept_web_socket(&self, _: GameID) -> anyhow::Result<WebSocketPair> {
+    fn accept_web_socket(&self) -> anyhow::Result<WebSocketPair> {
         let pair = WebSocketPair::new()?;
         self.state.accept_web_socket(&pair.server);
 
@@ -93,7 +91,6 @@ impl GameState for Game {
 
     fn set_alarm(
         &self,
-        _: GameID,
         duration: std::time::Duration,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + '_>> {
         Box::pin(async move {
@@ -110,5 +107,13 @@ impl GameState for Game {
             })
             .await
         })
+    }
+}
+
+impl GameDirectory for Game {
+    type GameState = Game;
+
+    async fn get(&self, _: GameID) -> Self::GameState {
+        self.clone()
     }
 }

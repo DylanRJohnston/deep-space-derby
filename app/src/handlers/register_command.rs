@@ -1,12 +1,11 @@
 use std::any::type_name;
 
 use crate::{
-    extractors::{GameCode, SessionID},
-    ports::game_state::GameState,
+    extractors::{Game, SessionID},
+    ports::game_state::{GameDirectory, GameState},
     service::InternalServerError,
 };
 use axum::{
-    extract::State,
     response::{IntoResponse, Response},
     routing::post,
     Json,
@@ -21,34 +20,33 @@ pub trait RegisterCommandExt {
 }
 
 #[tracing::instrument(skip_all, fields(session_id, input, command = type_name::<C>()), err)]
-pub async fn command_handler<C: CommandHandler, G: GameState>(
+pub async fn command_handler<C: CommandHandler, G: GameDirectory>(
     SessionID(session_id): SessionID,
-    State(game): State<G>,
-    GameCode { code }: GameCode,
+    Game(game): Game<G>,
     Json(input): Json<C::Input>,
 ) -> Result<Response, InternalServerError> {
-    let mut events = game.events(code).await?;
+    let mut events = game.events().await?;
 
     let new_events = C::handle(session_id, &events, input)?;
     for event in new_events {
-        game.push_event(code, event.clone()).await?;
+        game.push_event(event.clone()).await?;
         events.push_back(event);
     }
 
     let (new_events, alarm) = run_processors(&events)?;
 
     for event in new_events {
-        game.push_event(code, event).await?;
+        game.push_event(event).await?;
     }
 
     if let Some(alarm) = alarm {
-        game.set_alarm(code, alarm.0).await?;
+        game.set_alarm(alarm.0).await?;
     }
 
     Ok(().into_response())
 }
 
-impl<G: GameState> RegisterCommandExt for axum::Router<G> {
+impl<G: GameDirectory> RegisterCommandExt for axum::Router<G> {
     fn register_command_handler<C: CommandHandler + API + 'static>(self) -> Self {
         self.route(&C::url(":code"), post(command_handler::<C, G>))
     }

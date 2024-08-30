@@ -171,66 +171,68 @@ pub fn pre_game() -> impl IntoView {
         Signal::derive(move || projections::already_played_card_this_round(&events(), player_id));
 
     view! {
-        <div class="pre-game-container">
-            // <div class="profile-image">"Profile Image"</div>
-            <div class="player-info">
-                <h2>{player_name}</h2>
-                <div class="finance">
-                    <span style="justify-self: end">"Funds:"</span>
-                    <span>"💎 " {available_money}</span>
-                    <span style="justify-self: end">"Debt:"</span>
-                    <span>"💎 " {debt}</span>
+        <Show when=move || !(bets_modal() || loan_modal() || card_modal()) fallback=|| view! {}>
+            <div class="pre-game-container">
+                // <div class="profile-image">"Profile Image"</div>
+                <div class="player-info">
+                    <h2>{player_name}</h2>
+                    <div class="finance">
+                        <span style="justify-self: end">"Funds:"</span>
+                        <span>"💎 " {available_money}</span>
+                        <span style="justify-self: end">"Debt:"</span>
+                        <span>"💎 " {debt}</span>
+                    </div>
                 </div>
-            </div>
-            <div class="action-grid">
-                <div class="placeholder-image">
-                    <img src="/pkg/icons/spade.svg"/>
+                <div class="action-grid">
+                    <div class="placeholder-image">
+                        <img src="/pkg/icons/spade.svg"/>
+                    </div>
+                    <div class="placeholder-image">
+                        <img src="/pkg/icons/shark.svg"/>
+                    </div>
+                    <button
+                        class="action"
+                        on:click=move |_| buy_card.dispatch(())
+                        disabled=move || (cards().len() >= 5)
+                    >
+                        <p>"Buy a card"</p>
+                        <p>"(💎 100)"</p>
+                    </button>
+                    <button class="action" on:click=move |_| toggle_loan_modal()>
+                        "Loan Shark"
+                    </button>
+                    <button class="action double-width" on:click=move |_| toggle_bets_modal()>
+                        "Place Bet"
+                    </button>
                 </div>
-                <div class="placeholder-image">
-                    <img src="/pkg/icons/shark.svg"/>
-                </div>
-                <button
-                    class="action"
-                    on:click=move |_| buy_card.dispatch(())
-                    disabled=move || (cards().len() >= 5)
-                >
-                    <p>"Buy a card"</p>
-                    <p>"(💎 100)"</p>
-                </button>
-                <button class="action" on:click=move |_| toggle_loan_modal()>
-                    "Loan Shark"
-                </button>
-                <button class="action double-width" on:click=move |_| toggle_bets_modal()>
-                    "Place Bet"
-                </button>
-            </div>
-            <div class="card-line">
-                {move || {
-                    let cards = cards();
-                    let count = cards.len() as i32;
-                    cards
-                        .into_iter()
-                        .enumerate()
-                        .map(|(index, card)| {
-                            let rotation = if count % 2 == 0 {
-                                (index as i32 - count / 2) * 25 + 13
-                            } else {
-                                (index as i32 - count / 2) * 25
-                            };
-                            view! {
-                                <CardPreview
-                                    card
-                                    rotation
-                                    on_click=toggle_card_modal
-                                    disabled=cards_disabled
-                                />
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                }}
+                <div class="card-line">
+                    {move || {
+                        let cards = cards();
+                        let count = cards.len() as i32;
+                        cards
+                            .into_iter()
+                            .enumerate()
+                            .map(|(index, card)| {
+                                let rotation = if count % 2 == 0 {
+                                    (index as i32 - count / 2) * 25 + 13
+                                } else {
+                                    (index as i32 - count / 2) * 25
+                                };
+                                view! {
+                                    <CardPreview
+                                        card
+                                        rotation
+                                        on_click=toggle_card_modal
+                                        disabled=cards_disabled
+                                    />
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                    }}
 
+                </div>
             </div>
-        </div>
+        </Show>
         <Show when=bets_modal fallback=|| view! {}>
             <div class="pre-game-container blurred">
                 <button class="back-button" on:click=move |_| toggle_bets_modal()>
@@ -303,7 +305,7 @@ fn loan_modal(
             <button class="back-button" on:click=move |_| close()>
                 "←"
             </button>
-            // <h1>"Loan shark"</h1>
+            <h1>"Loan shark"</h1>
             <div class="loan-shark"></div>
             <p class="bio">"\"I'm a shark, How much do you want to borrow?\""</p>
             <p>"Interest Rate: 5.1%/pr"</p>
@@ -358,13 +360,13 @@ fn card_preview(
 }
 
 #[component]
-fn card_main(card: Card) -> impl IntoView {
+fn card_main(card: Card, on_click: impl FnMut(MouseEvent) + 'static) -> impl IntoView {
     view! {
-        <div class="card-main">
+        <button class="card-main" on:click=on_click>
             <p>{card.name()}</p>
             <img src=card.icon()/>
             <p>{card.description()}</p>
-        </div>
+        </button>
     }
 }
 
@@ -378,41 +380,46 @@ fn card_modal(close: impl Fn() + Copy + 'static) -> impl IntoView {
 
     let scroll = use_scroll(scroll_ref);
 
-    let (target_modal, toggle_target_modal) = {
-        let (read, write) = create_signal(false);
-
-        (read, move || write(!read()))
-    };
-
     let card = Signal::derive(move || {
         let index = (((scroll.x)() as f32 - 125.0) / 250.) as usize;
         cards().get(index).copied()
     });
 
-    view! {
-        <div class="pre-game-container blurred">
-            <button class="back-button" on:click=move |_| close()>
-                "←"
-            </button>
-            <div ref=scroll_ref class="card-carousel">
-                {move || {
-                    cards().into_iter().map(|card| view! { <CardMain card/> }).collect::<Vec<_>>()
-                }}
+    let (selected_card, set_selected_card) = create_signal::<Option<Card>>(None);
 
+    view! {
+        <Show when=move || selected_card().is_none()>
+            <div class="pre-game-container blurred">
+                <button class="back-button" on:click=move |_| close()>
+                    "←"
+                </button>
+                <div ref=scroll_ref class="card-carousel">
+                    {move || {
+                        cards()
+                            .into_iter()
+                            .map(|card| {
+                                view! {
+                                    <CardMain card on_click=move |_| set_selected_card(Some(card))/>
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                    }}
+
+                </div>
+                <button
+                    class="action"
+                    disabled=scroll.is_scrolling
+                    on:click=move |_| set_selected_card(card())
+                >
+                    "Play Card"
+                </button>
             </div>
-            <button
-                class="action"
-                disabled=scroll.is_scrolling
-                on:click=move |_| toggle_target_modal()
-            >
-                "Play Card"
-            </button>
-        </div>
-        {move || match card() {
-            Some(card) if target_modal() => {
-                view! { <TargetModal card close=toggle_target_modal done=close/> }.into_view()
-            }
-            _ => ().into_view(),
+        </Show>
+        {move || {
+            selected_card()
+                .map(|card| {
+                    view! { <TargetModal card close=move || set_selected_card(None) done=close/> }
+                })
         }}
     }
 }

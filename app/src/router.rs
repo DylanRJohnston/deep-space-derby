@@ -1,10 +1,6 @@
 use std::{net::SocketAddr, str::FromStr};
 
-use axum::{
-    extract::Request,
-    middleware::Next,
-    routing::{any, get, post},
-};
+use axum::routing::{any, get, post};
 use leptos::{leptos_config, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use shared::models::commands;
@@ -16,7 +12,7 @@ use crate::{
         on_connect::on_connect, register_command::RegisterCommandExt,
     },
     middleware::session_middleware,
-    ports::game_state::GameState,
+    ports::game_state::GameDirectory,
     service::GameService,
 };
 
@@ -47,7 +43,7 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
     router.with_state(leptos_options)
 }
 
-pub fn into_game_router<G: GameState>(game: G) -> axum::Router {
+pub fn into_game_router<G: GameDirectory>(game: G) -> axum::Router {
     axum::Router::new()
         .route(
             "/api/object/game/by_code/:code/connect",

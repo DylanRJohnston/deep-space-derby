@@ -664,6 +664,10 @@ pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
 
             distance = f32::min(distance + jump_distance, 10.0);
 
+            if distance == 10.0 {
+                distance = 10.2;
+            }
+
             jumps.push(Jump {
                 monster_id: id,
                 start: time,

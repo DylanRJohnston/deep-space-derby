@@ -12,7 +12,10 @@ use serde::Deserialize;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::service::InternalServerError;
+use crate::{
+    ports::game_state::{GameDirectory, GameState},
+    service::InternalServerError,
+};
 
 #[derive(Debug, Copy, Clone)]
 pub struct SessionID(pub Uuid);
@@ -52,5 +55,20 @@ impl<S: Send + Sync> FromRequestParts<S> for GameCode {
             .try_into()?;
 
         Ok(GameCode { code: game_id })
+    }
+}
+
+#[derive(Clone)]
+pub struct Game<G: GameDirectory>(pub <G as GameDirectory>::GameState);
+
+#[async_trait]
+impl<G: GameDirectory> FromRequestParts<G> for Game<G> {
+    type Rejection = InternalServerError;
+
+    #[instrument(skip_all, err, fields(uri = ?parts.uri))]
+    async fn from_request_parts(parts: &mut Parts, state: &G) -> Result<Self, Self::Rejection> {
+        let GameCode { code } = parts.extract::<GameCode>().await?;
+
+        Ok(Game(state.get(code).await))
     }
 }
