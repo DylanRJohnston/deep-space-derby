@@ -13,7 +13,7 @@ use shared::models::{
     cards::{Card, Target, TargetKind},
     commands::{borrow_money, place_bets, play_card, BorrowMoney, BuyCard, PlaceBets, PlayCard},
     monsters::Monster,
-    projections,
+    projections::{self, maximum_debt},
 };
 
 #[component]
@@ -269,14 +269,21 @@ fn loan_modal(
     account_balance: Signal<i32>,
 ) -> impl IntoView {
     let game_id = use_game_id();
+    let events = use_events();
 
     let minimum = move || -1 * i32::min(account_balance(), debt() as i32);
+
+    let maximum_debt = move || projections::maximum_debt(&events());
 
     let (borrow, set_borrow) = {
         let (read, write) = create_signal(0);
 
         (read, move |amount: i32| {
-            write(i32::clamp(amount, minimum(), 1000));
+            write(i32::clamp(
+                amount,
+                minimum(),
+                maximum_debt() - debt() as i32,
+            ));
         })
     };
 
@@ -312,14 +319,14 @@ fn loan_modal(
             <div class="creature-container">
                 <p style="text-align: center;">
                     "Current debt:  💎 " {debt}
-                    {move || (debt() == 1000).then(|| view! { "(max)" })}
+                    {move || (debt() as i32 == maximum_debt()).then(|| view! { "(max)" })}
                 </p>
                 <div class="betting-row">
                     <button on:click=decrement disabled=move || (borrow() <= minimum())>
                         "-"
                     </button>
                     <input type="number" prop:value=borrow on:input=set_borrow_from_input/>
-                    <button on:click=increment disabled=move || (total_debt() >= 1000)>
+                    <button on:click=increment disabled=move || (total_debt() >= maximum_debt())>
                         "+"
                     </button>
                 </div>

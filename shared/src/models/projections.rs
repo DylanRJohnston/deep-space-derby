@@ -447,6 +447,7 @@ pub fn unique_played_monster_cards(events: &Vector<Event>) -> Vec<PlayedMonsterC
                 monster_id: *monster_id,
             }),
             Event::RoundStarted { .. } => cards.clear(),
+            Event::RaceFinished { .. } => cards.clear(),
             _ => {}
         }
     }
@@ -775,6 +776,19 @@ pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
             wins.get(&monster.uuid).copied().unwrap_or_default() as f32 / 1000.,
         )
     }))
+}
+
+pub fn maximum_debt(events: &Vector<Event>) -> i32 {
+    let mut max_debt = 300;
+
+    for event in events {
+        match event {
+            Event::RoundStarted { .. } => max_debt += 200,
+            _ => {}
+        }
+    }
+
+    max_debt
 }
 
 pub fn results(events: &Vector<Event>) -> Option<RaceResults> {

@@ -110,6 +110,7 @@ impl GameState for Game {
     }
 }
 
+// DurableObjects are already singletons, so there's nothing to do here
 impl GameDirectory for Game {
     type GameState = Game;
 

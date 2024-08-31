@@ -59,8 +59,10 @@ impl CommandHandler for BorrowMoney {
 
         let new_debt = debt as i32 + amount;
 
-        if new_debt > 1000 {
-            bail!("cannot borrow more than $1000");
+        let maximum_debt = projections::maximum_debt(events);
+
+        if new_debt > maximum_debt {
+            bail!("cannot borrow more than ${maximum_debt}");
         }
 
         if new_debt < 0 {

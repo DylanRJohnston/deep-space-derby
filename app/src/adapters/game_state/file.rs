@@ -68,6 +68,7 @@ pub struct FileGameDirectory {
 impl GameDirectory for FileGameDirectory {
     type GameState = Game;
 
+    // The lock on the hashmap is only held while we figure out if the game exists or not
     async fn get(&self, game_id: GameID) -> Self::GameState {
         self.inner
             .lock()
