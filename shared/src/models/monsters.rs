@@ -9,6 +9,8 @@ pub struct Monster {
     pub speed: i32,
     // How far they jump
     pub strength: i32,
+
+    pub starting_position: f32,
 }
 
 impl Monster {
@@ -18,7 +20,14 @@ impl Monster {
         uuid: Uuid::from_u128(0),
         speed: 5,
         strength: 5,
+        starting_position: 0.0,
     };
+}
+
+impl Default for Monster {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
 }
 
 pub const MONSTERS: [Monster; 9] = [
@@ -28,6 +37,7 @@ pub const MONSTERS: [Monster; 9] = [
         blueprint_name: "library/Monster_Cactoro.glb",
         speed: 5,
         strength: 4,
+        ..Monster::DEFAULT
     },
     Monster {
         name: "Purglehorn",
@@ -51,6 +61,7 @@ pub const MONSTERS: [Monster; 9] = [
         blueprint_name: "library/Monster_Mech.glb",
         speed: 4,
         strength: 7,
+        ..Monster::DEFAULT
     },
     Monster {
         name: "Finflare",

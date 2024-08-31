@@ -46,7 +46,7 @@ impl CommandHandler for PlayCard {
             bail!("Player already played card this round");
         }
 
-        if !projections::valid_target_for_card(events, session_id, input.target) {
+        if !projections::valid_target_for_card(events, session_id, input.target.clone()) {
             bail!("Invalid target for card");
         }
 

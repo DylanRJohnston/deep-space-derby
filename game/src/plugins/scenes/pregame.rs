@@ -92,6 +92,7 @@ fn spawn_monsters(
                 monster,
                 behaviour: MonsterBehaviour::Idle,
                 id: spawn_point.id,
+                ..default()
             })
         });
 }

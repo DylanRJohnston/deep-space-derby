@@ -129,6 +129,7 @@ fn spawn_monsters(
                     MonsterBehaviour::Idle
                 },
                 id: spawn_point.id,
+                ..default()
             });
 
             let mut block_transform = *transform;

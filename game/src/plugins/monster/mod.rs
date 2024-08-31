@@ -214,9 +214,10 @@ fn despawn_all_monsters(
     }
 }
 
-#[derive(Debug, Event)]
+#[derive(Debug, Event, Default)]
 pub struct SpawnMonster {
     pub transform: Transform,
+    pub start: Option<Transform>,
     pub monster: Monster,
     pub behaviour: MonsterBehaviour,
     pub id: usize,
@@ -236,6 +237,7 @@ fn spawn_monster(
 ) {
     let SpawnMonster {
         transform,
+        start,
         monster,
         behaviour,
         id,
@@ -274,7 +276,7 @@ fn spawn_monster(
         MonsterBundle {
             id: MonsterID(*id),
             monster: *behaviour,
-            start: Start(transform),
+            start: Start(start.unwrap_or(transform)),
             ..default()
         },
         MonsterInfo(*monster),

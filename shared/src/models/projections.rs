@@ -1,4 +1,4 @@
-use std::{hash::Hash, time::Duration};
+use std::{cell::RefCell, hash::Hash, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
@@ -219,6 +219,34 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
 
                 bets.clear();
             }
+            Event::PlayedCard {
+                session_id: source_uuid,
+                card: Card::Theft,
+                target: Target::Player(target_uuid),
+            } => {
+                assert_ne!(
+                    target_uuid, source_uuid,
+                    "Theft card cannot be played on self"
+                );
+
+                // We verified above that target and source are disjoint keys so it's safe to take two mutable references
+                let target = accounts.get(target_uuid).copied().unwrap_or_default();
+                let source = accounts.get(source_uuid).copied().unwrap_or_default();
+
+                let amount = ((target as f32) * 0.2) as i32;
+
+                tracing::info!(target = target, source = source, ?amount);
+
+                accounts.insert(*target_uuid, target - amount);
+                accounts.insert(*source_uuid, source + amount);
+            }
+            Event::PlayedCard {
+                card: Card::Crystals,
+                target: Target::Player(target),
+                ..
+            } => {
+                *accounts.entry(*target).or_default() += 500;
+            }
             _ => {}
         };
     }
@@ -349,13 +377,19 @@ pub fn race_seed(events: &Vector<Event>) -> u32 {
     race_seed_for_round(events, round(events))
 }
 
-const DECK: [(usize, Card); 6] = [
+const DECK: [(usize, Card); 12] = [
     (10, Card::Poison),
-    (10, Card::TasteTester),
     (10, Card::ExtraRations),
+    (10, Card::TasteTester),
     (10, Card::PsyBlast),
-    (10, Card::TinfoilHat),
     (10, Card::Meditation),
+    (10, Card::TinfoilHat),
+    (5, Card::Nepotism),
+    (10, Card::Theft),
+    (10, Card::Extortion),
+    (10, Card::Stupify),
+    (10, Card::Scrutiny),
+    (10, Card::Crystals),
 ];
 
 fn bought_cards(events: &Vector<Event>) -> u32 {
@@ -381,23 +415,44 @@ pub fn draw_card_from_deck(events: &Vector<Event>) -> Card {
 }
 
 pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
-    let mut cards = Vec::new();
+    let mut cards = HashMap::<Uuid, Vec<Card>>::new();
+
+    let remove_card_from_hand = |cards: &mut Vec<Card>, card| {
+        if let Some(index) = cards.iter().position(|it| *it == card) {
+            cards.remove(index);
+        }
+    };
 
     for event in events {
         match event {
-            Event::BoughtCard { session_id, card } if *session_id == player => cards.push(*card),
+            Event::BoughtCard { session_id, card } => {
+                cards.entry(*session_id).or_default().push(*card)
+            }
+            Event::PlayedCard {
+                session_id: source,
+                card: Card::Extortion,
+                target: Target::Player(target),
+            } if source != target => {
+                // We verified above that source and target are disjoint keys
+
+                let target_cards = cards.entry(*target).or_default();
+                let mut removed_cards = (0..2)
+                    .filter_map(|_| target_cards.pop())
+                    .collect::<Vec<_>>();
+
+                let source_cards = cards.entry(*source).or_default();
+
+                remove_card_from_hand(source_cards, Card::Extortion);
+                source_cards.append(&mut removed_cards);
+            }
             Event::PlayedCard {
                 session_id, card, ..
-            } if *session_id == player => {
-                if let Some(index) = cards.iter().position(|it| it == card) {
-                    cards.remove(index);
-                }
-            }
+            } => remove_card_from_hand(cards.entry(*session_id).or_default(), *card),
             _ => {}
         }
     }
 
-    cards
+    cards.remove(&player).unwrap_or_default()
 }
 
 pub fn already_played_card_this_round(events: &Vector<Event>, player: Uuid) -> bool {
@@ -405,6 +460,11 @@ pub fn already_played_card_this_round(events: &Vector<Event>, player: Uuid) -> b
         match event {
             Event::RoundStarted { .. } => return false,
             Event::PlayedCard { session_id, .. } if *session_id == player => return true,
+            Event::PlayedCard {
+                session_id,
+                card: Card::Scrutiny,
+                target: Target::MultiplePlayers(targets),
+            } if targets.contains(&player) => return true,
             _ => {}
         }
     }
@@ -414,14 +474,17 @@ pub fn already_played_card_this_round(events: &Vector<Event>, player: Uuid) -> b
 
 pub fn valid_target_for_card(events: &Vector<Event>, player: Uuid, target: Target) -> bool {
     match target {
-        Target::Player(player_id) => player != player_id && player_exists(events, player_id),
-        Target::Monster(monster_id) => {
+        Target::Player(target) => player != target && player_exists(events, target),
+        Target::MultiplePlayers(targets) => targets
+            .iter()
+            .all(|target| valid_target_for_card(events, player, Target::Player(*target))),
+        Target::Monster(target) => {
             let race_seed = race_seed(events);
             let monsters = monsters(events, race_seed);
 
             monsters
                 .iter()
-                .find(|monster| monster.uuid == monster_id)
+                .find(|monster| monster.uuid == target)
                 .is_some()
         }
     }
@@ -475,6 +538,21 @@ pub fn poisoned(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
     }
 
     poisoned && !countered
+}
+
+pub fn nepotism(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
+    for card in cards {
+        if card.monster_id != target {
+            continue;
+        }
+
+        match card.card {
+            Card::Nepotism => return true,
+            _ => {}
+        }
+    }
+
+    false
 }
 
 pub fn extra_rations(cards: &Vec<PlayedMonsterCard>, target: Uuid) -> bool {
@@ -564,6 +642,10 @@ pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
         if meditation(&played_cards, monster.uuid) {
             monster.speed += 2;
         }
+
+        if nepotism(&played_cards, monster.uuid) {
+            monster.starting_position += 1.5;
+        }
     }
 
     monsters
@@ -630,7 +712,7 @@ pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
     let mut jumps = Vec::new();
 
     for (id, monster) in monsters.iter().enumerate() {
-        let mut distance = 0.;
+        let mut distance = monster.starting_position;
         let mut time = 0.;
 
         let mut jump_time = 0.;
@@ -799,6 +881,22 @@ pub fn results(events: &Vector<Event>) -> Option<RaceResults> {
     }
 
     None
+}
+
+pub fn victim_of_card(events: &Vector<Event>, player: Uuid) -> Option<Card> {
+    match events.last() {
+        Some(Event::PlayedCard {
+            card,
+            target: Target::Player(target),
+            ..
+        }) if *target == player => Some(*card),
+        Some(Event::PlayedCard {
+            card,
+            target: Target::MultiplePlayers(targets),
+            ..
+        }) if targets.contains(&player) => Some(*card),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -1601,5 +1699,173 @@ mod tests {
             super::draw_card_from_deck(&events),
             super::draw_card_from_deck(&events)
         );
+    }
+
+    #[test]
+    fn theft() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Theft
+            },
+            Event::PlayedCard {
+                session_id: alice,
+                card: Card::Theft,
+                target: Target::Player(bob),
+            }
+        ];
+
+        let balances = super::all_account_balances(&events);
+
+        assert_eq!(balances[&alice], 1100);
+        assert_eq!(balances[&bob], 800);
+    }
+
+    #[test]
+    fn extortion_one_card() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::try_from("ABCDEF").unwrap()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Extortion
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Poison,
+            },
+            Event::PlayedCard {
+                session_id: alice,
+                card: Card::Extortion,
+                target: Target::Player(bob),
+            }
+        ];
+
+        assert_eq!(super::cards_in_hand(&events, alice), vec![Card::Poison]);
+        assert_eq!(super::cards_in_hand(&events, bob), vec![]);
+    }
+
+    #[test]
+    fn extortion_two_card() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::try_from("ABCDEF").unwrap()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Extortion
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Poison,
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::PsyBlast,
+            },
+            Event::PlayedCard {
+                session_id: alice,
+                card: Card::Extortion,
+                target: Target::Player(bob),
+            }
+        ];
+
+        assert_eq!(
+            super::cards_in_hand(&events, alice),
+            vec![Card::PsyBlast, Card::Poison]
+        );
+        assert_eq!(super::cards_in_hand(&events, bob), vec![]);
+    }
+
+    #[test]
+    fn extortion_three_card() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameID::try_from("ABCDEF").unwrap()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Extortion
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Poison,
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::PsyBlast,
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Meditation,
+            },
+            Event::PlayedCard {
+                session_id: alice,
+                card: Card::Extortion,
+                target: Target::Player(bob),
+            }
+        ];
+
+        assert_eq!(
+            super::cards_in_hand(&events, alice),
+            vec![Card::Meditation, Card::PsyBlast]
+        );
+        assert_eq!(super::cards_in_hand(&events, bob), vec![Card::Poison]);
     }
 }

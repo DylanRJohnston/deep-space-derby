@@ -13,7 +13,7 @@ use shared::models::{
     cards::{Card, Target, TargetKind},
     commands::{borrow_money, place_bets, play_card, BorrowMoney, BuyCard, PlaceBets, PlayCard},
     monsters::Monster,
-    projections::{self, maximum_debt},
+    projections::{self},
 };
 
 #[component]
@@ -146,23 +146,23 @@ pub fn pre_game() -> impl IntoView {
         }
     });
 
-    let (bets_modal, toggle_bets_modal) = {
+    let new_modal = || {
         let (read, write) = create_signal(false);
 
         (read, move || write(!read()))
     };
 
-    let (loan_modal, toggle_loan_modal) = {
-        let (read, write) = create_signal(false);
+    let (bets_modal, toggle_bets_modal) = new_modal();
+    let (loan_modal, toggle_loan_modal) = new_modal();
+    let (card_modal, toggle_card_modal) = new_modal();
 
-        (read, move || write(!read()))
-    };
-
-    let (card_modal, toggle_card_modal) = {
-        let (read, write) = create_signal(false);
-
-        (read, move || write(!read()))
-    };
+    // TODO: Fix this, it causes the modal to pop up during re-hydration of the event stream
+    let (victim_modal, set_victim_modal) = create_signal(None);
+    create_effect(move |_| {
+        if let Some(card) = projections::victim_of_card(&events(), player_id) {
+            set_victim_modal(Some(card))
+        }
+    });
 
     let cards = move || projections::cards_in_hand(&events(), player_id);
 
@@ -171,7 +171,10 @@ pub fn pre_game() -> impl IntoView {
         Signal::derive(move || projections::already_played_card_this_round(&events(), player_id));
 
     view! {
-        <Show when=move || !(bets_modal() || loan_modal() || card_modal()) fallback=|| view! {}>
+        <Show
+            when=move || !(bets_modal() || loan_modal() || card_modal() || victim_modal().is_some())
+            fallback=|| view! {}
+        >
             <div class="pre-game-container">
                 // <div class="profile-image">"Profile Image"</div>
                 <div class="player-info">
@@ -233,7 +236,7 @@ pub fn pre_game() -> impl IntoView {
                 </div>
             </div>
         </Show>
-        <Show when=bets_modal fallback=|| view! {}>
+        <Show when=move || bets_modal() && victim_modal().is_none() fallback=|| view! {}>
             <div class="pre-game-container blurred">
                 <button class="back-button" on:click=move |_| toggle_bets_modal()>
                     "←"
@@ -253,12 +256,18 @@ pub fn pre_game() -> impl IntoView {
                 </button>
             </div>
         </Show>
-        <Show when=loan_modal fallback=|| view! {}>
+        <Show when=move || loan_modal() && victim_modal().is_none() fallback=|| view! {}>
             <LoanModal debt=debt.into_signal() account_balance close=toggle_loan_modal/>
         </Show>
-        <Show when=card_modal fallback=|| view! {}>
+        <Show when=move || card_modal() && victim_modal().is_none() fallback=|| view! {}>
             <CardModal close=toggle_card_modal/>
         </Show>
+        {move || {
+            victim_modal()
+                .map(|card| {
+                    view! { <VictimModal card close=move || set_victim_modal(None)/> }
+                })
+        }}
     }
 }
 
@@ -439,19 +448,66 @@ fn target_modal(
 ) -> impl IntoView {
     let events = use_events();
     let game_id = use_game_id();
+    let player_id = use_session_id();
+
     let race_seed = move || projections::race_seed(&events());
 
-    let (target, set_target) = create_signal::<Option<Uuid>>(None);
+    let target_count = match card.target_kind() {
+        TargetKind::Player | TargetKind::Monster => 1,
+        TargetKind::MultiplePlayers(count) => count,
+    };
 
-    let targets = move || match card.target_kind() {
+    let (targets, toggle_target) = {
+        let (read, write) = create_signal::<Option<Vec<Uuid>>>(None);
+
+        (read, move |uuid| {
+            move |_| match read() {
+                Some(mut targets) => match targets.iter().position(|target| *target == uuid) {
+                    Some(index) => {
+                        targets.remove(index);
+
+                        match targets.len() {
+                            0 => write(None),
+                            _ => write(Some(targets)),
+                        }
+                    }
+                    None => {
+                        if targets.len() >= target_count {
+                            return;
+                        }
+
+                        targets.push(uuid);
+                        write(Some(targets));
+                    }
+                },
+                None => write(Some(vec![uuid])),
+            }
+        })
+    };
+
+    let target_selected = move |uuid| {
+        move || match targets() {
+            Some(targets) => targets.contains(&uuid),
+            None => false,
+        }
+    };
+
+    let disabled = move |uuid| {
+        let target_selected = target_selected(uuid);
+
+        move || targets().unwrap_or_default().len() >= target_count && !target_selected()
+    };
+
+    let target_view = move || match card.target_kind() {
         TargetKind::Monster => projections::monsters(&events(), race_seed())
             .into_iter()
             .map(|monster| {
                 view! {
                     <button
                         class="card-target"
-                        class:selected-target=move || target().unwrap_or_default() == monster.uuid
-                        on:click=move |_| set_target(Some(monster.uuid))
+                        class:selected-target=target_selected(monster.uuid)
+                        on:click=toggle_target(monster.uuid)
+                        disabled=disabled(monster.uuid)
                     >
                         <p>{monster.name}</p>
                     </button>
@@ -459,19 +515,17 @@ fn target_modal(
                 .into_view()
             })
             .collect::<Vec<View>>(),
-        TargetKind::Player => projections::players(&events())
+        TargetKind::Player | TargetKind::MultiplePlayers(_) => projections::players(&events())
             .into_iter()
+            .filter(|(target_id, _)| *target_id != player_id)
             .map(|(_, player)| {
                 view! {
                     <button
                         class="card-target"
-                        class:selected-target=move || {
-                            target().unwrap_or_default() == player.session_id
-                        }
-
-                        on:click=move |_| set_target(Some(player.session_id))
+                        class:selected-target=target_selected(player.session_id)
+                        on:click=toggle_target(player.session_id)
+                        disabled=disabled(player.session_id)
                     >
-
                         <p>{player.name}</p>
                     </button>
                 }
@@ -481,13 +535,14 @@ fn target_modal(
     };
 
     let play_card = create_action(move |_: &()| async move {
-        let Some(target) = target.get_untracked() else {
+        let Some(target) = targets.get_untracked() else {
             return;
         };
 
         let target = match card.target_kind() {
-            TargetKind::Monster => Target::Monster(target),
-            TargetKind::Player => Target::Player(target),
+            TargetKind::Monster => Target::Monster(target[0]),
+            TargetKind::Player => Target::Player(target[0]),
+            TargetKind::MultiplePlayers(_) => Target::MultiplePlayers(target),
         };
 
         match server_fn::<PlayCard>(game_id, &play_card::Input { card, target }).await {
@@ -503,15 +558,28 @@ fn target_modal(
             </button>
             <div class="card-target-container">
                 <p>{card.description()}</p>
-                {targets}
+                {target_view}
                 <button
                     class="action target-confirm"
-                    disabled=move || target().is_none()
+                    disabled=move || targets().is_none()
                     on:click=move |_| play_card.dispatch(())
                 >
                     "Confirm"
                 </button>
             </div>
+        </div>
+    }
+}
+
+#[component]
+pub fn victim_modal(card: Card, close: impl Fn() + Copy + 'static) -> impl IntoView {
+    view! {
+        <div class="pre-game-container blurred">
+            <button class="back-button" on:click=move |_| close()>
+                "←"
+            </button>
+            <h1>{card.victim_description()}</h1>
+            <img class="victim-icon" src=card.icon()/>
         </div>
     }
 }

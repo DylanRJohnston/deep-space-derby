@@ -89,6 +89,7 @@ fn init_pre_race(
                 monster,
                 behaviour: MonsterBehaviour::Idle,
                 id: spawn_point.id,
+                ..default()
             })
         });
 
@@ -165,11 +166,17 @@ fn init_race(
                 .copied()
                 .unwrap();
 
+            let start = *transform;
+            let mut transform = *transform;
+            transform.translation.x += monster.starting_position;
+
             commands.trigger(SpawnMonster {
-                transform: *transform,
+                transform,
+                start: Some(start),
                 monster,
                 behaviour: MonsterBehaviour::Idle,
                 id: spawn_point.id,
+                ..default()
             })
         });
 }

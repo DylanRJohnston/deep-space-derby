@@ -18,7 +18,8 @@
     "rngs",
     "serifx",
     "srgb",
-    "srgba"
+    "srgba",
+    "Stupify"
   ],
   "files.exclude": {
     "**/.git": true,

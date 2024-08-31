@@ -10,3 +10,4 @@ site/*
 /playwright/.cache/
 *.blend1
 *.DS_Store
+mprocs.log

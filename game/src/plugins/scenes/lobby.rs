@@ -66,6 +66,7 @@ pub fn spawn_racers(
                 transform: *transform,
                 monster,
                 behaviour: MonsterBehaviour::Dancing,
+                ..default()
             })
         });
 }
