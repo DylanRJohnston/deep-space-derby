@@ -5,7 +5,7 @@ use crate::plugins::{
     delayed_command::DelayedCommandExt,
     event_stream::GameEvents,
     monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterInfo, SpawnMonster},
-    music::PlayCountdown,
+    music::PlayRaceCountdown,
 };
 
 use super::{
@@ -112,7 +112,7 @@ fn init_pre_race(
 
     commands.delayed(
         f32::max(pre_race_duration.as_secs_f32() - 3.0, 0.0),
-        |commands| commands.trigger(PlayCountdown),
+        |commands| commands.trigger(PlayRaceCountdown),
     );
 }
 

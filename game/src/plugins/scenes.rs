@@ -129,6 +129,9 @@ pub struct MusicAssets {
     #[asset(path = "audio/countdown.ogg")]
     pub countdown: Handle<bevy_kira_audio::AudioSource>,
 
+    #[asset(path = "audio/pregame-countdown.ogg")]
+    pub pregame_countdown: Handle<bevy_kira_audio::AudioSource>,
+
     #[asset(path = "audio/crowd.ogg")]
     pub crowd: Handle<bevy_kira_audio::AudioSource>,
 }

@@ -25,7 +25,8 @@ impl Plugin for MusicPlugin {
                     !matches!(state.get(), SceneState::Loading | SceneState::Spawning)
                 }),
             )
-            .observe(play_countdown);
+            .observe(play_countdown)
+            .observe(play_pregame_countdown);
     }
 }
 
@@ -36,6 +37,7 @@ struct MusicHandles {
     race: Option<Handle<AudioInstance>>,
     results: Option<Handle<AudioInstance>>,
     crowd: Option<Handle<AudioInstance>>,
+    pregame_countdown: Option<Handle<AudioInstance>>,
 }
 
 fn update_audio(
@@ -202,6 +204,7 @@ fn update_audio(
             pause(&handles.lobby);
             pause(&handles.pregame);
             pause(&handles.results);
+            stop(&handles.pregame_countdown);
         }
         SceneState::Results => {
             match handles.results.as_ref() {
@@ -237,12 +240,28 @@ fn update_audio(
 }
 
 #[derive(Debug, Event)]
-pub struct PlayCountdown;
+pub struct PlayRaceCountdown;
 
 fn play_countdown(
-    _trigger: Trigger<PlayCountdown>,
+    _trigger: Trigger<PlayRaceCountdown>,
     game_assets: Res<MusicAssets>,
     effects_channel: Res<AudioChannel<SoundEffectsChannel>>,
 ) {
     effects_channel.play(game_assets.countdown.clone());
+}
+
+#[derive(Debug, Event)]
+pub struct PlayPreGameCountdown;
+
+fn play_pregame_countdown(
+    _trigger: Trigger<PlayPreGameCountdown>,
+    game_assets: Res<MusicAssets>,
+    effects_channel: Res<AudioChannel<SoundEffectsChannel>>,
+    mut handles: ResMut<MusicHandles>,
+) {
+    handles.pregame_countdown = Some(
+        effects_channel
+            .play(game_assets.pregame_countdown.clone())
+            .handle(),
+    );
 }

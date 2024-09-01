@@ -4,6 +4,7 @@ use shared::models::projections;
 use crate::plugins::{
     event_stream::GameEvents,
     monster::{DespawnAllMonsters, MonsterBehaviour, SpawnMonster},
+    music::PlayPreGameCountdown,
 };
 
 use super::{SceneMetadata, SceneState};
@@ -25,6 +26,10 @@ impl Plugin for PreGamePlugin {
                 init_pregame.after(spawn_pregame_spawn_point_on_scene_load),
             )
             .add_systems(Update, spawn_pregame_spawn_point_on_scene_load)
+            .add_systems(
+                Update,
+                countdown_timer.run_if(in_state(SceneState::PreGame)),
+            )
             .add_systems(
                 OnEnter(SceneState::PreGame),
                 |mut query: Query<&mut Visibility, With<SpotLight>>| {
@@ -98,8 +103,10 @@ fn spawn_monsters(
 }
 
 fn init_pregame(
-    mut camera: Query<(&mut Transform, &mut Projection), With<Camera>>,
     position: Query<&Transform, (With<PreGameCamera>, Without<Camera>)>,
+    game_events: Res<GameEvents>,
+    mut camera: Query<(&mut Transform, &mut Projection), With<Camera>>,
+    mut commands: Commands,
 ) {
     let position = position.get_single().unwrap();
     let (mut camera, mut projection) = camera.get_single_mut().unwrap();
@@ -113,4 +120,28 @@ fn init_pregame(
     };
 
     projection.fov = 0.4;
+
+    if let Some(time) = projections::time_left_in_pregame(&game_events) {
+        commands.spawn((
+            StateScoped(SceneState::PreGame),
+            CountdownTimer(Timer::from_seconds((time - 10) as f32, TimerMode::Once)),
+        ));
+    }
+}
+
+#[derive(Component)]
+struct CountdownTimer(Timer);
+
+fn countdown_timer(
+    time: Res<Time>,
+    mut timers: Query<&mut CountdownTimer>,
+    mut commands: Commands,
+) {
+    for mut timer in &mut timers {
+        if !timer.0.tick(time.delta()).just_finished() {
+            continue;
+        }
+
+        commands.trigger(PlayPreGameCountdown);
+    }
 }
