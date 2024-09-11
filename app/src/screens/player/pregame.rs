@@ -1,4 +1,7 @@
-use std::cmp::{max, min};
+use std::{
+    borrow::BorrowMut,
+    cmp::{max, min},
+};
 
 use ev::MouseEvent;
 use leptos::*;
@@ -515,23 +518,43 @@ fn target_modal(
                 .into_view()
             })
             .collect::<Vec<View>>(),
-        TargetKind::Player | TargetKind::MultiplePlayers(_) => projections::players(&events())
-            .into_iter()
-            .filter(|(target_id, _)| *target_id != player_id)
-            .map(|(_, player)| {
-                view! {
-                    <button
-                        class="card-target"
-                        class:selected-target=target_selected(player.session_id)
-                        on:click=toggle_target(player.session_id)
-                        disabled=disabled(player.session_id)
-                    >
-                        <p>{player.name}</p>
-                    </button>
-                }
-                .into_view()
-            })
-            .collect::<Vec<View>>(),
+        TargetKind::Player | TargetKind::MultiplePlayers(_) => {
+            let account_balances = projections::all_account_balances(&events());
+
+            let mut players = projections::players(&events())
+                .into_iter()
+                .filter(|(target_id, _)| *target_id != player_id)
+                .map(|(target_id, info)| {
+                    (
+                        target_id,
+                        info.name,
+                        account_balances
+                            .get(&target_id)
+                            .copied()
+                            .unwrap_or_default(),
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            players.sort_by(|a, b| b.2.cmp(&a.2).then(b.1.cmp(&a.1)).then(b.0.cmp(&a.0)));
+
+            players
+                .into_iter()
+                .map(|(target_id, name, balance)| {
+                    view! {
+                        <button
+                            class="card-target"
+                            class:selected-target=target_selected(target_id)
+                            on:click=toggle_target(target_id)
+                            disabled=disabled(target_id)
+                        >
+                            <p>{name} " (💎 " {balance} ")"</p>
+                        </button>
+                    }
+                    .into_view()
+                })
+                .collect::<Vec<View>>()
+        }
     };
 
     let play_card = create_action(move |_: &()| async move {

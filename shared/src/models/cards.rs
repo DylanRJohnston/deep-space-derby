@@ -95,7 +95,7 @@ impl Card {
             Card::Extortion => "Take 2 random cards from a player",
             Card::Stupify => "Player must speak loudly and in single syllables",
             Card::Scrutiny => "Up to 2 players cannot play cards this turn",
-            Card::Crystals => "Give player 500 Crystals",
+            Card::Crystals => "Give 1 player 500 Crystals",
         }
     }
 
