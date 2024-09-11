@@ -1,6 +1,7 @@
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     use axum::response::Response;
+    use worker::WebSocketPair;
 
     use crate::{
         extractors::{Game, GameCode, SessionID},
@@ -8,13 +9,17 @@ mod wasm {
         service::InternalServerError,
     };
 
+    pub type WebSocket = worker::WebSocket;
+
     // #[instrument(skip_all, err)]
-    pub async fn on_connect<G: GameDirectory>(
+    pub async fn on_connect<G: GameDirectory<WebSocket = WebSocket>>(
         Game(game_state): Game<G>,
         SessionID(_session_id): SessionID,
         GameCode { code }: GameCode,
     ) -> Result<Response, InternalServerError> {
-        let pair = game_state.accept_web_socket()?;
+        let pair = WebSocketPair::new()?;
+
+        game_state.accept_web_socket(pair.server.clone()).await?;
 
         for event in game_state.events().await?.into_iter() {
             pair.server.send(&event)?;
@@ -30,7 +35,7 @@ mod wasm {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub use wasm::on_connect;
+pub use wasm::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod native {
@@ -43,8 +48,10 @@ mod native {
         service::InternalServerError,
     };
 
+    pub type WebSocket = axum::extract::ws::WebSocket;
+
     #[instrument(skip_all, err)]
-    pub async fn on_connect<G: GameDirectory>(
+    pub async fn on_connect<G: GameDirectory<WebSocket = WebSocket>>(
         ws: axum::extract::WebSocketUpgrade,
         Game(game_state): Game<G>,
     ) -> Result<Response, InternalServerError> {
@@ -68,4 +75,4 @@ mod native {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use native::on_connect;
+pub use native::*;

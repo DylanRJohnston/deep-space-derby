@@ -8,8 +8,11 @@ use shared::models::commands;
 use crate::{
     app,
     handlers::{
-        create_game::create_game, forward_command::forward_command, join_game::join_game,
-        on_connect::on_connect, register_command::RegisterCommandExt,
+        create_game::create_game,
+        forward_command::forward_command,
+        join_game::join_game,
+        on_connect::{on_connect, WebSocket},
+        register_command::RegisterCommandExt,
     },
     middleware::session_middleware,
     ports::game_state::GameDirectory,
@@ -43,7 +46,7 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
     router.with_state(leptos_options)
 }
 
-pub fn into_game_router<G: GameDirectory>(game: G) -> axum::Router {
+pub fn into_game_router<G: GameDirectory<WebSocket = WebSocket>>(game: G) -> axum::Router {
     axum::Router::new()
         .route(
             "/api/object/game/by_code/:code/connect",

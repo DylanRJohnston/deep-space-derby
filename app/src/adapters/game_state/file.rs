@@ -66,6 +66,7 @@ pub struct FileGameDirectory {
 }
 
 impl GameDirectory for FileGameDirectory {
+    type WebSocket = WebSocket;
     type GameState = Game;
 
     // The lock on the hashmap is only held while we figure out if the game exists or not
@@ -80,6 +81,8 @@ impl GameDirectory for FileGameDirectory {
 }
 
 impl GameState for Game {
+    type WebSocket = WebSocket;
+
     async fn events(&self) -> Result<im::Vector<Event>> {
         self.inner.lock().await.events.vector().await
     }

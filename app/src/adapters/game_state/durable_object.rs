@@ -6,7 +6,7 @@ use shared::models::processors::{run_processors, Alarm};
 use tower::Service;
 use tracing::instrument;
 use worker::send::SendFuture;
-use worker::{durable_object, Env, State, Storage, WebSocketPair};
+use worker::{durable_object, Env, State, Storage, WebSocket};
 
 use crate::adapters::event_log::durable_object::DurableObjectKeyValue;
 use crate::ports::event_log::EventLog;
@@ -65,6 +65,8 @@ impl DurableObject for Game {
 
 // DurableObject Game State Can Ignore the GameID parameter as there is one per game
 impl GameState for Game {
+    type WebSocket = WebSocket;
+
     async fn events(&self) -> anyhow::Result<im::Vector<Event>> {
         SendFuture::new(async { Ok(self.events.vector().await?) }).await
     }
@@ -82,11 +84,10 @@ impl GameState for Game {
         .await
     }
 
-    fn accept_web_socket(&self) -> anyhow::Result<WebSocketPair> {
-        let pair = WebSocketPair::new()?;
-        self.state.accept_web_socket(&pair.server);
+    async fn accept_web_socket(&self, ws: WebSocket) -> anyhow::Result<()> {
+        self.state.accept_web_socket(&ws);
 
-        Ok(pair)
+        Ok(())
     }
 
     fn set_alarm(
@@ -112,6 +113,7 @@ impl GameState for Game {
 
 // DurableObjects are already singletons, so there's nothing to do here
 impl GameDirectory for Game {
+    type WebSocket = WebSocket;
     type GameState = Game;
 
     async fn get(&self, _: GameID) -> Self::GameState {
