@@ -61,6 +61,8 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
                 set_events(Vector::new());
 
                 while let Some(msg) = socket.next().await {
+                    count = 0;
+
                     let event = match msg {
                         Ok(Message::Text(text)) => serde_json::from_str::<Event>(&text).map_err(
                             |err: serde_json::Error| {
