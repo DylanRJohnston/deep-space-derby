@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use shared::models::events::Event;
+use shared::models::events::{Event, EventStream};
 use shared::models::game_id::GameID;
 use shared::models::processors::{run_processors, Alarm};
 use tower::Service;
@@ -76,7 +76,7 @@ impl GameState for Game {
             self.events.push(event.clone()).await;
 
             for ws in self.state.get_websockets() {
-                ws.send(&EventStream::Event(event))?;
+                ws.send(&EventStream::Event(event.clone()))?;
             }
 
             Ok(())

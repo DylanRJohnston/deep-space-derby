@@ -51,7 +51,7 @@ pub async fn fetch(
 ) -> worker::Result<axum::response::Response> {
     use tower::Service;
 
-    let game = app::service::durable_object::DurableObjectGameService { env };
+    let game = app::adapters::game_service::durable_object::DurableObjectGameService { env };
 
     Ok(app::router::into_outer_router(game).call(req).await?)
 }
