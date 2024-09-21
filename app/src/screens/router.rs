@@ -1,10 +1,12 @@
+use std::cell::Cell;
+
 use html::summary;
 use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
 
 use crate::{
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
-    utils::{send_game_event, use_events, use_session_id},
+    utils::{reset_game_events, send_game_event, use_events, use_session_id},
 };
 use shared::models::{events::Event, projections};
 
@@ -12,10 +14,18 @@ use shared::models::{events::Event, projections};
 pub fn send_events_to_bevy() -> impl IntoView {
     let events = use_events();
 
+    reset_game_events();
+    let index = Cell::new(0);
+
     create_effect(move |_| {
-        if let Some(event) = events().last() {
+        let mut events = events();
+        let len = events.len();
+
+        for event in events.slice(index.get()..len) {
             send_game_event(event.clone());
         }
+
+        index.set(len);
     });
 }
 

@@ -12,10 +12,7 @@ use serde::Deserialize;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::{
-    ports::game_state::{GameDirectory, GameState},
-    service::InternalServerError,
-};
+use crate::ports::{game_service::InternalServerError, game_state::GameDirectory};
 
 #[derive(Debug, Copy, Clone)]
 pub struct SessionID(pub Uuid);

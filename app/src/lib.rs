@@ -28,5 +28,3 @@ pub mod ports;
 pub mod router;
 #[cfg(all(feature = "ssr", not(target_arch = "wasm32")))]
 pub mod serve_files;
-#[cfg(feature = "ssr")]
-pub mod service;

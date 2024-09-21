@@ -85,10 +85,10 @@ impl Card {
     pub fn description(&self) -> &'static str {
         match self {
             Card::Poison => "-3 Strength",
-            Card::TasteTester => "Blocks Poison & Extra Rations",
+            Card::TasteTester => "Blocks Strength Buffs (Extra Rations) and Debuffs (Poison)",
             Card::ExtraRations => "+2 Strength",
             Card::PsyBlast => "-3 Speed",
-            Card::TinfoilHat => "Blocks Psy Blast & Meditation",
+            Card::TinfoilHat => "Blocks Speed Buffs (Meditation) and Debuffs (Psy Blast)",
             Card::Nepotism => "Monster starts race 1.5m ahead",
             Card::Meditation => "+2 Speed",
             Card::Theft => "Take 20% of a player's Crystals",

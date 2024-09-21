@@ -8,7 +8,7 @@ use http::StatusCode;
 use tower::Service;
 use worker::{send::SendFuture, Stub};
 
-use super::InternalServerError;
+use crate::ports::game_service::InternalServerError;
 
 #[derive(Clone)]
 pub struct DurableObjectGameService {

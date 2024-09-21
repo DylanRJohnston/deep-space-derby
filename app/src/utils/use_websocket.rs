@@ -1,6 +1,9 @@
 use im::vector::Vector;
 use leptos::{provide_context, use_context, ReadSignal, Signal};
-use shared::models::{events::Event, game_id::GameID};
+use shared::models::{
+    events::{Event, EventStream},
+    game_id::GameID,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
@@ -64,18 +67,27 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
                     count = 0;
 
                     let event = match msg {
-                        Ok(Message::Text(text)) => serde_json::from_str::<Event>(&text).map_err(
-                            |err: serde_json::Error| {
+                        Ok(Message::Text(text)) => serde_json::from_str::<EventStream>(&text)
+                            .map_err(|err: serde_json::Error| {
                                 ServerFnError::<NoCustomError>::Deserialization(err.to_string())
-                            },
-                        ),
+                            }),
                         Ok(Message::Bytes(_)) => Err(ServerFnError::Deserialization(
                             "got binary message on websocket".into(),
                         )),
                         Err(err) => Err(ServerFnError::ServerError(err.to_string())),
                     }?;
 
-                    set_events.update(|events| events.push_back(event));
+                    tracing::info!(?event);
+
+                    match event {
+                        EventStream::Events(new_events) => {
+                            set_events.update(|events| events.append(new_events.into()))
+                        }
+                        EventStream::Event(event) => {
+                            set_events.update(|events| events.push_back(event))
+                        }
+                    }
+
                     set_connection.set(Connection::Connected);
                 }
             };

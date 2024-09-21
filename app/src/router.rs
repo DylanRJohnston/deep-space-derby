@@ -15,8 +15,7 @@ use crate::{
         register_command::RegisterCommandExt,
     },
     middleware::session_middleware,
-    ports::game_state::GameDirectory,
-    service::GameService,
+    ports::{game_service::GameService, game_state::GameDirectory},
 };
 
 pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {

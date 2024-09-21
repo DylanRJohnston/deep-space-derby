@@ -3,7 +3,6 @@ use std::any::type_name;
 use crate::{
     extractors::{Game, SessionID},
     ports::game_state::{GameDirectory, GameState},
-    service::InternalServerError,
 };
 use axum::{
     response::{IntoResponse, Response},
@@ -14,6 +13,8 @@ use shared::models::{
     commands::{CommandHandler, API},
     processors::run_processors,
 };
+
+use crate::ports::game_service::{GameService, InternalServerError};
 
 pub trait RegisterCommandExt {
     fn register_command_handler<C: CommandHandler + API + 'static>(self) -> Self;

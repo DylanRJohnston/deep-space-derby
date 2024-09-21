@@ -140,8 +140,8 @@ canvas {
   align-items: center;
 
   border-radius: 8px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -184,8 +184,8 @@ canvas {
   font-size: 40px;
 
   border-radius: 8px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
 
@@ -239,6 +239,7 @@ canvas {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   background-color: #03193f55;
+  z-index: -1;
 }
 
 p {
@@ -253,8 +254,8 @@ h2 {
   width: 150px;
   height: 150px;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -272,8 +273,8 @@ h2 {
   align-items: center;
 
   border-radius: 8px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
   padding: 0.5em 1em;
@@ -296,8 +297,8 @@ h2 {
   justify-content: center;
   align-items: center;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 
@@ -395,8 +396,8 @@ h2 {
   width: 250px;
   flex-shrink: 0;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -428,8 +429,8 @@ h2 {
 
   border-radius: 25px;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -446,8 +447,8 @@ h2 {
   border-radius: 1em;
   padding: 1em;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 
@@ -481,8 +482,8 @@ h2 {
 
   border: none;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -506,8 +507,8 @@ h2 {
   width: 150px;
 
   border-radius: 8px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
 
@@ -527,8 +528,8 @@ h2 {
   height: 250px;
 
   /* 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11; */
 
@@ -581,8 +582,8 @@ input[type="number"] {
 
   border-radius: 100px;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 
@@ -611,8 +612,8 @@ input[type="number"] {
   padding: 1em;
   border-radius: 1em;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 
@@ -647,8 +648,8 @@ input[type="number"] {
   justify-content: center;
   align-items: center;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 
@@ -705,8 +706,8 @@ input[type="number"] {
   border-radius: 16px;
   gap: 1em;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 
@@ -838,8 +839,8 @@ div .two-columns {
 
   border: none;
 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff00;
@@ -884,8 +885,8 @@ div .two-columns {
 
 .host-lobby-player {
   padding: 1em;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #d4aeff66;
   background-color: #7909fa29;
   border: 2px solid #eeeeee60;
@@ -925,8 +926,8 @@ div .two-columns {
 }
 
 .race-card {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -981,8 +982,8 @@ div .two-columns {
 
 /* Style the front side (fallback if image is missing) */
 .flip-card-front {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -999,8 +1000,8 @@ div .two-columns {
 
 /* Style the back side */
 .flip-card-back {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); */
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;

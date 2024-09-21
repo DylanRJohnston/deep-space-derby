@@ -14,8 +14,7 @@ impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
             .add_systems(Update, read_event_stream)
-            .add_systems(Update, reset_event_stream)
-            .add_systems(Update, transition_debug);
+            .add_systems(Update, reset_event_stream);
 
         #[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
         app.add_systems(Startup, connect_to_server);
@@ -67,21 +66,6 @@ fn reset_event_stream(mut events: ResMut<GameEvents>) {
     while let Ok(_) = RESET_CHANNEL.receiver.try_recv() {
         tracing::error!("event stream reset");
         events.as_mut().0.clear();
-    }
-}
-
-// #[cfg(feature = debug)]
-fn transition_debug(
-    keys: Res<ButtonInput<KeyCode>>,
-    state: Res<State<SceneState>>,
-    mut next_state: ResMut<NextState<SceneState>>,
-) {
-    if keys.just_pressed(KeyCode::Space) {
-        next_state.set(match state.get() {
-            SceneState::Lobby => SceneState::PreGame,
-            SceneState::PreGame => SceneState::Lobby,
-            other => *other,
-        })
     }
 }
 

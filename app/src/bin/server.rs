@@ -1,9 +1,8 @@
 use std::net::SocketAddr;
 
 use app::{
-    adapters::game_state::file::FileGameDirectory,
+    adapters::{game_service::axum_router::AxumGameService, game_state::file::FileGameDirectory},
     router::{into_game_router, into_outer_router},
-    service::axum_router::AxumGameService,
 };
 use axum_server::tls_rustls::RustlsConfig;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};

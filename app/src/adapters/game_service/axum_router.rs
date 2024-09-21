@@ -3,7 +3,7 @@ use std::{future::Future, task::Poll};
 use axum::{extract::Request, response::Response, Router};
 use tower::Service;
 
-use super::InternalServerError;
+use crate::ports::game_service::InternalServerError;
 
 #[derive(Clone)]
 pub struct AxumGameService {

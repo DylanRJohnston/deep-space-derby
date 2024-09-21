@@ -1,4 +1,4 @@
-use crate::service::{GameService, InternalServerError};
+use crate::ports::game_service::{GameService, InternalServerError};
 use axum::{
     extract::{Request, State},
     http::header::HeaderMap,

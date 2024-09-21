@@ -33,9 +33,3 @@ pub trait GameService = where
     Self: Clone + Send + Sync + 'static,
     Self: Service<(String, Request), Response = Response, Error = InternalServerError>,
     <Self as Service<(String, Request)>>::Future: Send + 'static;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub mod axum_router;
-
-#[cfg(target_arch = "wasm32")]
-pub mod durable_object;

@@ -73,6 +73,13 @@ impl OddsExt for Option<Odds> {
 
 #[derive(Debug, Clone, PartialEq)]
 #[serde_wasm_bindgen]
+pub enum EventStream {
+    Events(Vec<Event>),
+    Event(Event),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[serde_wasm_bindgen]
 pub enum Event {
     GameCreated {
         game_id: GameID,

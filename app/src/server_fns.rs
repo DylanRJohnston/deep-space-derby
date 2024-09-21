@@ -3,7 +3,7 @@ use shared::models::commands::{CommandHandler, API};
 use shared::models::game_id::GameID;
 use std::future::Future;
 
-// #[cfg(not(feature = "ssr"))]
+#[cfg(not(feature = "ssr"))]
 pub fn server_fn<C: CommandHandler + API>(
     game_id: GameID,
     input: &C::Input,
@@ -29,13 +29,12 @@ pub fn server_fn<C: CommandHandler + API>(
     }
 }
 
-// // TODO make this invoke the Durable Object on the server for better SSR, for now, just block forever
-// #[cfg(feature = "ssr")]
-// #[allow(unused_variables)]
-// pub fn server_fn<C: Command>(
-//     game_id: GameID,
-//     input: &C::Input,
-// ) -> impl Future<Output = Result<(), ServerFnError>> + 'static {
-
-//     async { std::future::pending().await }
-// }
+// TODO make this invoke the Durable Object on the server for better SSR, for now, just block forever
+#[cfg(feature = "ssr")]
+#[allow(unused_variables)]
+pub fn server_fn<C: CommandHandler + API>(
+    game_id: GameID,
+    input: &C::Input,
+) -> impl Future<Output = Result<(), ServerFnError>> + 'static {
+    async { std::future::pending().await }
+}

@@ -76,7 +76,7 @@ impl GameState for Game {
             self.events.push(event.clone()).await;
 
             for ws in self.state.get_websockets() {
-                ws.send(&event)?;
+                ws.send(&EventStream::Event(event))?;
             }
 
             Ok(())

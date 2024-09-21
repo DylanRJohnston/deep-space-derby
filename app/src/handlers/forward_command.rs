@@ -3,7 +3,7 @@ use axum::{
     response::Response,
 };
 
-use crate::service::{GameService, InternalServerError};
+use crate::ports::game_service::{GameService, InternalServerError};
 
 #[tracing::instrument(skip_all, err)]
 pub async fn forward_command<G: GameService>(

@@ -3,7 +3,11 @@ use tokio::{sync::Mutex, task::JoinHandle};
 
 use anyhow::Result;
 use axum::extract::ws::WebSocket;
-use shared::models::{events::Event, game_id::GameID, processors::run_processors};
+use shared::models::{
+    events::{Event, EventStream},
+    game_id::GameID,
+    processors::run_processors,
+};
 use tracing::instrument;
 
 use crate::{
@@ -30,7 +34,7 @@ impl InnerGame {
         self.events.push(event.clone()).await?;
 
         for mut socket in std::mem::take(&mut self.sockets) {
-            let message = serde_json::to_string(&event)?;
+            let message = serde_json::to_string(&EventStream::Event(event.clone()))?;
 
             if let Err(err) = socket.send(message.into()).await {
                 tracing::warn!(

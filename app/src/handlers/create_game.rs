@@ -8,7 +8,7 @@ use shared::models::{
     game_id::generate_game_code,
 };
 
-use crate::service::{GameService, InternalServerError};
+use crate::ports::game_service::{GameService, InternalServerError};
 
 #[tracing::instrument(skip_all, err)]
 pub async fn create_game<G: GameService>(
