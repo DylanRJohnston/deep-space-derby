@@ -42,7 +42,7 @@ impl CommandHandler for PlayCard {
             bail!("Player does not have card in hand");
         }
 
-        if projections::already_played_card_this_round(events, session_id) {
+        if !projections::can_play_more_cards(events, session_id) {
             bail!("Player already played card this round");
         }
 

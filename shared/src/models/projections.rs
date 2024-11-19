@@ -1,4 +1,4 @@
-use std::{cell::RefCell, hash::Hash, time::Duration};
+use std::{hash::Hash, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
@@ -455,16 +455,25 @@ pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
     cards.remove(&player).unwrap_or_default()
 }
 
-pub fn already_played_card_this_round(events: &Vector<Event>, player: Uuid) -> bool {
+pub fn can_play_more_cards(events: &Vector<Event>, player: Uuid) -> bool {
+    let max_cards = match player_count(events) {
+        0..=3 => 3,
+        4..=8 => 2,
+        9.. => 1,
+    };
+
+    let mut count = 0;
+
+    // Watch out this iterator is backwards so we can short circuit
     for event in events.iter().rev() {
         match event {
-            Event::RoundStarted { .. } => return false,
-            Event::PlayedCard { session_id, .. } if *session_id == player => return true,
+            Event::RoundStarted { .. } => return count < max_cards,
+            Event::PlayedCard { session_id, .. } if *session_id == player => count += 1,
             Event::PlayedCard {
-                session_id,
                 card: Card::Scrutiny,
                 target: Target::MultiplePlayers(targets),
-            } if targets.contains(&player) => return true,
+                ..
+            } if targets.contains(&player) => return false,
             _ => {}
         }
     }
@@ -1867,5 +1876,222 @@ mod tests {
             vec![Card::Meditation, Card::PsyBlast]
         );
         assert_eq!(super::cards_in_hand(&events, bob), vec![Card::Poison]);
+    }
+
+    #[test]
+    fn three_players_numbers_of_cards() {
+        init_tracing();
+
+        // The number of cards that can be played per round scales inversely with the number of players.
+        // [1-3] -> 3
+        // [4-8] -> 2
+        // 9+ -> 1
+
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+        let carol = Uuid::new_v4();
+
+        let mut events = vector![
+            Event::GameCreated {
+                game_id: GameID::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::PlayerJoined {
+                name: "Carol".into(),
+                session_id: carol
+            },
+            Event::PlayerReady { session_id: alice },
+            Event::PlayerReady { session_id: bob },
+            Event::PlayerReady { session_id: carol },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison,
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison,
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison,
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Scrutiny,
+            },
+        ];
+
+        assert!(
+            super::can_play_more_cards(&events, alice),
+            "Player should be able to play cards initially"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::Poison,
+            target: Target::Monster(Uuid::new_v4()),
+        });
+        assert!(
+            super::can_play_more_cards(&events, alice),
+            "A three player game should allow a player to play at least two card"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::Poison,
+            target: Target::Monster(Uuid::new_v4()),
+        });
+
+        assert!(
+            super::can_play_more_cards(&events, alice),
+            "A three player game should allow a player to play at least three cards"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: alice,
+            card: Card::Poison,
+            target: Target::Monster(Uuid::new_v4()),
+        });
+
+        assert!(
+            !super::can_play_more_cards(&events, alice),
+            "A three player game should allow a player to play no more than three cards"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: bob,
+            card: Card::Scrutiny,
+            target: Target::MultiplePlayers(vec![carol]),
+        });
+
+        assert!(
+            !super::can_play_more_cards(&events, carol),
+            "Player should not be able to play cards after being subject to scrutiny"
+        );
+
+        events.push_back(Event::RoundStarted {
+            time: 1,
+            odds: None,
+        });
+        assert!(
+            super::can_play_more_cards(&events, alice),
+            "Player should be able to play cards at the start of a new round"
+        );
+    }
+
+    #[test]
+    fn four_to_eight_players_numbers_of_cards() {
+        init_tracing();
+
+        let players = (1..=6).map(|_| Uuid::new_v4()).collect::<Vec<_>>();
+
+        let mut events = Vector::from_iter(
+            [Event::GameCreated {
+                game_id: GameID::random(),
+            }]
+            .into_iter()
+            .chain(players.iter().clone().flat_map(|id| {
+                [
+                    Event::PlayerJoined {
+                        session_id: *id,
+                        name: id.to_string(),
+                    },
+                    Event::PlayerReady { session_id: *id },
+                ]
+            }))
+            .chain([Event::RoundStarted {
+                time: 0,
+                odds: None,
+            }]),
+        );
+
+        assert!(
+            super::can_play_more_cards(&events, players[0]),
+            "Player should be able to play cards initially"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: players[0],
+            card: Card::Poison,
+            target: Target::Monster(Uuid::new_v4()),
+        });
+        assert!(
+            super::can_play_more_cards(&events, players[0]),
+            "A three player game should allow a player to play at least two card"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: players[0],
+            card: Card::Poison,
+            target: Target::Monster(Uuid::new_v4()),
+        });
+
+        assert!(
+            !super::can_play_more_cards(&events, players[0]),
+            "A 6 player game should allow a player to play no more than two cards"
+        );
+
+        assert!(
+            super::can_play_more_cards(&events, players[1]),
+            "Other players playing cards should not affect other players ability to play cards"
+        );
+    }
+
+    #[test]
+    fn nine_plus_players_numbers_of_cards() {
+        init_tracing();
+
+        let players = (1..=9).map(|_| Uuid::new_v4()).collect::<Vec<_>>();
+
+        let mut events = Vector::from_iter(
+            [Event::GameCreated {
+                game_id: GameID::random(),
+            }]
+            .into_iter()
+            .chain(players.iter().clone().flat_map(|id| {
+                [
+                    Event::PlayerJoined {
+                        session_id: *id,
+                        name: id.to_string(),
+                    },
+                    Event::PlayerReady { session_id: *id },
+                ]
+            }))
+            .chain([Event::RoundStarted {
+                time: 0,
+                odds: None,
+            }]),
+        );
+
+        assert!(
+            super::can_play_more_cards(&events, players[0]),
+            "Player should be able to play cards initially"
+        );
+
+        events.push_back(Event::PlayedCard {
+            session_id: players[0],
+            card: Card::Poison,
+            target: Target::Monster(Uuid::new_v4()),
+        });
+        assert!(
+            !super::can_play_more_cards(&events, players[0]),
+            "A nine player game should allow only a single card to be played"
+        );
+
+        assert!(
+            super::can_play_more_cards(&events, players[1]),
+            "Other players playing cards should not affect other players ability to play cards"
+        );
     }
 }

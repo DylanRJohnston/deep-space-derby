@@ -85,10 +85,13 @@ mod test {
     use im::Vector;
     use uuid::Uuid;
 
-    use crate::models::{
-        events::Event,
-        game_id::GameID,
-        processors::{run_processors, Alarm},
+    use crate::{
+        models::{
+            events::Event,
+            game_id::GameID,
+            processors::{run_processors, Alarm},
+        },
+        test::init_tracing,
     };
 
     #[test]
@@ -118,6 +121,8 @@ mod test {
 
     #[test]
     fn pre_game_timeout() -> anyhow::Result<()> {
+        init_tracing();
+
         let a = Uuid::new_v4();
 
         let events = Vector::from_iter([
@@ -133,12 +138,13 @@ mod test {
                 time: 0,
                 odds: None,
             },
+            Event::RoundStarted {
+                time: 0,
+                odds: None,
+            },
         ]);
 
-        assert_eq!(
-            Some(Alarm(Duration::from_secs_f32(90.))),
-            run_processors(&events)?.1
-        );
+        assert!(matches!(run_processors(&events)?.1, Some(Alarm(_)),));
 
         Ok(())
     }

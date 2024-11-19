@@ -81,7 +81,7 @@ impl Processor for StartRace {
 
 #[cfg(test)]
 mod test {
-    use crate::time::*;
+    use crate::{test::init_tracing, time::*};
 
     use im::Vector;
     use uuid::Uuid;
@@ -162,6 +162,8 @@ mod test {
 
     #[test]
     pub fn race_starts_after_timeout() {
+        init_tracing();
+
         let a = Uuid::new_v4();
         let b = Uuid::new_v4();
 
@@ -184,6 +186,10 @@ mod test {
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
+            Event::RoundStarted {
+                time: start - 90,
+                odds: None,
+            },
             Event::RoundStarted {
                 time: start - 90,
                 odds: None,

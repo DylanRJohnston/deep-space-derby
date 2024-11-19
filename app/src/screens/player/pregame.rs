@@ -171,7 +171,7 @@ pub fn pre_game() -> impl IntoView {
 
     let buy_card = create_action(move |input| server_fn::<BuyCard>(game_id, input));
     let cards_disabled =
-        Signal::derive(move || projections::already_played_card_this_round(&events(), player_id));
+        Signal::derive(move || !projections::can_play_more_cards(&events(), player_id));
 
     view! {
         <Show
