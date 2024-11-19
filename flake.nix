@@ -52,6 +52,18 @@
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --remove-name-section --remove-producers-section --out-name game  --target web     --out-dir ./site/pkg
           '';
 
+          deploy-site = pkgs.writeShellScriptBin "deploy-site" ''
+            set -x
+            set -o nounset
+            set -o errexit
+            set -o pipefail
+
+            ${packages.build-site}/bin/build-site
+
+            wrangler deploy site/_worker.js
+            wrangler pages deploy --project-name deep-space-derby site
+          '';
+
           dev-clean = pkgs.writeShellScriptBin "dev-clean" ''
             set -x
             set -o nounset

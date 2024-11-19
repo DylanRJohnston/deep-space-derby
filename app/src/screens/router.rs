@@ -1,6 +1,5 @@
 use std::cell::Cell;
 
-use html::summary;
 use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
 

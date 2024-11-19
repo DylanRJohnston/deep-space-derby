@@ -345,7 +345,7 @@ pub fn game_id(events: &Vector<Event>) -> GameID {
         Some(Event::GameCreated { game_id, .. }) => *game_id,
         None => GameID::random(),
         Some(event) => {
-            tracing::error!(?events, "first event wasn't game_created");
+            tracing::error!(?event, "first event wasn't game_created");
             unreachable!()
         }
     }

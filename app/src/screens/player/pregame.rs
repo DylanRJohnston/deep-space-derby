@@ -1,7 +1,4 @@
-use std::{
-    borrow::BorrowMut,
-    cmp::{max, min},
-};
+use std::cmp::{max, min};
 
 use ev::MouseEvent;
 use leptos::*;

@@ -73,7 +73,7 @@ impl GameState for Game {
 
     async fn push_event(&self, event: Event) -> anyhow::Result<()> {
         SendFuture::new(async {
-            self.events.push(event.clone()).await;
+            self.events.push(event.clone()).await?;
 
             for ws in self.state.get_websockets() {
                 ws.send(&EventStream::Event(event.clone()))?;

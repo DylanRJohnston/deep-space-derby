@@ -79,7 +79,6 @@ pub fn run_processors(events: &Vector<Event>) -> Result<(Vec<Event>, Option<Alar
 
 #[cfg(test)]
 mod test {
-    use std::time::Duration;
 
     use anyhow::bail;
     use im::Vector;
