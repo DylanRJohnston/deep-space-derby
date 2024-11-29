@@ -83,14 +83,22 @@ pub fn pre_game() -> impl IntoView {
         projections::time_left_in_pregame(&events())
     };
 
+    let round_number = move || projections::round(&events());
+
     view! {
         <div class="host-pre-game-container">
+            <div class="host-pre-game-timer" style="left: 1em;">
+                "Round: "
+                {round_number}
+                "/10"
+            </div>
             <div class="host-pre-game-timer">
                 "Time Left: "
                 {move || match time() {
                     Some(time) => format!("{time}s"),
                     None => "∞".to_string(),
                 }}
+
             </div>
             <For each=monsters key=|it| it.monster.uuid let:data>
                 <div class="monster-stats-container">
