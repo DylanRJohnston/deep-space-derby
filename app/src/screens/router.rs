@@ -1,30 +1,25 @@
-use std::cell::Cell;
-
 use leptos::*;
 use leptos_router::{Route, Router as LeptosRouter, Routes};
 
 use crate::{
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
-    utils::{reset_game_events, send_game_event, use_events, use_session_id},
+    utils::{send_game_event, use_events, use_session_id},
 };
-use shared::models::{events::Event, projections};
+use shared::models::{
+    events::{Event, EventStream},
+    projections,
+};
 
 #[component]
 pub fn send_events_to_bevy() -> impl IntoView {
     let events = use_events();
 
-    reset_game_events();
-    let index = Cell::new(0);
-
     create_effect(move |_| {
-        let mut events = events();
-        let len = events.len();
+        let events = events();
 
-        for event in events.slice(index.get()..len) {
-            send_game_event(event.clone());
-        }
-
-        index.set(len);
+        // This is really inefficient sending the entire event
+        // But I'm about to remove comms between the UI and the game
+        send_game_event(EventStream::Events(Vec::from_iter(events.into_iter())));
     });
 }
 
@@ -40,11 +35,10 @@ pub fn router() -> impl IntoView {
                         view! {
                             <script type="module">
                                 "
-                                import init, { sendGameEvent as innerSendGameEvent, resetGameEvents as innerResetGameEvents } from '/pkg/game.js';
+                                import init, { sendGameEvent as innerSendGameEvent } from '/pkg/game.js';
                                 
                                 init().catch(() => {
                                     globalThis['innerSendGameEvent'] = innerSendGameEvent;
-                                    globalThis['innerResetGameEvents'] = innerResetGameEvents;
                                     console.log('Module initialised, flushing pending events')
                                     console.log(pendingEvents);
                                     while (pendingEvents.length > 0) {

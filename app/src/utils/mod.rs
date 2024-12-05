@@ -1,6 +1,6 @@
 use cookie::Cookie;
 use leptos::{provide_context, use_context};
-use shared::models::events::Event;
+use shared::models::events::EventStream;
 use uuid::Uuid;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast};
 
@@ -41,8 +41,5 @@ pub fn use_session_id() -> Uuid {
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_name = "sendGameEvent")]
-    pub fn send_game_event(event: Event);
-
-    #[wasm_bindgen(js_name = "resetGameEvents")]
-    pub fn reset_game_events();
+    pub fn send_game_event(event: EventStream);
 }

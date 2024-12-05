@@ -15,17 +15,14 @@ pub fn app() -> impl IntoView {
             let pendingEvents = [];
             function sendGameEvent(event) {
                 if (typeof globalThis['innerSendGameEvent'] !== 'function') {
+                    console.warn('pushing message before module initialised');
+                    console.warn(event)
                     pendingEvents.push(event);
                 } else {
                     globalThis['innerSendGameEvent'](event);
                 }
             }
             
-            function resetGameEvents() {
-                if (typeof globalThis['innerResetGameEvents'] === 'function') {
-                    globalThis['innerResetGameEvents']();
-                }
-            }
             "
         </script>
         <script>
@@ -93,6 +90,21 @@ pub fn app() -> impl IntoView {
                 document.addEventListener(eventName, resumeAllContexts);
               });
             })();
+        // An array of all contexts to resume on the page
+
+        // An array of various user interaction events we should listen for
+
+        // A proxy object to intercept AudioContexts and
+        // add them to the array for tracking and resuming later
+
+        // To resume all AudioContexts being tracked
+
+        // If all the AudioContexts have now resumed then we unbind all
+        // the event listeners from the page to prevent unnecessary resume attempts
+        // Checking count > 0 ensures that the user interaction happens AFTER the game started up
+
+        // We bind the resume function for each user interaction
+        // event on the page
         // An array of all contexts to resume on the page
 
         // An array of various user interaction events we should listen for

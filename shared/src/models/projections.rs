@@ -387,9 +387,9 @@ const DECK: [(usize, Card); 12] = [
     (5, Card::Nepotism),
     (10, Card::Theft),
     (10, Card::Extortion),
-    (10, Card::Stupify),
-    (10, Card::Scrutiny),
-    (10, Card::Crystals),
+    (3, Card::Stupify),
+    (4, Card::Scrutiny),
+    (3, Card::Crystals),
 ];
 
 fn bought_cards(events: &Vector<Event>) -> u32 {

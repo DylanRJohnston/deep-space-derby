@@ -706,8 +706,8 @@ input[type="number"] {
   border-radius: 16px;
   gap: 1em;
 
-  /* -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px); */
+  /* -webkit-backdrop-filter: blur(8px); */
+  backdrop-filter: blur(16px);
   box-shadow: 0px 0px 5px #7a09fa66;
   background-color: #7a09fa11;
 

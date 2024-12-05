@@ -4,17 +4,14 @@ use bevy::{prelude::*, utils::tracing};
 
 use crossbeam_channel::{Receiver, Sender};
 use im::Vector;
-use shared::models::{events::Event, game_id::GameID};
-
-use super::scenes::SceneState;
+use shared::models::{events::Event, events::EventStream, game_id::GameID};
 
 pub struct EventStreamPlugin;
 
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
-            .add_systems(Update, read_event_stream)
-            .add_systems(Update, reset_event_stream);
+            .add_systems(Update, read_event_stream);
 
         #[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
         app.add_systems(Startup, connect_to_server);
@@ -26,14 +23,8 @@ struct EventChannel<T> {
     receiver: Receiver<T>,
 }
 
-static EVENT_CHANNEL: LazyLock<EventChannel<Event>> = LazyLock::new(|| {
-    let (sender, receiver) = crossbeam_channel::unbounded::<Event>();
-
-    EventChannel { sender, receiver }
-});
-
-static RESET_CHANNEL: LazyLock<EventChannel<()>> = LazyLock::new(|| {
-    let (sender, receiver) = crossbeam_channel::unbounded::<()>();
+static EVENT_CHANNEL: LazyLock<EventChannel<EventStream>> = LazyLock::new(|| {
+    let (sender, receiver) = crossbeam_channel::unbounded::<EventStream>();
 
     EventChannel { sender, receiver }
 });
@@ -56,29 +47,18 @@ fn read_event_stream(
     // mut next_state: ResMut<NextState<SceneState>>,
     mut events: ResMut<GameEvents>,
 ) {
-    while let Ok(event) = EVENT_CHANNEL.receiver.try_recv() {
-        tracing::info!(?event);
-        events.as_mut().0.push_back(event);
+    while let Ok(new_events) = EVENT_CHANNEL.receiver.try_recv() {
+        match new_events {
+            EventStream::Events(new_events) => events.as_mut().0 = Vector::from(new_events),
+            EventStream::Event(new_event) => events.as_mut().0.push_back(new_event),
+        }
     }
 }
 
-fn reset_event_stream(mut events: ResMut<GameEvents>) {
-    while let Ok(_) = RESET_CHANNEL.receiver.try_recv() {
-        tracing::error!("event stream reset");
-        events.as_mut().0.clear();
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(js_name = "sendGameEvent")]
-pub fn send_game_event(event: Event) -> Result<(), wasm_bindgen::JsError> {
-    EVENT_CHANNEL.sender.send(event).map_err(Into::into)
-}
-
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen::prelude::wasm_bindgen(js_name = "resetGameEvents")]
-pub fn reset_game_events() -> Result<(), wasm_bindgen::JsError> {
-    RESET_CHANNEL.sender.send(()).map_err(Into::into)
+pub fn send_game_event(events: EventStream) -> Result<(), wasm_bindgen::JsError> {
+    EVENT_CHANNEL.sender.send(events).map_err(Into::into)
 }
 
 #[derive(Debug, Resource, Deref)]
@@ -105,7 +85,7 @@ fn connect_to_server(game_code: Res<GameCode>) {
                         Ok(event) => {
                             EVENT_CHANNEL
                                 .sender
-                                .send(event)
+                                .send(EventStream::Event(event))
                                 .expect("error sending event to event channel");
                         }
                         Err(err) => {
