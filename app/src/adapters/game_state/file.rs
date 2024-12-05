@@ -84,40 +84,31 @@ impl GameDirectory for FileGameDirectory {
     }
 }
 
-impl GameState for Game {
-    type WebSocket = WebSocket;
+// Error
 
-    async fn events(&self) -> Result<im::Vector<Event>> {
-        self.inner.lock().await.events.vector().await
-    }
+// A separate module is required to solve problems with the compiler not knowing if the hidden type
+// of the opaque type satisfies the auto trait bounds.
+mod set_alarm {
+    use anyhow::Result;
+    use shared::models::processors::run_processors;
+    use std::{future::Future, sync::Arc, time::Duration};
 
-    async fn push_event(&self, event: Event) -> Result<()> {
-        let mut lock_guard = self.inner.lock().await;
+    use crate::ports::{event_log::EventLog, game_state::GameState};
 
-        lock_guard.push_event(event).await?;
+    use super::Game;
 
-        Ok(())
-    }
-
-    async fn accept_web_socket(&self, ws: WebSocket) -> Result<()> {
-        self.inner.lock().await.sockets.push(ws);
-
-        Ok(())
-    }
-
-    #[instrument(skip(self))]
-    fn set_alarm(
-        &self,
+    pub fn set_alarm(
+        this: &Game,
         duration: Duration,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>> {
-        Box::pin(async move {
-            let mut game = self.inner.lock().await;
+    ) -> impl Future<Output = Result<()>> + Send + '_ {
+        async move {
+            let mut game = this.inner.lock().await;
 
             if let Some(handle) = game.alarm.take() {
                 handle.abort();
             }
 
-            let this = Arc::downgrade(&self.inner);
+            let this = Arc::downgrade(&this.inner);
 
             tracing::info!(?duration, "setting alarm");
             game.alarm = Some(tokio::spawn(async move {
@@ -155,6 +146,32 @@ impl GameState for Game {
             }));
 
             Ok(())
-        })
+        }
+    }
+}
+
+impl GameState for Game {
+    type WebSocket = WebSocket;
+
+    async fn events(&self) -> Result<im::Vector<Event>> {
+        self.inner.lock().await.events.vector().await
+    }
+
+    async fn push_event(&self, event: Event) -> Result<()> {
+        let mut lock_guard = self.inner.lock().await;
+
+        lock_guard.push_event(event).await?;
+
+        Ok(())
+    }
+
+    async fn accept_web_socket(&self, ws: WebSocket) -> Result<()> {
+        self.inner.lock().await.sockets.push(ws);
+
+        Ok(())
+    }
+
+    async fn set_alarm(&self, duration: Duration) -> Result<()> {
+        set_alarm::set_alarm(&self, duration).await
     }
 }

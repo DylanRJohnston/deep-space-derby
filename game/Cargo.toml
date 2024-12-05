@@ -5,7 +5,6 @@ edition = "2021"
 
 
 [dependencies]
-bevy = { version = "0.14", default-features = false }
 bevy-inspector-egui = { version = "0.25", optional = true }
 bevy_asset_loader = { version = "0.21", features = [
   "progress_tracking",
@@ -22,40 +21,43 @@ shared = { workspace = true }
 im = "15.1.0"
 serde = "1.0.204"
 serde_json = "1.0.120"
-tungstenite = { version = "0.23.0", optional = true, features = ["rustls"] }
 anyhow = "1.0.86"
 bevy_kira_audio = { version = "0.20.0", features = ["ogg"] }
 
 
-[features]
-default = ["native"]
-wasm = ["bevy", "shared/wasm"]
-bevy = [
-  "bevy/animation",
-  "bevy/bevy_asset",
-  "bevy/bevy_state",
-  "bevy/bevy_color",
-  "bevy/bevy_gilrs",
-  "bevy/bevy_scene",
-  "bevy/bevy_winit",
-  "bevy/bevy_core_pipeline",
-  "bevy/bevy_pbr",
-  "bevy/bevy_gltf",
-  "bevy/bevy_render",
-  "bevy/bevy_sprite",
-  "bevy/bevy_text",
-  "bevy/bevy_ui",
-  "bevy/multi_threaded",
-  "bevy/png",
-  "bevy/hdr",
-  "bevy/x11",
-  "bevy/bevy_gizmos",
-  "bevy/android_shared_stdcxx",
-  "bevy/tonemapping_luts",
-  "bevy/smaa_luts",
-  "bevy/default_font",
-  "bevy/webgpu",
-  "bevy/sysinfo_plugin",
+[dependencies.bevy]
+version = "0.14"
+default-features = false
+features = [
+  "animation",
+  "bevy_asset",
+  "bevy_state",
+  "bevy_color",
+  "bevy_gilrs",
+  "bevy_scene",
+  "bevy_winit",
+  "bevy_core_pipeline",
+  "bevy_pbr",
+  "bevy_gltf",
+  "bevy_render",
+  "bevy_sprite",
+  "bevy_text",
+  "bevy_ui",
+  "multi_threaded",
+  "png",
+  "hdr",
+  "x11",
+  "bevy_gizmos",
+  "android_shared_stdcxx",
+  "tonemapping_luts",
+  "smaa_luts",
+  "default_font",
+  "webgpu",
+  "sysinfo_plugin",
 ]
-native = ["bevy", "bevy/dynamic_linking", "dep:tungstenite"]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tungstenite = { version = "0.23.0", features = ["rustls"] }
+
+[features]
 debug = ["dep:bevy-inspector-egui"]

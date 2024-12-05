@@ -1,8 +1,9 @@
+use shared::time::{Duration, SystemTime};
 use std::{cell::RefCell, rc::Rc};
 
 use anyhow::Result;
 use im::Vector;
-use shared::models::events::Event;
+use shared::{models::events::Event, time};
 use tracing::instrument;
 use worker::{ListOptions, Storage};
 
@@ -61,6 +62,33 @@ impl DurableObjectKeyValue {
         *self.inner.hydrated.borrow_mut() = true;
 
         Ok(())
+    }
+
+    pub async fn write_alarm(&self, alarm: Duration) -> Result<()> {
+        let wakeup = time::SystemTime::now() + alarm;
+
+        self.inner
+            .storage
+            .borrow_mut()
+            .put(
+                "ALARM",
+                &wakeup.duration_since(time::UNIX_EPOCH)?.as_secs_f64(),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn read_alarm(&self) -> Option<SystemTime> {
+        let time = self
+            .inner
+            .storage
+            .borrow_mut()
+            .get::<f64>("ALARM")
+            .await
+            .ok()?;
+
+        Some(SystemTime::UNIX_EPOCH + Duration::from_secs_f64(time))
     }
 }
 

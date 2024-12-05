@@ -1,12 +1,16 @@
 use std::rc::Rc;
 
+use anyhow::Result;
+use im::Vector;
+use serde::de;
 use shared::models::events::{Event, EventStream};
 use shared::models::game_id::GameID;
 use shared::models::processors::{run_processors, Alarm};
+use shared::time::SystemTime;
 use tower::Service;
 use tracing::instrument;
-use worker::send::SendFuture;
-use worker::{durable_object, Env, State, Storage, WebSocket};
+use worker::{durable_object, Env, State, WebSocket};
+use worker_macros::send;
 
 use crate::adapters::event_log::durable_object::DurableObjectKeyValue;
 use crate::ports::event_log::EventLog;
@@ -26,7 +30,7 @@ unsafe impl Sync for Game {}
 
 #[durable_object]
 impl DurableObject for Game {
-    pub fn new(state: State, env: Env) -> Self {
+    pub fn new(state: State, _env: Env) -> Self {
         let events = DurableObjectKeyValue::new(state.storage());
         Self {
             events,
@@ -43,6 +47,19 @@ impl DurableObject for Game {
     }
 
     pub async fn alarm(&mut self) -> worker::Result<worker::Response> {
+        if let Some(alarm) = self.events.read_alarm().await {
+            let now = SystemTime::now();
+            if now < alarm {
+                let delta = alarm.duration_since(now).map_err(|err| err.to_string())?;
+
+                tracing::warn!(?delta, "woke up too early, going back to sleep");
+
+                self.set_alarm(delta).await.map_err(|err| err.to_string())?;
+
+                return worker::Response::empty();
+            }
+        };
+
         let events = self.events.vector().await.map_err(|err| err.to_string())?;
 
         let (events, alarm) = run_processors(&events).map_err(|err| err.to_string())?;
@@ -59,7 +76,7 @@ impl DurableObject for Game {
                 .map_err(|err| err.to_string())?;
         }
 
-        worker::Response::ok("")
+        worker::Response::empty()
     }
 }
 
@@ -67,47 +84,41 @@ impl DurableObject for Game {
 impl GameState for Game {
     type WebSocket = WebSocket;
 
-    async fn events(&self) -> anyhow::Result<im::Vector<Event>> {
-        SendFuture::new(async { Ok(self.events.vector().await?) }).await
+    #[send]
+    async fn events(&self) -> Result<Vector<Event>> {
+        Ok(self.events.vector().await?)
     }
 
-    async fn push_event(&self, event: Event) -> anyhow::Result<()> {
-        SendFuture::new(async {
-            self.events.push(event.clone()).await?;
+    #[send]
+    async fn push_event(&self, event: Event) -> Result<()> {
+        self.events.push(event.clone()).await?;
 
-            for ws in self.state.get_websockets() {
-                ws.send(&EventStream::Event(event.clone()))?;
-            }
+        for ws in self.state.get_websockets() {
+            ws.send(&EventStream::Event(event.clone()))?;
+        }
 
-            Ok(())
-        })
-        .await
+        Ok(())
     }
 
-    async fn accept_web_socket(&self, ws: WebSocket) -> anyhow::Result<()> {
+    async fn accept_web_socket(&self, ws: WebSocket) -> Result<()> {
         self.state.accept_web_socket(&ws);
 
         Ok(())
     }
 
-    fn set_alarm(
-        &self,
-        duration: std::time::Duration,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + '_>> {
-        Box::pin(async move {
-            SendFuture::new(async {
-                let storage = self.state.storage();
+    #[send]
+    async fn set_alarm(&self, duration: std::time::Duration) -> Result<()> {
+        self.events.write_alarm(duration.clone()).await?;
 
-                if let Some(time) = storage.get_alarm().await? {
-                    tracing::warn!(?time, "overriding timer");
-                };
+        let storage = self.state.storage();
 
-                storage.set_alarm(duration).await?;
+        if let Some(time) = storage.get_alarm().await? {
+            tracing::warn!(?time, "overriding timer");
+        };
 
-                Ok(())
-            })
-            .await
-        })
+        storage.set_alarm(duration).await?;
+
+        Ok(())
     }
 }
 

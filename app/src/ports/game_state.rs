@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin, time::Duration};
+use std::{future::Future, time::Duration};
 
 use anyhow::Result;
 use im::Vector;
@@ -9,10 +9,7 @@ pub trait GameState: Clone + Send + 'static {
 
     fn events(&self) -> impl Future<Output = Result<Vector<Event>>> + Send;
     fn push_event(&self, event: Event) -> impl Future<Output = Result<()>> + Send;
-    fn set_alarm(
-        &self,
-        duration: Duration,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>>;
+    fn set_alarm(&self, duration: Duration) -> impl Future<Output = Result<()>> + Send;
 
     fn accept_web_socket(&self, ws: Self::WebSocket) -> impl Future<Output = Result<()>> + Send;
 }

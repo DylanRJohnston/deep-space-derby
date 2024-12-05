@@ -13,7 +13,7 @@ impl Plugin for EventStreamPlugin {
         app.insert_resource(GameEvents(Vector::new()))
             .add_systems(Update, read_event_stream);
 
-        #[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
+        #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(Startup, connect_to_server);
     }
 }
@@ -55,7 +55,7 @@ fn read_event_stream(
     }
 }
 
-// #[cfg(target_arch = "wasm32")]
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen(js_name = "sendGameEvent")]
 pub fn send_game_event(events: EventStream) -> Result<(), wasm_bindgen::JsError> {
     EVENT_CHANNEL.sender.send(events).map_err(Into::into)
@@ -64,7 +64,7 @@ pub fn send_game_event(events: EventStream) -> Result<(), wasm_bindgen::JsError>
 #[derive(Debug, Resource, Deref)]
 pub struct GameCode(pub GameID);
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
+#[cfg(not(target_arch = "wasm32"))]
 fn connect_to_server(game_code: Res<GameCode>) {
     use anyhow::Context;
     use bevy::tasks::IoTaskPool;

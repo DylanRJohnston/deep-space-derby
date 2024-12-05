@@ -1,5 +1,5 @@
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub use std::time::*;
 
-#[cfg(feature = "wasm")]
+#[cfg(target_arch = "wasm32")]
 pub use web_time::*;

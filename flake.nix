@@ -42,13 +42,13 @@
             cp -r assets/* site/
             cp -r game/assets site/assets
 
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --lib        --features app/hydrate,app/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --lib        --features app/hydrate
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/app.wasm    --no-typescript --remove-name-section --remove-producers-section --out-name index --target web     --out-dir ./site/pkg
 
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr,app/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --bin worker --features app/ssr
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/worker.wasm --no-typescript --remove-name-section --remove-producers-section --out-name index --target bundler --out-dir ./site
 
-            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game   --features game/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --remove-name-section --remove-producers-section --out-name game  --target web     --out-dir ./site/pkg
           '';
 
@@ -90,7 +90,7 @@
 
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/app.wasm"
 
-            cargo build --target wasm32-unknown-unknown --no-default-features -p app --lib --features app/hydrate,app/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features -p app --lib --features app/hydrate
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $CLIENT_TARGET --no-typescript --out-name index --target web --out-dir ./site/pkg
 
             echo "############### FINISHED BUILDING CLIENT ###############"
@@ -103,7 +103,7 @@
 
             GAME_TARGET="./target/wasm32-unknown-unknown/debug/game.wasm"
 
-            cargo build --target wasm32-unknown-unknown --no-default-features -p game --bin game --features game/wasm
+            cargo build --target wasm32-unknown-unknown --no-default-features -p game --bin game
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $GAME_TARGET --no-typescript --out-name game --target web --out-dir ./site/pkg
 
             echo "############### FINISHED BUILDING GAME ###############"
@@ -124,7 +124,7 @@
               set -o errexit
               set -o pipefail
 
-              cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin worker --features app/ssr,app/wasm
+              cargo build --target wasm32-unknown-unknown --no-default-features -p app --bin worker --features app/ssr
               ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/debug/worker.wasm --keep-debug --no-typescript --out-name index --target bundler --out-dir ./site
               wrangler pages dev site --ip 0.0.0.0 --local-protocol https --compatibility-date=2023-10-30
             '';

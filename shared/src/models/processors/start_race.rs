@@ -42,17 +42,17 @@ impl Processor for StartRace {
             .unwrap_or(usize::MAX);
 
         if last_race_start < last_round_start {
-            tracing::info!(?last_race_start, ?last_round_start, "race already started");
+            tracing::debug!(?last_race_start, ?last_round_start, "race already started");
             return None;
         }
 
         if projections::all_players_have_bet(events) {
-            tracing::info!("all players have bet");
+            tracing::debug!("all players have bet");
             return Some(Command::StartRace(()));
         }
 
         if projections::time_left_in_pregame(events).is_none() {
-            tracing::info!("no timer for this round");
+            tracing::debug!("no timer for this round");
             return None;
         }
 
@@ -61,7 +61,7 @@ impl Processor for StartRace {
             .rev()
             .find(|event| matches!(event, Event::RoundStarted { .. }))
         else {
-            tracing::info!("No round started found");
+            tracing::debug!("No round started found");
             return None;
         };
 
@@ -70,11 +70,11 @@ impl Processor for StartRace {
                 + Duration::from_secs(*start as u64)
                 + Duration::from_secs(PRE_GAME_TIMEOUT as u64)
         {
-            tracing::info!("Starting race");
+            tracing::debug!("Starting race");
             return Some(Command::StartRace(()));
         }
 
-        tracing::info!("Timer hasn't elapsed yet");
+        tracing::debug!("Timer hasn't elapsed yet");
         None
     }
 }
