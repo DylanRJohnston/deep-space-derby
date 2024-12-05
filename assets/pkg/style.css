@@ -926,8 +926,7 @@ div .two-columns {
 }
 
 .race-card {
-  /* -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px); */
+  backdrop-filter: blur(16px);
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -982,8 +981,8 @@ div .two-columns {
 
 /* Style the front side (fallback if image is missing) */
 .flip-card-front {
-  /* -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px); */
+  /* -webkit-backdrop-filter: blur(8px); */
+  backdrop-filter: blur(16px);
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
@@ -1000,8 +999,8 @@ div .two-columns {
 
 /* Style the back side */
 .flip-card-back {
-  /* -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px); */
+  /* -webkit-backdrop-filter: blur(8px); */
+  backdrop-filter: blur(16px);
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #fdcbff44;
