@@ -43,8 +43,8 @@ pub fn wait() -> impl IntoView {
         </Show>
         {move || {
             victim_modal()
-                .map(|card| {
-                    view! { <VictimModal card close=move || set_victim_modal(None)/> }
+                .map(|(card, perpetrator)| {
+                    view! { <VictimModal card perpetrator close=move || set_victim_modal(None)/> }
                 })
         }}
     }

@@ -85,28 +85,36 @@ impl Card {
     pub fn description(&self) -> &'static str {
         match self {
             Card::Poison => "-3 Strength",
-            Card::TasteTester => "Blocks Strength Buffs (Extra Rations) and Debuffs (Poison)",
+            Card::TasteTester => "Blocks Strength Effects",
             Card::ExtraRations => "+2 Strength",
-            Card::PsyBlast => "-3 Speed",
-            Card::TinfoilHat => "Blocks Speed Buffs (Meditation) and Debuffs (Psy Blast)",
+            Card::PsyBlast => "-3 Dexterity",
+            Card::TinfoilHat => "Blocks Dexterity Effects",
             Card::Nepotism => "Monster starts race 1.5m ahead",
-            Card::Meditation => "+2 Speed",
+            Card::Meditation => "+2 Dexterity",
             Card::Theft => "Take 20% of a player's Crystals",
             Card::Extortion => "Take 2 random cards from a player",
-            Card::Stupify => "Player must speak loudly and in single syllables",
+            Card::Stupify => "(Free Action) Player must speak loudly and in single syllables",
             Card::Scrutiny => "Up to 2 players cannot play cards this turn",
-            Card::Crystals => "Give 1 player 500 Crystals",
+            Card::Crystals => "(Free Action) Give 1 player 1000 Crystals",
         }
     }
 
-    pub fn victim_description(&self) -> &'static str {
+    pub fn victim_description(&self, perpetrator: &str) -> String {
         match self {
-            Card::Theft => "Someone stole 20% of your crystals!",
-            Card::Extortion => "Someone stole 2 of your cards!",
-            Card::Stupify => "You must speak loudly and in single syllables!",
-            Card::Scrutiny => "You cannot play cards this turn!",
-            Card::Crystals => "Someone gave you 500 Crystals!",
-            _ => "N/A",
+            Card::Theft => format!("{perpetrator} stole 20% of your crystals!"),
+            Card::Extortion => format!("{perpetrator} stole 2 of your cards!"),
+            Card::Stupify => "You must speak loudly and in single syllables!".to_string(),
+            Card::Scrutiny => format!("{perpetrator} stopped you from playing cards this turn!"),
+            Card::Crystals => format!("{perpetrator} gave you 1000 Crystals!"),
+            _ => "N/A".to_owned(),
+        }
+    }
+
+    pub fn is_free(&self) -> bool {
+        match self {
+            Card::Crystals => true,
+            Card::Stupify => true,
+            _ => false,
         }
     }
 }

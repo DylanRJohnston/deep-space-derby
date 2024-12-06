@@ -159,8 +159,8 @@ pub fn pre_game() -> impl IntoView {
     // TODO: Fix this, it causes the modal to pop up during re-hydration of the event stream
     let (victim_modal, set_victim_modal) = create_signal(None);
     create_effect(move |_| {
-        if let Some(card) = projections::victim_of_card(&events(), player_id) {
-            set_victim_modal(Some(card))
+        if let Some((card, perpetrator)) = projections::victim_of_card(&events(), player_id) {
+            set_victim_modal(Some((card, perpetrator)))
         }
     });
 
@@ -264,8 +264,8 @@ pub fn pre_game() -> impl IntoView {
         </Show>
         {move || {
             victim_modal()
-                .map(|card| {
-                    view! { <VictimModal card close=move || set_victim_modal(None)/> }
+                .map(|(card, perpetrator)| {
+                    view! { <VictimModal card perpetrator close=move || set_victim_modal(None)/> }
                 })
         }}
     }
@@ -323,7 +323,7 @@ fn loan_modal(
             </button>
             <h1>"Loan shark"</h1>
             <div class="loan-shark"></div>
-            <p class="bio">"\"I'm a shark, How much do you want to borrow?\""</p>
+            <p class="bio">"I'm a shark, How much do you want to borrow?"</p>
             <p>"Interest Rate: 5.1%/pr"</p>
             <div class="creature-container">
                 <p style="text-align: center;">
@@ -592,13 +592,17 @@ fn target_modal(
 }
 
 #[component]
-pub fn victim_modal(card: Card, close: impl Fn() + Copy + 'static) -> impl IntoView {
+pub fn victim_modal(
+    card: Card,
+    perpetrator: String,
+    close: impl Fn() + Copy + 'static,
+) -> impl IntoView {
     view! {
         <div class="pre-game-container blurred">
             <button class="back-button" on:click=move |_| close()>
                 "←"
             </button>
-            <h1>{card.victim_description()}</h1>
+            <h1>{card.victim_description(&perpetrator)}</h1>
             <img class="victim-icon" src=card.icon()/>
         </div>
     }

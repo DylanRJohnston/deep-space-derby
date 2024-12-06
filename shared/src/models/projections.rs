@@ -18,7 +18,7 @@ use super::{
     monsters::Monster,
     processors::start_race::PRE_GAME_TIMEOUT,
 };
-use im::{HashMap, Vector};
+use im::{HashMap, OrdMap, Vector};
 use tracing::instrument;
 use uuid::Uuid;
 
@@ -41,8 +41,8 @@ pub struct PlayerInfo {
     pub ready: bool,
 }
 
-pub fn players(events: &Vector<Event>) -> HashMap<Uuid, PlayerInfo> {
-    let mut map = HashMap::new();
+pub fn players(events: &Vector<Event>) -> OrdMap<Uuid, PlayerInfo> {
+    let mut map = OrdMap::new();
 
     for event in events {
         match event {
@@ -119,8 +119,8 @@ pub fn minimum_bet(events: &Vector<Event>) -> i32 {
     starting_bet
 }
 
-pub fn placed_bets(events: &Vector<Event>) -> HashMap<Uuid, Vector<PlacedBet>> {
-    let mut bets = HashMap::<Uuid, Vector<PlacedBet>>::new();
+pub fn placed_bets(events: &Vector<Event>) -> OrdMap<Uuid, Vector<PlacedBet>> {
+    let mut bets = OrdMap::<Uuid, Vector<PlacedBet>>::new();
 
     for event in events {
         match event {
@@ -166,8 +166,8 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     true
 }
 
-pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
-    let mut accounts = HashMap::<Uuid, i32>::new();
+pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
+    let mut accounts = OrdMap::<Uuid, i32>::new();
     let mut bets = Vector::new();
 
     let mut maybe_odds = None;
@@ -245,7 +245,7 @@ pub fn all_account_balances(events: &Vector<Event>) -> HashMap<Uuid, i32> {
                 target: Target::Player(target),
                 ..
             } => {
-                *accounts.entry(*target).or_default() += 500;
+                *accounts.entry(*target).or_default() += 1000;
             }
             _ => {}
         };
@@ -280,8 +280,8 @@ pub fn last_round(events: &Vector<Event>) -> Option<Vector<Event>> {
     Some(events.clone().slice(start..=end))
 }
 
-pub fn winnings(events: &Vector<Event>) -> HashMap<Uuid, i32> {
-    let mut winnings = HashMap::new();
+pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
+    let mut winnings = OrdMap::new();
     let mut bets = Vec::new();
     let odds = pre_computed_odds(events);
 
@@ -384,12 +384,12 @@ const DECK: [(usize, Card); 12] = [
     (10, Card::PsyBlast),
     (10, Card::Meditation),
     (10, Card::TinfoilHat),
-    (5, Card::Nepotism),
-    (10, Card::Theft),
-    (10, Card::Extortion),
-    (3, Card::Stupify),
+    (3, Card::Nepotism),
+    (8, Card::Theft),
+    (8, Card::Extortion),
+    (4, Card::Stupify),
     (4, Card::Scrutiny),
-    (3, Card::Crystals),
+    (5, Card::Crystals),
 ];
 
 fn bought_cards(events: &Vector<Event>) -> u32 {
@@ -415,7 +415,7 @@ pub fn draw_card_from_deck(events: &Vector<Event>) -> Card {
 }
 
 pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
-    let mut cards = HashMap::<Uuid, Vec<Card>>::new();
+    let mut cards = OrdMap::<Uuid, Vec<Card>>::new();
 
     let remove_card_from_hand = |cards: &mut Vec<Card>, card| {
         if let Some(index) = cards.iter().position(|it| *it == card) {
@@ -468,7 +468,9 @@ pub fn can_play_more_cards(events: &Vector<Event>, player: Uuid) -> bool {
     for event in events.iter().rev() {
         match event {
             Event::RoundStarted { .. } => return count < max_cards,
-            Event::PlayedCard { session_id, .. } if *session_id == player => count += 1,
+            Event::PlayedCard {
+                session_id, card, ..
+            } if (*session_id == player && !card.is_free()) => count += 1,
             Event::PlayedCard {
                 card: Card::Scrutiny,
                 target: Target::MultiplePlayers(targets),
@@ -645,11 +647,11 @@ pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
         }
 
         if psyblast(&played_cards, monster.uuid) {
-            monster.speed -= 3;
+            monster.dexterity -= 3;
         }
 
         if meditation(&played_cards, monster.uuid) {
-            monster.speed += 2;
+            monster.dexterity += 2;
         }
 
         if nepotism(&played_cards, monster.uuid) {
@@ -728,15 +730,15 @@ pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
         let mut jump_distance = 0.;
         let mut counter = 0;
 
-        let speed = (monster.speed as f32) / 5.;
+        let dexterity = (monster.dexterity as f32) / 5.;
         let strength = (monster.strength as f32) / 5.;
 
         loop {
             if counter == 0 {
-                counter = Uniform::new(1, 5).sample(&mut rng);
+                counter = Uniform::new(3, 7).sample(&mut rng);
                 jump_time = {
-                    let lower = f32::max(1.25 - speed, 0.0);
-                    let upper = f32::max(2.0 - speed, 0.00);
+                    let lower = f32::max(1.25 - dexterity, 0.0);
+                    let upper = f32::max(2.0 - dexterity, 0.00);
 
                     1.3 * (BASE_JUMP_TIME + 0.5 * (lower + rng.gen::<f32>() * (upper - lower)))
                 };
@@ -852,7 +854,7 @@ pub fn pre_computed_odds(events: &Vector<Event>) -> Odds {
         })
 }
 pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
-    let mut wins = HashMap::<Uuid, u32>::new();
+    let mut wins = OrdMap::<Uuid, u32>::new();
     let mut rng = StdRng::seed_from_u64(seed as u64);
 
     for _ in 0..1000 {
@@ -892,18 +894,22 @@ pub fn results(events: &Vector<Event>) -> Option<RaceResults> {
     None
 }
 
-pub fn victim_of_card(events: &Vector<Event>, player: Uuid) -> Option<Card> {
+pub fn victim_of_card(events: &Vector<Event>, player: Uuid) -> Option<(Card, String)> {
+    let players = players(events);
+
     match events.last() {
         Some(Event::PlayedCard {
             card,
+            session_id,
             target: Target::Player(target),
-            ..
-        }) if *target == player => Some(*card),
+        }) if *target == player => Some((*card, players.get(session_id).unwrap().name.clone())),
         Some(Event::PlayedCard {
             card,
+            session_id,
             target: Target::MultiplePlayers(targets),
-            ..
-        }) if targets.contains(&player) => Some(*card),
+        }) if targets.contains(&player) => {
+            Some((*card, players.get(session_id).unwrap().name.clone()))
+        }
         _ => None,
     }
 }
@@ -911,7 +917,7 @@ pub fn victim_of_card(events: &Vector<Event>, player: Uuid) -> Option<Card> {
 #[cfg(test)]
 mod tests {
 
-    use im::{vector, HashMap, Vector};
+    use im::{vector, OrdMap, Vector};
     use uuid::Uuid;
 
     use crate::models::{
@@ -943,7 +949,12 @@ mod tests {
 
         let accounts = all_account_balances(&events);
 
-        assert_eq!(accounts, [].into_iter().collect::<HashMap<Uuid, i32>>())
+        assert_eq!(
+            accounts,
+            ([] as [(Uuid, i32); 0])
+                .into_iter()
+                .collect::<OrdMap<Uuid, i32>>()
+        )
     }
 
     #[test]
@@ -972,7 +983,7 @@ mod tests {
             accounts,
             [(alice, 1000), (bob, 1000)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1014,7 +1025,7 @@ mod tests {
             accounts,
             [(alice, 800), (bob, 900)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1052,7 +1063,7 @@ mod tests {
             accounts,
             [(alice, 2000), (bob, 1200)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1094,7 +1105,7 @@ mod tests {
             accounts,
             [(alice, 2000), (bob, 1100)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1137,7 +1148,7 @@ mod tests {
             accounts,
             [(alice, 800), (bob, 500)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1189,7 +1200,7 @@ mod tests {
             accounts,
             [(alice, 1400), (bob, 500)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1277,7 +1288,7 @@ mod tests {
             accounts,
             [(alice, 1100), (bob, 2100)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1385,7 +1396,7 @@ mod tests {
             accounts,
             [(alice, 1100), (bob, 1800)]
                 .into_iter()
-                .collect::<HashMap<Uuid, i32>>()
+                .collect::<OrdMap<Uuid, i32>>()
         )
     }
 
@@ -1449,7 +1460,7 @@ mod tests {
 
         assert_eq!(
             winnings,
-            HashMap::from([(alice, 100), (bob, 200), (carol, -100)].as_ref())
+            OrdMap::from([(alice, 100), (bob, 200), (carol, -100)].as_ref())
         );
     }
 

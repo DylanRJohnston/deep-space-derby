@@ -29,7 +29,7 @@ pub fn lobby() -> impl IntoView {
                     .iter()
                     .map(|(_, player)| {
                         view! {
-                            <div class="host-lobby-player">
+                            <div class="host-lobby-player" class:ready=player.ready>
                                 <div class="profile-image">"Profile Image"</div>
                                 <h1>{player.name.clone()}</h1>
                                 <p>{if player.ready { "Ready" } else { "Busy" }}</p>

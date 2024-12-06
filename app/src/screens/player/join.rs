@@ -11,7 +11,7 @@ pub fn join() -> impl IntoView {
     view! {
         <div class="vertical-stack container full-height">
             <div class="headroom"></div>
-            <h1 class="title">"Join a game"</h1>
+            <h1>"Join a game"</h1>
             <div class="placeholder-image">"Image"</div>
             <Form action="/api/join_game" method="POST" class="vertical-stack">
                 <TextInput
@@ -33,7 +33,7 @@ pub fn join() -> impl IntoView {
                     title="player name between 1-10 characters long"
                     value=None
                 />
-                <input class="button" type="submit" value="Join"/>
+                <input class="button join-button" type="submit" value="Join"/>
             </Form>
         </div>
     }

@@ -9,9 +9,9 @@ pub fn main_menu() -> impl IntoView {
         <div class="vertical-stack container full-height">
             <div class="headroom"></div>
             <h1 class="title">"Deep Space Derby"</h1>
-            <div class="splash-image">"Image"</div>
+            // <div class="splash-image">"Image"</div>
             <HorizontalStack>
-                <Form class="button" action="/api/create_game" method="POST">
+                <Form class="button-form" action="/api/create_game" method="POST">
                     <input class="button" type="submit" value="Host"/>
                 </Form>
                 <a class="button" href="/play">
