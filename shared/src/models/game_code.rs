@@ -14,9 +14,9 @@ use serde::{
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct GameID([u8; 6]);
+pub struct GameCode([u8; 6]);
 
-impl GameID {
+impl GameCode {
     pub fn random() -> Self {
         generate_game_code()
     }
@@ -26,8 +26,8 @@ impl GameID {
     }
 }
 
-pub fn generate_game_code() -> GameID {
-    GameID(
+pub fn generate_game_code() -> GameCode {
+    GameCode(
         Uniform::from(b'A'..=b'Z')
             .sample_iter(&mut thread_rng())
             .take(6)
@@ -37,7 +37,7 @@ pub fn generate_game_code() -> GameID {
     )
 }
 
-impl Debug for GameID {
+impl Debug for GameCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("GameID")
             .field(&std::str::from_utf8(&self.0))
@@ -45,14 +45,14 @@ impl Debug for GameID {
     }
 }
 
-impl Display for GameID {
+impl Display for GameCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(std::str::from_utf8(&self.0).unwrap()).unwrap();
         Ok(())
     }
 }
 
-impl TryFrom<&str> for GameID {
+impl TryFrom<&str> for GameCode {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -60,7 +60,7 @@ impl TryFrom<&str> for GameID {
             bail!("failed to convert from String to GameID, incorrect length");
         }
 
-        Ok(GameID(
+        Ok(GameCode(
             value
                 .to_uppercase()
                 .as_bytes()
@@ -71,13 +71,13 @@ impl TryFrom<&str> for GameID {
     }
 }
 
-impl From<GameID> for String {
-    fn from(value: GameID) -> Self {
+impl From<GameCode> for String {
+    fn from(value: GameCode) -> Self {
         value.deref().to_owned()
     }
 }
 
-impl Deref for GameID {
+impl Deref for GameCode {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -88,7 +88,7 @@ impl Deref for GameID {
 struct GameIDVisitor;
 
 impl<'de> Visitor<'de> for GameIDVisitor {
-    type Value = GameID;
+    type Value = GameCode;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "a string containing exactly 6 characters")
@@ -103,7 +103,7 @@ impl<'de> Visitor<'de> for GameIDVisitor {
     }
 }
 
-impl<'de> Deserialize<'de> for GameID {
+impl<'de> Deserialize<'de> for GameCode {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -112,7 +112,7 @@ impl<'de> Deserialize<'de> for GameID {
     }
 }
 
-impl Serialize for GameID {
+impl Serialize for GameCode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -125,13 +125,13 @@ impl Serialize for GameID {
 mod test {
     use serde::{Deserialize, Serialize};
 
-    use crate::models::game_id::GameID;
+    use crate::models::game_code::GameCode;
 
     #[test]
     fn test_deserialize() {
         #[derive(Debug, Serialize, Deserialize)]
         struct Test {
-            game_id: GameID,
+            game_id: GameCode,
         }
 
         let input = "{ \"game_id\": \"ABCDEF\" }";
@@ -144,7 +144,7 @@ mod test {
     fn test_serialize() {
         #[derive(Debug, Serialize, Deserialize)]
         struct Test {
-            game_id: GameID,
+            game_id: GameCode,
         }
 
         let input = "{\"game_id\":\"ABCDEF\"}";
@@ -158,7 +158,7 @@ mod test {
     fn test_uppercase() {
         #[derive(Debug, Serialize, Deserialize)]
         struct Test {
-            game_id: GameID,
+            game_id: GameCode,
         }
 
         let input = "{ \"game_id\": \"abcdef\" }";

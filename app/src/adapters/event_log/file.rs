@@ -1,7 +1,7 @@
 use std::result::Result::Ok;
 
 use anyhow::Result;
-use shared::models::{events::Event, game_id::GameID};
+use shared::models::{events::Event, game_code::GameCode};
 use tokio::io::AsyncWriteExt;
 use tracing::instrument;
 
@@ -13,7 +13,7 @@ pub struct FileEventLog {
 }
 
 impl FileEventLog {
-    pub fn from_game_id(game_id: GameID) -> Self {
+    pub fn from_game_id(game_id: GameCode) -> Self {
         Self {
             path: format!(".game_state/{game_id}.json"),
         }

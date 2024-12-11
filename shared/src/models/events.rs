@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use super::{
     cards::{Card, Target},
-    game_id::GameID,
+    game_code::GameCode,
     projections::RaceResults,
 };
 
@@ -82,7 +82,7 @@ pub enum EventStream {
 #[serde_wasm_bindgen]
 pub enum Event {
     GameCreated {
-        game_id: GameID,
+        game_id: GameCode,
     },
     PlayerJoined {
         session_id: Uuid,

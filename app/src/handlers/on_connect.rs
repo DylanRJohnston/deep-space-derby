@@ -63,8 +63,6 @@ mod native {
                     let events =
                         EventStream::Events(game_state.events().await?.into_iter().collect());
 
-                    tracing::info!(?events);
-
                     let message = serde_json::to_string(&events)?;
                     ws.send(message.into()).await?;
 

@@ -5,10 +5,10 @@ use axum::{
 };
 use shared::models::{
     commands::{self, API},
-    game_id::generate_game_code,
+    game_code::generate_game_code,
 };
 
-use crate::ports::game_service::{GameService, InternalServerError};
+use crate::ports::game_service::{GameBy, GameRequest, GameService, InternalServerError};
 
 #[tracing::instrument(skip_all, err)]
 pub async fn create_game<G: GameService>(
@@ -32,7 +32,12 @@ pub async fn create_game<G: GameService>(
     let req = do_req
         .body(serde_json::to_string(&commands::create_game::Input { code: game_code })?.into())?;
 
-    let response = game_service.call((game_code.to_string(), req)).await?;
+    let response = game_service
+        .call(GameRequest {
+            by: GameBy::Code(game_code),
+            req,
+        })
+        .await?;
 
     if response.status() != 200 {
         let err = anyhow::anyhow!("non-200 received from game-service");

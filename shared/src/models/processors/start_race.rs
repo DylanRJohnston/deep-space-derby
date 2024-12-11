@@ -29,22 +29,10 @@ impl AlarmProcessor for StartRace {
 impl Processor for StartRace {
     #[instrument(skip_all)]
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
-        let last_round_start = events
-            .iter()
-            .rev()
-            .position(|event| matches!(event, Event::RoundStarted { .. }))
-            .unwrap_or(usize::MAX);
-
-        let last_race_start = events
-            .iter()
-            .rev()
-            .position(|event| matches!(event, Event::RaceStarted { .. }))
-            .unwrap_or(usize::MAX);
-
-        if last_race_start < last_round_start {
-            tracing::debug!(?last_race_start, ?last_round_start, "race already started");
+        let Some(start) = projections::currently_betting(events) else {
+            tracing::debug!("no betting in progress");
             return None;
-        }
+        };
 
         if projections::all_players_have_bet(events) {
             tracing::debug!("all players have bet");
@@ -56,18 +44,9 @@ impl Processor for StartRace {
             return None;
         }
 
-        let Some(Event::RoundStarted { time: start, .. }) = events
-            .iter()
-            .rev()
-            .find(|event| matches!(event, Event::RoundStarted { .. }))
-        else {
-            tracing::debug!("No round started found");
-            return None;
-        };
-
         if SystemTime::now()
             >= UNIX_EPOCH
-                + Duration::from_secs(*start as u64)
+                + Duration::from_secs(start as u64)
                 + Duration::from_secs(PRE_GAME_TIMEOUT as u64)
         {
             tracing::debug!("Starting race");
@@ -89,7 +68,7 @@ mod test {
     use crate::models::{
         commands::Command,
         events::{Event, PlacedBet},
-        game_id::GameID,
+        game_code::GameCode,
         processors::Processor,
     };
 
@@ -102,7 +81,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,
@@ -132,7 +111,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,
@@ -174,7 +153,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,

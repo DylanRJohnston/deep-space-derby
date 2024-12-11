@@ -21,7 +21,9 @@ mod test {
     use im::Vector;
     use uuid::Uuid;
 
-    use crate::models::{commands::Command, events::Event, game_id::GameID, processors::Processor};
+    use crate::models::{
+        commands::Command, events::Event, game_code::GameCode, processors::Processor,
+    };
 
     use super::StartGame;
 
@@ -32,7 +34,7 @@ mod test {
 
         let mut events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,
@@ -57,7 +59,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,

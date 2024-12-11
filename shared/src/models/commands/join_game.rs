@@ -6,21 +6,21 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::models::{events::Event, game_id::GameID, projections};
+use crate::models::{events::Event, game_code::GameCode, projections};
 
-use super::{CommandHandler, GameCode, API};
+use super::{CommandHandler, HasGameCode, API};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Input {
     pub name: String,
-    pub code: GameID,
+    pub code: GameCode,
 }
 
 #[derive(Default)]
 pub struct JoinGame;
 
-impl GameCode for Input {
-    fn game_code(&self) -> GameID {
+impl HasGameCode for Input {
+    fn game_code(&self) -> GameCode {
         self.code
     }
 }

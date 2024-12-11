@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use http::StatusCode;
+use shared::models::game_code::GameCode;
 use tower::Service;
 
 #[derive(Debug)]
@@ -29,7 +30,17 @@ where
     }
 }
 
+pub struct GameRequest {
+    pub by: GameBy,
+    pub req: Request,
+}
+
+pub enum GameBy {
+    ID(String),
+    Code(GameCode),
+}
+
 pub trait GameService = where
     Self: Clone + Send + Sync + 'static,
-    Self: Service<(String, Request), Response = Response, Error = InternalServerError>,
-    <Self as Service<(String, Request)>>::Future: Send + 'static;
+    Self: Service<GameRequest, Response = Response, Error = InternalServerError>,
+    <Self as Service<GameRequest>>::Future: Send + 'static;

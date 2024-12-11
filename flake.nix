@@ -39,7 +39,7 @@
             set -o pipefail
 
             rm -rf site/*
-            cp -r assets/* site/
+            cp -r assets/. site/
             cp -r game/assets site/assets
 
             cargo build --target wasm32-unknown-unknown --no-default-features --release -p app  --lib        --features app/hydrate

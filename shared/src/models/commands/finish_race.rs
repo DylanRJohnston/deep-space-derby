@@ -23,7 +23,7 @@ impl CommandHandler for FinishRace {
             bail!("players may not finish the race");
         }
 
-        if !matches!(events.last(), Some(Event::RaceStarted { .. })) {
+        if projections::currently_racing(events).is_none() {
             bail!("race can only finish if its in progress");
         }
 
@@ -45,7 +45,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::models::{
-        commands::CommandHandler, events::Event, game_id::GameID, projections::RaceResults,
+        commands::CommandHandler, events::Event, game_code::GameCode, projections::RaceResults,
     };
 
     use super::FinishRace;
@@ -56,7 +56,7 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 session_id: player,
@@ -87,7 +87,7 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 session_id: player,
@@ -127,7 +127,7 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 session_id: player,

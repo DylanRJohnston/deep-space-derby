@@ -2,7 +2,9 @@ use std::{future::Future, time::Duration};
 
 use anyhow::Result;
 use im::Vector;
-use shared::models::{events::Event, game_id::GameID};
+use shared::models::events::Event;
+
+use super::game_service::GameBy;
 
 pub trait GameState: Clone + Send + 'static {
     type WebSocket;
@@ -18,5 +20,5 @@ pub trait GameDirectory: Clone + Send + Sync + 'static {
     type WebSocket;
     type GameState: GameState<WebSocket = Self::WebSocket>;
 
-    fn get(&self, game_id: GameID) -> impl Future<Output = Self::GameState> + Send;
+    fn get(&self, game_id: GameBy) -> impl Future<Output = Self::GameState> + Send;
 }

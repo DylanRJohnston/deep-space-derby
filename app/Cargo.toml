@@ -27,7 +27,7 @@ futures = "0.3.30"
 futures-util = { version = "0.3.28", default-features = false }
 gloo-net = "0.5.0"
 http = "1.1.0"
-im = "15.1.0"
+im = { version = "15.1.0", features = ["serde"] }
 js-sys = "0.3.67"
 leptos = { version = "0.6.10", default-features = false, features = [
   "nightly",

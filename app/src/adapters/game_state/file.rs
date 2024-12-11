@@ -1,19 +1,18 @@
-use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::{sync::Mutex, task::JoinHandle};
 
 use anyhow::Result;
 use axum::extract::ws::WebSocket;
 use shared::models::{
     events::{Event, EventStream},
-    game_id::GameID,
-    processors::run_processors,
+    game_code::GameCode,
 };
-use tracing::instrument;
 
 use crate::{
     adapters::event_log::file::FileEventLog,
     ports::{
         event_log::EventLog,
+        game_service::GameBy,
         game_state::{GameDirectory, GameState},
     },
 };
@@ -53,10 +52,10 @@ impl InnerGame {
 }
 
 impl Game {
-    fn from_game_id(game_id: GameID) -> Self {
+    fn from_game_code(game_code: GameCode) -> Self {
         Self {
             inner: Arc::new(Mutex::new(InnerGame {
-                events: FileEventLog::from_game_id(game_id),
+                events: FileEventLog::from_game_id(game_code),
                 sockets: vec![],
                 alarm: None,
             })),
@@ -66,7 +65,7 @@ impl Game {
 
 #[derive(Clone, Default)]
 pub struct FileGameDirectory {
-    inner: Arc<Mutex<HashMap<GameID, Game>>>,
+    inner: Arc<Mutex<HashMap<GameCode, Game>>>,
 }
 
 impl GameDirectory for FileGameDirectory {
@@ -74,12 +73,16 @@ impl GameDirectory for FileGameDirectory {
     type GameState = Game;
 
     // The lock on the hashmap is only held while we figure out if the game exists or not
-    async fn get(&self, game_id: GameID) -> Self::GameState {
+    async fn get(&self, game_id: GameBy) -> Self::GameState {
+        let GameBy::Code(game_id) = game_id else {
+            panic!("FileGameDirectory::get() called with GameBy::Code");
+        };
+
         self.inner
             .lock()
             .await
             .entry(game_id)
-            .or_insert_with(|| Game::from_game_id(game_id))
+            .or_insert_with(|| Game::from_game_code(game_id))
             .clone()
     }
 }

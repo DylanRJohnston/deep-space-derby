@@ -25,7 +25,7 @@ pub fn start(f: impl FnOnce(&mut App)) {
 
     #[cfg(not(target_arch = "wasm32"))]
     if let Some(game_id) = std::env::args().nth(1) {
-        let game_id = shared::models::game_id::GameID::try_from(game_id.as_str())
+        let game_id = shared::models::game_code::GameCode::try_from(game_id.as_str())
             .expect("failed to parse game_id");
         app.insert_resource(crate::plugins::event_stream::GameCode(game_id));
     }

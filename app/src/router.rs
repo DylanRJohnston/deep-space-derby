@@ -9,10 +9,12 @@ use crate::{
     app,
     handlers::{
         create_game::create_game,
-        forward_command::forward_command,
+        event_log::event_log,
+        forward_command::{forward_command_by_code, forward_command_by_id},
         join_game::join_game,
         on_connect::{on_connect, WebSocket},
         register_command::RegisterCommandExt,
+        wake_up::wake_up,
     },
     middleware::session_middleware,
     ports::{game_service::GameService, game_state::GameDirectory},
@@ -33,7 +35,11 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
         .route("/api/join_game", post(join_game::<S>))
         .route(
             "/api/object/game/by_code/:code/*command",
-            any(forward_command::<S>),
+            any(forward_command_by_code::<S>),
+        )
+        .route(
+            "/api/object/game/by_id/:game_id/*command",
+            any(forward_command_by_id::<S>),
         )
         .with_state(game_service)
         .leptos_routes(&leptos_options, generate_route_list(app::App), app::App)
@@ -50,6 +56,15 @@ pub fn into_game_router<G: GameDirectory<WebSocket = WebSocket>>(game: G) -> axu
         .route(
             "/api/object/game/by_code/:code/connect",
             get(on_connect::<G>),
+        )
+        .route("/api/object/game/by_code/:code/wake_up", post(wake_up::<G>))
+        .route(
+            "/api/object/game/by_code/:code/event_log",
+            get(event_log::<G>),
+        )
+        .route(
+            "/api/object/game/by_id/:game_id/event_log",
+            get(event_log::<G>),
         )
         .register_command_handler::<commands::CreateGame>()
         .register_command_handler::<commands::JoinGame>()

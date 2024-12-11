@@ -62,7 +62,7 @@ mod test {
     use crate::models::{
         commands::{change_profile, ChangeProfile, CommandHandler},
         events::Event,
-        game_id::GameID,
+        game_code::GameCode,
     };
 
     #[test]
@@ -72,7 +72,7 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 session_id: a,

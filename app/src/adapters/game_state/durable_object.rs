@@ -2,9 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Result;
 use im::Vector;
-use serde::de;
 use shared::models::events::{Event, EventStream};
-use shared::models::game_id::GameID;
 use shared::models::processors::{run_processors, Alarm};
 use shared::time::SystemTime;
 use tower::Service;
@@ -14,6 +12,7 @@ use worker_macros::send;
 
 use crate::adapters::event_log::durable_object::DurableObjectKeyValue;
 use crate::ports::event_log::EventLog;
+use crate::ports::game_service::GameBy;
 use crate::ports::game_state::{GameDirectory, GameState};
 use crate::router::into_game_router;
 
@@ -127,7 +126,7 @@ impl GameDirectory for Game {
     type WebSocket = WebSocket;
     type GameState = Game;
 
-    async fn get(&self, _: GameID) -> Self::GameState {
+    async fn get(&self, _: GameBy) -> Self::GameState {
         self.clone()
     }
 }

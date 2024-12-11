@@ -4,7 +4,7 @@ use im::Vector;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{events::Event, game_id::GameID};
+use super::{events::Event, game_code::GameCode};
 
 #[derive(Debug)]
 pub enum Effect {
@@ -31,8 +31,8 @@ pub trait API {
     }
 }
 
-pub trait GameCode {
-    fn game_code(&self) -> GameID;
+pub trait HasGameCode {
+    fn game_code(&self) -> GameCode;
 }
 
 pub mod create_game;

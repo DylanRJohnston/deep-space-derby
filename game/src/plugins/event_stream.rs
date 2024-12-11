@@ -4,7 +4,7 @@ use bevy::{prelude::*, utils::tracing};
 
 use crossbeam_channel::{Receiver, Sender};
 use im::Vector;
-use shared::models::{events::Event, events::EventStream, game_id::GameID};
+use shared::models::{events::Event, events::EventStream, game_code};
 
 pub struct EventStreamPlugin;
 
@@ -62,7 +62,7 @@ pub fn send_game_event(events: EventStream) -> Result<(), wasm_bindgen::JsError>
 }
 
 #[derive(Debug, Resource, Deref)]
-pub struct GameCode(pub GameID);
+pub struct GameCode(pub game_code::GameCode);
 
 #[cfg(not(target_arch = "wasm32"))]
 fn connect_to_server(game_code: Res<GameCode>) {

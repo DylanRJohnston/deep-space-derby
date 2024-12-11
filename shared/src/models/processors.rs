@@ -87,7 +87,7 @@ mod test {
     use crate::{
         models::{
             events::Event,
-            game_id::GameID,
+            game_code::GameCode,
             processors::{run_processors, Alarm},
         },
         test::init_tracing,
@@ -99,7 +99,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,
@@ -126,7 +126,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,
@@ -154,7 +154,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,
@@ -180,7 +180,7 @@ mod test {
 
         let events = Vector::from_iter([
             Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             },
             Event::PlayerJoined {
                 session_id: a,

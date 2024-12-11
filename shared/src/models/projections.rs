@@ -14,7 +14,7 @@ use rand::{
 use super::{
     cards::{Card, Target},
     events::{Event, Odds, OddsExt, PlacedBet},
-    game_id::GameID,
+    game_code::GameCode,
     monsters::Monster,
     processors::start_race::PRE_GAME_TIMEOUT,
 };
@@ -340,10 +340,10 @@ pub fn debt(events: &Vector<Event>, player_id: Uuid) -> u32 {
 }
 
 #[instrument(skip_all)]
-pub fn game_id(events: &Vector<Event>) -> GameID {
+pub fn game_id(events: &Vector<Event>) -> GameCode {
     match events.get(0) {
         Some(Event::GameCreated { game_id, .. }) => *game_id,
-        None => GameID::random(),
+        None => GameCode::random(),
         Some(event) => {
             tracing::error!(?event, "first event wasn't game_created");
             unreachable!()
@@ -914,6 +914,32 @@ pub fn victim_of_card(events: &Vector<Event>, player: Uuid) -> Option<(Card, Str
     }
 }
 
+// returns the Some(start time) of the race if its currently in progress, otherwise None
+pub fn currently_racing(events: &Vector<Event>) -> Option<u32> {
+    match events.iter().rev().find(|event| {
+        matches!(
+            event,
+            Event::RaceStarted { .. } | Event::RaceFinished { .. }
+        )
+    }) {
+        Some(Event::RaceStarted { time }) => Some(*time),
+        _ => None,
+    }
+}
+
+// returns the Some(start time) of the betting round if its currently in progress, otherwise None
+pub fn currently_betting(events: &Vector<Event>) -> Option<u32> {
+    match events.iter().rev().find(|event| {
+        matches!(
+            event,
+            Event::RoundStarted { .. } | Event::RaceStarted { .. }
+        )
+    }) {
+        Some(Event::RoundStarted { time, .. }) => Some(*time),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -923,7 +949,7 @@ mod tests {
     use crate::models::{
         cards::{Card, Target},
         events::{Event, PlacedBet},
-        game_id::GameID,
+        game_code::GameCode,
         projections::RaceResults,
     };
 
@@ -1412,7 +1438,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1472,7 +1498,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1512,7 +1538,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1561,7 +1587,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1601,7 +1627,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1650,7 +1676,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1679,7 +1705,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1712,7 +1738,7 @@ mod tests {
     #[test]
     fn drawing_a_card_is_deterministic() {
         let events = vector![Event::GameCreated {
-            game_id: GameID::random()
+            game_id: GameCode::random()
         }];
 
         assert_eq!(
@@ -1730,7 +1756,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1766,7 +1792,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::try_from("ABCDEF").unwrap()
+                game_id: GameCode::try_from("ABCDEF").unwrap()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1804,7 +1830,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::try_from("ABCDEF").unwrap()
+                game_id: GameCode::try_from("ABCDEF").unwrap()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1849,7 +1875,7 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameID::try_from("ABCDEF").unwrap()
+                game_id: GameCode::try_from("ABCDEF").unwrap()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -1904,7 +1930,7 @@ mod tests {
 
         let mut events = vector![
             Event::GameCreated {
-                game_id: GameID::random()
+                game_id: GameCode::random()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
@@ -2009,7 +2035,7 @@ mod tests {
 
         let mut events = Vector::from_iter(
             [Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             }]
             .into_iter()
             .chain(players.iter().clone().flat_map(|id| {
@@ -2067,7 +2093,7 @@ mod tests {
 
         let mut events = Vector::from_iter(
             [Event::GameCreated {
-                game_id: GameID::random(),
+                game_id: GameCode::random(),
             }]
             .into_iter()
             .chain(players.iter().clone().flat_map(|id| {

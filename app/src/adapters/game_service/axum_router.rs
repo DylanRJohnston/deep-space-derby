@@ -3,14 +3,14 @@ use std::{future::Future, task::Poll};
 use axum::{extract::Request, response::Response, Router};
 use tower::Service;
 
-use crate::ports::game_service::InternalServerError;
+use crate::ports::game_service::{GameRequest, InternalServerError};
 
 #[derive(Clone)]
 pub struct AxumGameService {
     pub router: Router,
 }
 
-impl Service<(String, Request)> for AxumGameService {
+impl Service<GameRequest> for AxumGameService {
     type Response = Response;
 
     type Error = InternalServerError;
@@ -21,7 +21,7 @@ impl Service<(String, Request)> for AxumGameService {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, (_game_id, req): (String, Request)) -> Self::Future {
+    fn call(&mut self, GameRequest { req, .. }: GameRequest) -> Self::Future {
         let router = self.router.clone();
 
         async move { Ok(router.clone().call(req).await?) }

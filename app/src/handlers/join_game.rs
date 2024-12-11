@@ -1,4 +1,4 @@
-use crate::ports::game_service::{GameService, InternalServerError};
+use crate::ports::game_service::{GameBy, GameRequest, GameService, InternalServerError};
 use axum::{
     extract::{Request, State},
     http::header::HeaderMap,
@@ -25,7 +25,12 @@ pub async fn join_game<G: GameService>(
 
     let req = req.body(serde_json::to_string(&join_game)?.into())?;
 
-    let response = game_service.call((join_game.code.to_string(), req)).await?;
+    let response = game_service
+        .call(GameRequest {
+            by: GameBy::Code(join_game.code),
+            req,
+        })
+        .await?;
 
     if response.status() != 200 {
         tracing::error!(status = ?response.status(), "non-200 received from game");

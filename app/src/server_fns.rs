@@ -1,11 +1,11 @@
 use leptos::ServerFnError;
 use shared::models::commands::{CommandHandler, API};
-use shared::models::game_id::GameID;
+use shared::models::game_code::GameCode;
 use std::future::Future;
 
 #[cfg(not(feature = "ssr"))]
 pub fn server_fn<C: CommandHandler + API>(
-    game_id: GameID,
+    game_id: GameCode,
     input: &C::Input,
 ) -> impl Future<Output = Result<(), ServerFnError>> {
     use gloo_net::http::Request;
@@ -33,7 +33,7 @@ pub fn server_fn<C: CommandHandler + API>(
 #[cfg(feature = "ssr")]
 #[allow(unused_variables)]
 pub fn server_fn<C: CommandHandler + API>(
-    game_id: GameID,
+    game_id: GameCode,
     input: &C::Input,
 ) -> impl Future<Output = Result<(), ServerFnError>> + 'static {
     async { std::future::pending().await }

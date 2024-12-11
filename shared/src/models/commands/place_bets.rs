@@ -42,6 +42,10 @@ impl CommandHandler for PlaceBets {
             bail!("cannot place a bet if the game hasn't started");
         }
 
+        if projections::currently_betting(events).is_none() {
+            bail!("cannot place a bet if betting is not in progress");
+        }
+
         if input.bets.iter().any(|it| it.amount < 0) {
             bail!("cannot place a bet with a value less than 0");
         }

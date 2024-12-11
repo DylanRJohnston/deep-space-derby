@@ -2,7 +2,7 @@ use im::vector::Vector;
 use leptos::{provide_context, use_context, ReadSignal, Signal};
 use shared::models::{
     events::{Event, EventStream},
-    game_id::GameID,
+    game_code::GameCode,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,7 +39,9 @@ async fn sleep(ms: i32) {
 }
 
 #[cfg(feature = "hydrate")]
-pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
+pub fn create_event_signal(
+    game_id: GameCode,
+) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
     use futures_util::StreamExt;
     use gloo_net::websocket::{futures::WebSocket, Message};
     use leptos::{server_fn::error::NoCustomError, *};
@@ -119,7 +121,9 @@ pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSign
 
 #[cfg(feature = "ssr")]
 #[allow(unused_variables)]
-pub fn create_event_signal(game_id: GameID) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
+pub fn create_event_signal(
+    game_id: GameCode,
+) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
     use leptos::create_signal;
 
     let (connection, _) = create_signal(Connection::Connecting);
