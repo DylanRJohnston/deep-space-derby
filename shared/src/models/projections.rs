@@ -13,7 +13,7 @@ use rand::{
 
 use super::{
     cards::{Card, Target},
-    events::{Event, Odds, OddsExt, PlacedBet},
+    events::{Event, Odds, PlacedBet},
     game_code::GameCode,
     monsters::Monster,
     processors::start_race::PRE_GAME_TIMEOUT,
@@ -166,11 +166,11 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     true
 }
 
+pub const INFLATION_FACTOR: i32 = 110;
+
 pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
     let mut accounts = OrdMap::<Uuid, i32>::new();
     let mut bets = Vector::new();
-
-    let mut maybe_odds = None;
 
     for event in events {
         match event {
@@ -193,28 +193,36 @@ pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
                     .and_modify(|balance| *balance -= *amount as i32);
             }
             Event::PlacedBet(bet) => {
-                bets.push_back(bet);
+                bets.push_back(*bet);
                 accounts
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
-            }
-            Event::RoundStarted { odds, .. } => {
-                maybe_odds = *odds;
             }
             Event::RaceFinished {
                 results: RaceResults { first, .. },
                 ..
             } => {
+                let total_losses = bets
+                    .iter()
+                    .copied()
+                    .filter(|bet| bet.monster_id != *first)
+                    .fold(0, |total, bet| total + bet.amount);
+
+                let total_wins = bets
+                    .iter()
+                    .copied()
+                    .filter(|bet| bet.monster_id == *first)
+                    .fold(0, |total, bet| total + bet.amount);
+
                 bets.iter()
                     .filter(|bet| bet.monster_id == *first)
                     .for_each(|bet| {
                         let balance = accounts.entry(bet.session_id).or_default();
 
-                        let payout = maybe_odds.payout(bet.monster_id);
+                        let amount = bet.amount
+                            + INFLATION_FACTOR * bet.amount * total_losses / total_wins / 100;
 
-                        *balance += (payout * (bet.amount as f32)) as i32;
-
-                        tracing::info!(?bet.amount, ?payout, ?balance);
+                        *balance += amount;
                     });
 
                 bets.clear();
@@ -229,7 +237,6 @@ pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
                     "Theft card cannot be played on self"
                 );
 
-                // We verified above that target and source are disjoint keys so it's safe to take two mutable references
                 let target = accounts.get(target_uuid).copied().unwrap_or_default();
                 let source = accounts.get(source_uuid).copied().unwrap_or_default();
 
@@ -280,10 +287,12 @@ pub fn last_round(events: &Vector<Event>) -> Option<Vector<Event>> {
     Some(events.clone().slice(start..=end))
 }
 
+// TODO: There's an awkward duplication of logic here between this and `all_account_balances`
+// Unfortunately, there's slightly different with winnings ignoring the original bet but all_account_balances
+// needing to restore the original bet amount to the wallet
 pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
     let mut winnings = OrdMap::new();
     let mut bets = Vec::new();
-    let odds = pre_computed_odds(events);
 
     for event in events {
         match event {
@@ -294,15 +303,33 @@ pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
             Event::PlacedBet(bet) => {
                 bets.push(*bet);
             }
-            Event::RaceFinished { results, .. } => {
-                for bet in bets.iter() {
-                    *winnings.entry(bet.session_id).or_default() +=
-                        if bet.monster_id == results.first {
-                            ((odds.payout(bet.monster_id) - 1.0) * (bet.amount as f32)) as i32
-                        } else {
-                            -1 * bet.amount
-                        }
-                }
+            Event::RaceFinished {
+                results: RaceResults { first, .. },
+                ..
+            } => {
+                let total_losses = bets
+                    .iter()
+                    .copied()
+                    .filter(|bet| bet.monster_id != *first)
+                    .fold(0, |total, bet| total + bet.amount);
+
+                let total_wins = bets
+                    .iter()
+                    .copied()
+                    .filter(|bet| bet.monster_id == *first)
+                    .fold(0, |total, bet| total + bet.amount);
+
+                bets.iter().for_each(|bet| {
+                    let balance = winnings.entry(bet.session_id).or_default();
+
+                    let amount = if bet.monster_id == *first {
+                        INFLATION_FACTOR * bet.amount * total_losses / total_wins / 100
+                    } else {
+                        -bet.amount
+                    };
+
+                    *balance += amount;
+                });
             }
             _ => {}
         }
@@ -953,7 +980,7 @@ mod tests {
         projections::RaceResults,
     };
 
-    use super::all_account_balances;
+    use super::{all_account_balances, INFLATION_FACTOR};
 
     use super::{race, MONSTERS};
     use quickcheck_macros::quickcheck;
@@ -1224,7 +1251,7 @@ mod tests {
 
         assert_eq!(
             accounts,
-            [(alice, 1400), (bob, 500)]
+            [(alice, 1550), (bob, 500)]
                 .into_iter()
                 .collect::<OrdMap<Uuid, i32>>()
         )
@@ -1312,7 +1339,7 @@ mod tests {
 
         assert_eq!(
             accounts,
-            [(alice, 1100), (bob, 2100)]
+            [(alice, 1250), (bob, 830)]
                 .into_iter()
                 .collect::<OrdMap<Uuid, i32>>()
         )
@@ -1420,7 +1447,7 @@ mod tests {
 
         assert_eq!(
             accounts,
-            [(alice, 1100), (bob, 1800)]
+            [(alice, 1250), (bob, 730)]
                 .into_iter()
                 .collect::<OrdMap<Uuid, i32>>()
         )
@@ -1486,7 +1513,7 @@ mod tests {
 
         assert_eq!(
             winnings,
-            OrdMap::from([(alice, 100), (bob, 200), (carol, -100)].as_ref())
+            OrdMap::from([(alice, 10), (bob, 110), (carol, -100)].as_ref())
         );
     }
 
@@ -2130,5 +2157,154 @@ mod tests {
             super::can_play_more_cards(&events, players[1]),
             "Other players playing cards should not affect other players ability to play cards"
         );
+    }
+
+    #[test]
+    fn winnings_proportional_to_loss() {
+        init_tracing();
+
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+        let carol = Uuid::new_v4();
+
+        let monster_a = Uuid::new_v4();
+        let monster_b = Uuid::new_v4();
+        let monster_c = Uuid::new_v4();
+
+        let bets: [(&str, &[(Uuid, Uuid, i32)], [(Uuid, i32); 3]); 5] = [
+            (
+                "winner takes all",
+                &[
+                    (alice, monster_a, 100),
+                    (bob, monster_b, 200),
+                    (carol, monster_c, 300),
+                ],
+                [
+                    (alice, INFLATION_FACTOR * 500 / 100),
+                    (bob, -200),
+                    (carol, -300),
+                ],
+            ),
+            (
+                "winnings split proportionally",
+                &[
+                    (alice, monster_a, 100),
+                    (bob, monster_a, 200),
+                    (carol, monster_c, 300),
+                ],
+                [
+                    (alice, INFLATION_FACTOR * 100 / 100),
+                    (bob, INFLATION_FACTOR * 200 / 100),
+                    (carol, -300),
+                ],
+            ),
+            (
+                "bet nothing win nothing",
+                &[
+                    (alice, monster_a, 0),
+                    (bob, monster_a, 200),
+                    (carol, monster_c, 300),
+                ],
+                [
+                    (alice, 0),
+                    (bob, INFLATION_FACTOR * 300 / 100),
+                    (carol, -300),
+                ],
+            ),
+            (
+                "win some, loose some",
+                &[
+                    (alice, monster_a, 100),
+                    (alice, monster_b, 100),
+                    (bob, monster_a, 100),
+                    (carol, monster_c, 300),
+                ],
+                // A weird consequence of this means you win back some of the money you lost
+                [
+                    (alice, -100 + INFLATION_FACTOR * 200 / 100),
+                    (bob, INFLATION_FACTOR * 200 / 100),
+                    (carol, -300),
+                ],
+            ),
+            (
+                "infinite money glitch",
+                &[
+                    (alice, monster_a, 1),
+                    (alice, monster_b, 1000),
+                    (bob, monster_c, 0),
+                    (carol, monster_c, 0),
+                ],
+                // The inflation factor means if you're the only one loosing and winning, you win back more than you lost
+                [
+                    (alice, -1000 + INFLATION_FACTOR * 1000 / 100),
+                    (bob, 0),
+                    (carol, 0),
+                ],
+            ),
+        ];
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: GameCode::random()
+            },
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice
+            },
+            Event::PlayerJoined {
+                name: "Bob".into(),
+                session_id: bob
+            },
+            Event::PlayerJoined {
+                name: "Carol".into(),
+                session_id: carol
+            },
+            Event::PlayerReady { session_id: alice },
+            Event::PlayerReady { session_id: bob },
+            Event::PlayerReady { session_id: carol },
+            Event::RoundStarted {
+                time: 0,
+                odds: None
+            }
+        ];
+
+        for (name, bets, results) in bets {
+            let mut events = events.clone();
+
+            for (session_id, monster_id, amount) in bets.iter().copied() {
+                events.push_back(Event::PlacedBet(PlacedBet {
+                    session_id,
+                    monster_id,
+                    amount,
+                }));
+            }
+
+            events.push_back(Event::RaceStarted { time: 0 });
+            events.push_back(Event::RaceFinished {
+                time: 0,
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                },
+            });
+
+            let accounts = super::all_account_balances(&events);
+            let winnings = super::winnings(&events);
+
+            for (session_id, expected_winnings) in results {
+                assert_eq!(
+                    1000 + expected_winnings,
+                    accounts[&session_id],
+                    "account balance: {}",
+                    name
+                );
+                assert_eq!(
+                    expected_winnings, winnings[&session_id],
+                    "winnings: {}",
+                    name
+                );
+            }
+        }
     }
 }

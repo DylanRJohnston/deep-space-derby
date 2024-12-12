@@ -22,31 +22,30 @@ impl Stat {
 #[component]
 fn stat_row(stat: Stat, value: i32) -> impl IntoView {
     view! {
-        <div class="monster-stats-row">
-            <p
-                class:font-dexterity=stat == Stat::Dexterity
-                class:font-strength=stat == Stat::Strength
-            >
-                {stat.name()}
-                ":"
-            </p>
-            <div class="stat-bar-container">
+        <p
+            class="monster-stats-row"
+            class:font-dexterity=stat == Stat::Dexterity
+            class:font-strength=stat == Stat::Strength
+        >
+            {stat.name()}
+            ":"
+        </p>
+        <div class="stat-bar-container">
 
-                {(1..=value)
-                    .map(|i| {
-                        view! {
-                            <div
-                                class="stat-notch"
-                                class:stat-dexterity=stat == Stat::Dexterity
-                                class:stat-strength=stat == Stat::Strength
-                            >
-                                {if i == value { value.into_view() } else { "".into_view() }}
-                            </div>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
+            {(1..=value)
+                .map(|i| {
+                    view! {
+                        <div
+                            class="stat-notch"
+                            class:stat-dexterity=stat == Stat::Dexterity
+                            class:stat-strength=stat == Stat::Strength
+                        >
+                            {if i == value { value.into_view() } else { "".into_view() }}
+                        </div>
+                    }
+                })
+                .collect::<Vec<_>>()}
 
-            </div>
         </div>
     }
 }
@@ -106,10 +105,11 @@ pub fn pre_game() -> impl IntoView {
             <For each=monsters key=|it| it.monster.uuid let:data>
                 <div class="monster-stats-container">
                     <h1>{data.monster.name}</h1>
-                    <div class="monster-stats-row space-between odds-row">
-                        <p>"Odds: " <span>{format!("{:.0}", data.odds)} "%"</span></p>
-                        <p>"Payout: " <span>{format!("{:.2}", data.payout)} "x"</span></p>
-                    </div>
+                    <p class="odds">"Odds: "</p>
+                    <p class="odds" style="text-align: left;">
+                        {format!("{:.0}", data.odds)}
+                        "%"
+                    </p>
                     <StatRow stat=Stat::Dexterity value=data.monster.dexterity/>
                     <StatRow stat=Stat::Strength value=data.monster.strength/>
                 </div>

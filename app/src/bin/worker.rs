@@ -33,8 +33,8 @@ pub fn start() {
     console_error_panic_hook::set_once();
 
     tracing_subscriber::fmt()
-        .pretty()
         .with_writer(ConsoleWriter::default)
+        .with_ansi(false)
         .without_time()
         .init();
 

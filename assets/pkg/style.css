@@ -745,8 +745,8 @@ input[type="number"] {
 
   grid-row: 3;
 
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: max-content 1fr;
   padding: 16px;
   align-items: stretch;
   border-radius: 16px;
@@ -763,6 +763,7 @@ input[type="number"] {
 }
 
 .monster-stats-container > h1 {
+  grid-column: span 2;
   font-size: 4em;
   margin-bottom: 0.1em;
   color: #3167ba;
@@ -781,14 +782,12 @@ input[type="number"] {
   -webkit-text-stroke: 2px #444;
 }
 
-.odds-row {
+.odds {
   color: #ffbf00;
   margin-bottom: 0.5em;
   font-size: 32px;
-}
-
-.odds-row span {
-  color: #ffbf00;
+  -webkit-text-stroke: 2px #444;
+  text-align: right;
 }
 
 .space-between {
@@ -796,15 +795,14 @@ input[type="number"] {
 }
 
 .stat-bar-container {
-  width: 75%;
   position: relative;
   display: flex;
   gap: 1%;
 }
 
 .stat-notch {
-  height: 28px;
-  width: 9%;
+  height: 32px;
+  aspect-ratio: 1;
 
   border-radius: 8px;
 
@@ -828,17 +826,13 @@ input[type="number"] {
 .font-dexterity {
   font-style: bold;
   color: #78d631;
-  width: 200px;
   text-align: right;
-  padding-right: 0.75em;
 }
 
 .font-strength {
   font-style: bold;
   color: #ff3627;
-  width: 200px;
   text-align: right;
-  padding-right: 0.75em;
 }
 
 .host-results-container {

@@ -80,7 +80,7 @@ pub const MONSTERS: [Monster; 9] = [
         ..Monster::DEFAULT
     },
     Monster {
-        name: "Gallus Cranium",
+        name: "Cranius",
         uuid: Uuid::from_u128(0x73c68289e1334859a0f4e45883076e10u128),
         blueprint_name: "library/Monster_Pink_Slime.glb",
         dexterity: 10,
@@ -91,16 +91,16 @@ pub const MONSTERS: [Monster; 9] = [
         name: "Cluckerhead",
         uuid: Uuid::from_u128(0x9f987f8ff320446e8930740aca46954fu128),
         blueprint_name: "library/Monster_Chicken.glb",
-        dexterity: 7,
-        strength: 2,
+        dexterity: 6,
+        strength: 3,
         ..Monster::DEFAULT
     },
     Monster {
         name: "Fangmaw",
         uuid: Uuid::from_u128(0xb4775b5b2e1f42debe985d3d7890db0du128),
         blueprint_name: "library/Monster_Yeti.glb",
-        dexterity: 8,
-        strength: 1,
+        dexterity: 5,
+        strength: 5,
         ..Monster::DEFAULT
     },
 ];
