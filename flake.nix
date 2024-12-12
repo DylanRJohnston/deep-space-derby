@@ -30,9 +30,21 @@
         toolchain = pkgs.rust-bin.nightly.latest.complete.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
+
+        cargo-llvm-cov = let
+          src = pkgs.fetchzip {
+            url =
+              "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.14/cargo-llvm-cov-aarch64-apple-darwin.tar.gz";
+            hash = "sha256-Gs621B/BcPYnmYHDBJofryugLuFoefPhfPKnacafH38=";
+          };
+        in pkgs.runCommand "cargo-llvm-cov" { } ''
+          mkdir -p $out/bin
+          ${pkgs.tree}/bin/tree
+          cp ${src}/cargo-llvm-cov $out/bin/cargo-llvm-cov
+        '';
       in rec {
         packages = {
-          build-site = pkgs.writeShellScriptBin "site" ''
+          build-site = pkgs.writeShellScriptBin "build-site" ''
             set -x
             set -o nounset
             set -o errexit
@@ -60,8 +72,7 @@
 
             ${packages.build-site}/bin/build-site
 
-            wrangler deploy site/_worker.js
-            wrangler pages deploy --project-name deep-space-derby site
+            wrangler deploy
           '';
 
           dev-clean = pkgs.writeShellScriptBin "dev-clean" ''
@@ -182,6 +193,10 @@
               dev
               dev-wrangler
               binaryen
+              build-site
+              deploy-site
+              cargo-llvm-cov
+              llvmPackages.bintools-unwrapped
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
