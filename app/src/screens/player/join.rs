@@ -1,19 +1,19 @@
-use leptos::*;
-use leptos_router::*;
+use leptos::prelude::*;
+use leptos_router::{components::Form, hooks::use_query_map};
 
 use crate::components::molecules::TextInput;
 
 #[component]
 pub fn join() -> impl IntoView {
     let param_map = use_query_map();
-    let game_id = param_map.get_untracked().get("code").cloned();
+    let game_id = param_map.get_untracked().get("code");
 
     view! {
         <div class="vertical-stack container full-height">
             <div class="headroom"></div>
             <h1>"Join a game"</h1>
             <div class="placeholder-image">"Image"</div>
-            <Form action="/api/join_game" method="POST" class="vertical-stack">
+            <Form action="/api/join_game" method="POST" attr:class="vertical-stack">
                 <TextInput
                     id="code"
                     name="Lobby Code"

@@ -43,7 +43,7 @@
     "CARGO_TARGET_DIR": "target/rust-analyzer"
   },
   "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"]
-  "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
-  "rust-analyzer.cargo.noDefaultFeatures": true,
-  "rust-analyzer.cargo.features": ["app/ssr"]
+  // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+  // "rust-analyzer.cargo.noDefaultFeatures": true,
+  // "rust-analyzer.cargo.features": ["app/ssr"]
 }

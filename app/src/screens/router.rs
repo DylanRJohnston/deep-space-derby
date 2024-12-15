@@ -1,5 +1,8 @@
-use leptos::*;
-use leptos_router::{Route, Router as LeptosRouter, Routes};
+use leptos::prelude::*;
+use leptos_router::{
+    components::{Route, Router as LeptosRouter, Routes},
+    ParamSegment, StaticSegment,
+};
 
 use crate::{
     screens::{game_wrapper::GameConnectionWrapper, host, main_menu::MainMenu, player},
@@ -14,7 +17,7 @@ use shared::models::{
 pub fn send_events_to_bevy() -> impl IntoView {
     let events = use_events();
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         let events = events();
 
         // This is really inefficient sending the entire event
@@ -27,10 +30,10 @@ pub fn send_events_to_bevy() -> impl IntoView {
 pub fn router() -> impl IntoView {
     view! {
         <LeptosRouter>
-            <Routes>
-                <Route path="/" view=MainMenu/>
+            <Routes fallback=move || ()>
+                <Route path=StaticSegment("") view=MainMenu/>
                 <Route
-                    path="/host/:game_id"
+                    path=(StaticSegment("host"), ParamSegment("game_id"))
                     view=|| {
                         view! {
                             <script type="module">
@@ -62,10 +65,9 @@ pub fn router() -> impl IntoView {
                     }
                 />
 
-                <Route path="/play" view=player::Join/>
+                <Route path=StaticSegment("play") view=player::Join/>
                 <Route
-                    path="/play/:game_id"
-
+                    path=(StaticSegment("play"), ParamSegment("game_id"))
                     view=|| {
                         view! {
                             <GameConnectionWrapper>
@@ -118,21 +120,21 @@ pub fn game_state_router<
     summary: Summary,
 ) -> impl IntoView
 where
-    Lobby: Fn() -> LobbyIV + 'static,
+    Lobby: Fn() -> LobbyIV + Send + 'static,
     LobbyIV: IntoView + 'static,
-    PreGame: Fn() -> PreGameIV + 'static,
+    PreGame: Fn() -> PreGameIV + Send + 'static,
     PreGameIV: IntoView + 'static,
-    Race: Fn() -> RaceIV + 'static,
+    Race: Fn() -> RaceIV + Send + 'static,
     RaceIV: IntoView + 'static,
-    Wait: Fn() -> WaitIV + 'static,
+    Wait: Fn() -> WaitIV + Send + 'static,
     WaitIV: IntoView + 'static,
-    Summary: Fn() -> SummaryIV + 'static,
+    Summary: Fn() -> SummaryIV + Send + 'static,
     SummaryIV: IntoView + 'static,
 {
     let events = use_events();
     let player_id = use_session_id();
 
-    let state = create_memo(move |_| {
+    let state = Memo::new(move |_| {
         let events = events();
 
         let mut game_state = events
@@ -156,10 +158,10 @@ where
     });
 
     move || match state() {
-        GameState::Lobby => lobby().into_view(),
-        GameState::PreGame => pre_game().into_view(),
-        GameState::Race => race().into_view(),
-        GameState::Wait => wait().into_view(),
-        GameState::Summary | GameState::FinalScreen => summary().into_view(),
+        GameState::Lobby => lobby().into_any(),
+        GameState::PreGame => pre_game().into_any(),
+        GameState::Race => race().into_any(),
+        GameState::Wait => wait().into_any(),
+        GameState::Summary | GameState::FinalScreen => summary().into_any(),
     }
 }

@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::app;
-use leptos::{leptos_dom::logging::console_log, mount_to_body};
+use leptos::{logging::log, prelude::*};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -9,7 +9,7 @@ pub struct ConsoleWriter(Vec<u8>);
 
 impl io::Write for ConsoleWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        console_log(std::str::from_utf8(buf).unwrap());
+        log!("{}", std::str::from_utf8(buf).unwrap());
 
         Ok(buf.len())
     }
@@ -31,5 +31,5 @@ pub fn hydrate() {
         .without_time()
         .init();
 
-    mount_to_body(app::App);
+    hydrate_body(app::App);
 }

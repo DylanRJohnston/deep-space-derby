@@ -1,12 +1,12 @@
 use std::{net::SocketAddr, str::FromStr};
 
 use axum::routing::{any, get, post};
-use leptos::{leptos_config, LeptosOptions};
+use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use shared::models::commands;
 
 use crate::{
-    app,
+    app::{self, shell},
     handlers::{
         create_game::create_game,
         event_log::event_log,
@@ -25,10 +25,12 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
         .output_name("index")
         .site_root("site")
         .site_pkg_dir("pkg")
-        .env(leptos_config::Env::DEV)
+        .env(Env::DEV)
         .site_addr(SocketAddr::from_str("127.0.0.1:8788").unwrap())
         .reload_port(3001)
         .build();
+
+    let leptos_routes = generate_route_list(app::App);
 
     let router = axum::Router::new()
         .route("/api/create_game", post(create_game::<S>))
@@ -42,11 +44,15 @@ pub fn into_outer_router<S: GameService>(game_service: S) -> axum::Router {
             any(forward_command_by_id::<S>),
         )
         .with_state(game_service)
-        .leptos_routes(&leptos_options, generate_route_list(app::App), app::App)
+        .leptos_routes(&leptos_options, leptos_routes, {
+            let leptos_options = leptos_options.clone();
+
+            move || shell(leptos_options.clone())
+        })
         .layer(axum::middleware::from_fn(session_middleware));
 
     #[cfg(not(target_arch = "wasm32"))]
-    let router = router.fallback(crate::serve_files::file_and_error_handler);
+    let router = router.fallback(leptos_axum::file_and_error_handler(shell));
 
     router.with_state(leptos_options)
 }

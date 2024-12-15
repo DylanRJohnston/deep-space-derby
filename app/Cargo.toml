@@ -7,15 +7,15 @@ version = "0.1.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-anyhow = "1.0.86"
-async-trait = "0.1.79"
+anyhow = "1.0"
+async-trait = "0.1"
 axum = { version = "0.7", default-features = false, optional = true, features = [
   "macros",
   "form",
   "json",
   "original-uri",
 ] }
-axum-extra = { version = "0.9.3", default-features = false, optional = true, features = [
+axum-extra = { version = "0.9", default-features = false, optional = true, features = [
   "cookie",
   "tracing",
 ] }
@@ -29,17 +29,13 @@ gloo-net = "0.5.0"
 http = "1.1.0"
 im = { version = "15.1.0", features = ["serde"] }
 js-sys = "0.3.67"
-leptos = { version = "0.6.10", default-features = false, features = [
+leptos = { version = "0.7", default-features = false, features = ["nightly"] }
+leptos_axum = { version = "0.7", default-features = false, optional = true }
+leptos_meta = { version = "0.7", default-features = false, features = [] }
+leptos_router = { version = "0.7", default-features = false, features = [
   "nightly",
 ] }
-leptos_axum = { version = "0.6.10", default-features = false, optional = true }
-leptos_meta = { version = "0.6.10", default-features = false, features = [
-  "nightly",
-] }
-leptos_router = { version = "0.6.10", default-features = false, features = [
-  "nightly",
-] }
-leptos-use = "0.10.6"
+leptos-use = "0.14"
 macros = { path = "../macros" }
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
@@ -77,7 +73,7 @@ native = [
   "tower-http/fs",
   "tower-http/trace",
 ]
-hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+hydrate = ["leptos/hydrate"]
 ssr = [
   "dep:axum",
   "dep:axum-extra",

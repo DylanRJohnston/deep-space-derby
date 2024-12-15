@@ -1,4 +1,4 @@
-use leptos::*;
+use leptos::{either::Either, prelude::*};
 use leptos_use::{use_interval, UseIntervalReturn};
 use shared::models::{events::OddsExt, monsters::Monster, projections};
 
@@ -40,7 +40,12 @@ fn stat_row(stat: Stat, value: i32) -> impl IntoView {
                             class:stat-dexterity=stat == Stat::Dexterity
                             class:stat-strength=stat == Stat::Strength
                         >
-                            {if i == value { value.into_view() } else { "".into_view() }}
+                            {if i == value {
+                                Either::Left(value.into_view())
+                            } else {
+                                Either::Right("".into_view())
+                            }}
+
                         </div>
                     }
                 })

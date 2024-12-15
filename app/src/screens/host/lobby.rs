@@ -1,4 +1,5 @@
-use leptos::*;
+use leptos::prelude::*;
+use leptos_router::location::Url;
 use shared::models::projections;
 
 use crate::utils::{use_events, use_game_id};
@@ -13,7 +14,7 @@ pub fn lobby() -> impl IntoView {
 
     let url = format!("https://{host}/play?code={game_id}");
     // let url = format!("https://192.168.2.1:8788/play?code={game_id}");
-    let url = leptos_router::escape(&url);
+    let url = Url::escape(&url);
     let url = format!(
         "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={url}&color=fff&bgcolor=000"
     );

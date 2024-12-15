@@ -1,9 +1,9 @@
 use std::cmp::{max, min};
 
-use ev::MouseEvent;
-use leptos::*;
+use leptos::{either::Either, prelude::*};
 use leptos_use::use_scroll;
 use uuid::Uuid;
+use web_sys::MouseEvent;
 
 use crate::{
     server_fns::server_fn,
@@ -78,29 +78,28 @@ pub fn pre_game() -> impl IntoView {
     let monsters =
         projections::monsters(&untracked_events, projections::race_seed(&untracked_events));
 
-    let account_balance = (move || {
+    let account_balance = Signal::derive(move || {
         projections::all_account_balances(&events())
             .get(&player_id)
             .copied()
             .unwrap_or_default()
-    })
-    .into_signal();
+    });
 
     let bets = {
         monsters.map(|Monster { name, uuid, .. }| Bet {
             name,
             monster_id: uuid,
-            amount: create_rw_signal(0),
+            amount: RwSignal::new(0),
         })
     };
 
-    let debt = move || projections::debt(&events(), player_id);
+    let debt = Signal::derive(move || projections::debt(&events(), player_id));
 
     let sum_of_bets = Signal::derive(move || bets.iter().map(|bet| (bet.amount)()).sum::<i32>());
 
     let available_money = Signal::derive(move || max(account_balance() - sum_of_bets(), 0));
 
-    let place_bets = create_action({
+    let place_bets = Action::new({
         move |_: &()| {
             server_fn::<PlaceBets>(
                 game_id,
@@ -121,14 +120,14 @@ pub fn pre_game() -> impl IntoView {
         }
     });
 
-    let placed_bets = create_memo(move |_| {
+    let placed_bets = Memo::new(move |_| {
         projections::placed_bets(&events())
             .get(&player_id)
             .cloned()
             .unwrap_or_default()
     });
 
-    create_effect({
+    Effect::new({
         move |_| {
             let placed_bets = placed_bets();
 
@@ -147,7 +146,7 @@ pub fn pre_game() -> impl IntoView {
     });
 
     let new_modal = || {
-        let (read, write) = create_signal(false);
+        let (read, write) = signal(false);
 
         (read, move || write(!read()))
     };
@@ -157,8 +156,8 @@ pub fn pre_game() -> impl IntoView {
     let (card_modal, toggle_card_modal) = new_modal();
 
     // TODO: Fix this, it causes the modal to pop up during re-hydration of the event stream
-    let (victim_modal, set_victim_modal) = create_signal(None);
-    create_effect(move |_| {
+    let (victim_modal, set_victim_modal) = signal(None);
+    Effect::new(move |_| {
         if let Some((card, perpetrator)) = projections::victim_of_card(&events(), player_id) {
             set_victim_modal(Some((card, perpetrator)))
         }
@@ -166,7 +165,7 @@ pub fn pre_game() -> impl IntoView {
 
     let cards = move || projections::cards_in_hand(&events(), player_id);
 
-    let buy_card = create_action(move |input| server_fn::<BuyCard>(game_id, input));
+    let buy_card = Action::new(move |input| server_fn::<BuyCard>(game_id, input));
     let cards_disabled =
         Signal::derive(move || !projections::can_play_more_cards(&events(), player_id));
 
@@ -195,7 +194,10 @@ pub fn pre_game() -> impl IntoView {
                     </div>
                     <button
                         class="action"
-                        on:click=move |_| buy_card.dispatch(())
+                        on:click=move |_| {
+                            buy_card.dispatch(());
+                        }
+
                         disabled=move || (cards().len() >= 5)
                     >
                         <p>"Buy a card"</p>
@@ -251,13 +253,19 @@ pub fn pre_game() -> impl IntoView {
                     }
                 />
 
-                <button class="action confirm-bets" on:click=move |_| place_bets.dispatch(())>
+                <button
+                    class="action confirm-bets"
+                    on:click=move |_| {
+                        place_bets.dispatch(());
+                    }
+                >
+
                     "Confirm bets"
                 </button>
             </div>
         </Show>
         <Show when=move || loan_modal() && victim_modal().is_none() fallback=|| view! {}>
-            <LoanModal debt=debt.into_signal() account_balance close=toggle_loan_modal/>
+            <LoanModal debt=debt account_balance close=toggle_loan_modal/>
         </Show>
         <Show when=move || card_modal() && victim_modal().is_none() fallback=|| view! {}>
             <CardModal close=toggle_card_modal/>
@@ -273,7 +281,7 @@ pub fn pre_game() -> impl IntoView {
 
 #[component]
 fn loan_modal(
-    close: impl Fn() + Copy + 'static,
+    close: impl Fn() + Copy + Send + Sync + 'static,
     debt: Signal<u32>,
     account_balance: Signal<i32>,
 ) -> impl IntoView {
@@ -285,7 +293,7 @@ fn loan_modal(
     let maximum_debt = move || projections::maximum_debt(&events());
 
     let (borrow, set_borrow) = {
-        let (read, write) = create_signal(0);
+        let (read, write) = signal(0);
 
         (read, move |amount: i32| {
             write(i32::clamp(
@@ -296,8 +304,8 @@ fn loan_modal(
         })
     };
 
-    let increment = move |_: MouseEvent| set_borrow(borrow() + 100);
-    let decrement = move |_: MouseEvent| set_borrow(borrow() - 100);
+    let increment = move |_| set_borrow(borrow() + 100);
+    let decrement = move |_| set_borrow(borrow() - 100);
 
     let total_debt = move || debt() as i32 + borrow();
 
@@ -305,7 +313,7 @@ fn loan_modal(
         set_borrow(event_target_value(&ev).parse().unwrap_or_default());
     };
 
-    let borrow_money = create_action(move |amount: &i32| {
+    let borrow_money = Action::new(move |amount: &i32| {
         let amount = *amount;
 
         async move {
@@ -340,13 +348,18 @@ fn loan_modal(
                     </button>
                 </div>
             </div>
-            <button class="action confirm-bets" on:click=move |_| borrow_money.dispatch(borrow())>
+            <button
+                class="action confirm-bets"
+                on:click=move |_| {
+                    borrow_money.dispatch(borrow());
+                }
+            >
 
                 {move || {
                     if borrow() >= 0 {
-                        view! { "Borrow" }
+                        Either::Left(view! { "Borrow" })
                     } else {
-                        view! { "Payback" }
+                        Either::Right(view! { "Payback" })
                     }
                 }}
 
@@ -387,12 +400,12 @@ fn card_main(card: Card, on_click: impl FnMut(MouseEvent) + 'static) -> impl Int
 }
 
 #[component]
-fn card_modal(close: impl Fn() + Copy + 'static) -> impl IntoView {
+fn card_modal(close: impl Fn() + Copy + Send + Sync + 'static) -> impl IntoView {
     let events = use_events();
     let player_id = use_session_id();
     let cards = move || projections::cards_in_hand(&events(), player_id);
 
-    let scroll_ref = create_node_ref::<leptos::html::Div>();
+    let scroll_ref = NodeRef::<leptos::html::Div>::new();
 
     let scroll = use_scroll(scroll_ref);
 
@@ -401,7 +414,7 @@ fn card_modal(close: impl Fn() + Copy + 'static) -> impl IntoView {
         cards().get(index).copied()
     });
 
-    let (selected_card, set_selected_card) = create_signal::<Option<Card>>(None);
+    let (selected_card, set_selected_card) = signal::<Option<Card>>(None);
 
     view! {
         <Show when=move || selected_card().is_none()>
@@ -409,7 +422,7 @@ fn card_modal(close: impl Fn() + Copy + 'static) -> impl IntoView {
                 <button class="back-button" on:click=move |_| close()>
                     "←"
                 </button>
-                <div ref=scroll_ref class="card-carousel">
+                <div node_ref=scroll_ref class="card-carousel">
                     {move || {
                         cards()
                             .into_iter()
@@ -443,8 +456,8 @@ fn card_modal(close: impl Fn() + Copy + 'static) -> impl IntoView {
 #[component]
 fn target_modal(
     card: Card,
-    close: impl Fn() + Copy + 'static,
-    done: impl Fn() + Copy + 'static,
+    close: impl Fn() + Copy + Send + Sync + 'static,
+    done: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
     let events = use_events();
     let game_id = use_game_id();
@@ -458,7 +471,7 @@ fn target_modal(
     };
 
     let (targets, toggle_target) = {
-        let (read, write) = create_signal::<Option<Vec<Uuid>>>(None);
+        let (read, write) = signal::<Option<Vec<Uuid>>>(None);
 
         (read, move |uuid| {
             move |_| match read() {
@@ -512,9 +525,9 @@ fn target_modal(
                         <p>{monster.name}</p>
                     </button>
                 }
-                .into_view()
+                .into_any()
             })
-            .collect::<Vec<View>>(),
+            .collect::<Vec<AnyView>>(),
         TargetKind::Player | TargetKind::MultiplePlayers(_) => {
             let account_balances = projections::all_account_balances(&events());
 
@@ -548,13 +561,13 @@ fn target_modal(
                             <p>{name} " (💎 " {balance} ")"</p>
                         </button>
                     }
-                    .into_view()
+                    .into_any()
                 })
-                .collect::<Vec<View>>()
+                .collect::<Vec<AnyView>>()
         }
     };
 
-    let play_card = create_action(move |_: &()| async move {
+    let play_card = Action::new(move |_: &()| async move {
         let Some(target) = targets.get_untracked() else {
             return;
         };
@@ -582,8 +595,11 @@ fn target_modal(
                 <button
                     class="action target-confirm"
                     disabled=move || targets().is_none()
-                    on:click=move |_| play_card.dispatch(())
+                    on:click=move |_| {
+                        play_card.dispatch(());
+                    }
                 >
+
                     "Confirm"
                 </button>
             </div>

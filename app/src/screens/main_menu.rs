@@ -1,5 +1,5 @@
-use leptos::{component, view, IntoView};
-use leptos_router::Form;
+use leptos::prelude::*;
+use leptos_router::components::Form;
 
 use crate::components::layouts::HorizontalStack;
 
@@ -11,7 +11,7 @@ pub fn main_menu() -> impl IntoView {
             <h1 class="title">"Deep Space Derby"</h1>
             // <div class="splash-image">"Image"</div>
             <HorizontalStack>
-                <Form class="button-form" action="/api/create_game" method="POST">
+                <Form attr:class="button-form" action="/api/create_game" method="POST">
                     <input class="button" type="submit" value="Host"/>
                 </Form>
                 <a class="button" href="/play">

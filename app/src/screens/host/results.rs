@@ -1,4 +1,4 @@
-use leptos::*;
+use leptos::prelude::*;
 use shared::models::projections;
 
 use crate::utils::use_events;

@@ -1,7 +1,5 @@
-use leptos::SignalGetUntracked;
-
-use leptos_router::use_params_map;
-
+use leptos::prelude::*;
+use leptos_router::hooks::use_params_map;
 use shared::models::game_code::GameCode;
 
 pub fn use_game_id() -> GameCode {

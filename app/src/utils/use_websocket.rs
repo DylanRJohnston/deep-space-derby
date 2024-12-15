@@ -1,5 +1,5 @@
 use im::vector::Vector;
-use leptos::{provide_context, use_context, ReadSignal, Signal};
+use leptos::prelude::*;
 use shared::models::{
     events::{Event, EventStream},
     game_code::GameCode,
@@ -124,10 +124,10 @@ pub fn create_event_signal(
 pub fn create_event_signal(
     game_id: GameCode,
 ) -> (ReadSignal<Connection>, ReadSignal<Vector<Event>>) {
-    use leptos::create_signal;
+    use leptos::prelude::*;
 
-    let (connection, _) = create_signal(Connection::Connecting);
-    let (events, _) = create_signal(Vector::new());
+    let (connection, _) = signal(Connection::Connecting);
+    let (events, _) = signal(Vector::new());
 
     (connection, events)
 }

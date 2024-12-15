@@ -1,4 +1,4 @@
-use leptos::{component, create_action, create_node_ref, html::Input, view, IntoView, SignalGet};
+use leptos::{either::Either, html::Input, prelude::*};
 
 use crate::{
     server_fns::server_fn,
@@ -19,17 +19,15 @@ pub fn lobby() -> impl IntoView {
 
     let player = move || players().get(&session_id).cloned().unwrap_or_default();
 
-    let name_ref = create_node_ref::<Input>();
+    let name_ref = NodeRef::<Input>::new();
 
-    let ready_player = create_action(move |_: &()| async move {
-        server_fn::<ChangeProfile>(
-            game_id,
-            &change_profile::Input {
-                name: name_ref.get_untracked().unwrap().value(),
-            },
-        )
-        .await?;
-        server_fn::<ReadyPlayer>(game_id, &()).await
+    let ready_player = Action::new(move |_: &()| {
+        let name = name_ref.get_untracked().unwrap().value();
+
+        async move {
+            server_fn::<ChangeProfile>(game_id, &change_profile::Input { name }).await?;
+            server_fn::<ReadyPlayer>(game_id, &()).await
+        }
     });
 
     view! {
@@ -39,41 +37,46 @@ pub fn lobby() -> impl IntoView {
             </div>
             {move || {
                 if !player().ready {
-                    view! {
-                        <h1>"Profile"</h1>
-                        <div class="profile-image">"Placeholder"</div>
+                    Either::Left(
+                        view! {
+                            <h1>"Profile"</h1>
+                            <div class="profile-image">"Placeholder"</div>
 
-                        <div class="input">
-                            <label for="name">"Name:"</label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                _ref=name_ref
-                                prop:value=move || player().name
-                            />
-                        </div>
-                        <button
-                            class="button"
-                            style="margin-top: 2em;"
-                            on:click=move |_| { ready_player.dispatch(()) }
-                        >
-                            "Ready"
-                        </button>
-                        <a class="button" href="/play">
-                            "Leave"
-                        </a>
-                    }
-                        .into_view()
+                            <div class="input">
+                                <label for="name">"Name:"</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    node_ref=name_ref
+                                    prop:value=move || player().name
+                                />
+                            </div>
+                            <button
+                                class="button"
+                                style="margin-top: 2em;"
+                                on:click=move |_| {
+                                    ready_player.dispatch(());
+                                }
+                            >
+
+                                "Ready"
+                            </button>
+                            <a class="button" href="/play">
+                                "Leave"
+                            </a>
+                        },
+                    )
                 } else {
-                    view! {
-                        <h1>"Waiting for other players..."</h1>
-                        <div class="profile-image">"Image"</div>
+                    Either::Right(
+                        view! {
+                            <h1>"Waiting for other players..."</h1>
+                            <div class="profile-image">"Image"</div>
 
-                        <h1>{move || player().name}</h1>
-                        <span>"Ready"</span>
-                    }
-                        .into_view()
+                            <h1>{move || player().name}</h1>
+                            <span>"Ready"</span>
+                        },
+                    )
                 }
             }}
 

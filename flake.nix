@@ -17,9 +17,9 @@
       let
         wasm-bindgen-cli-update = final: prev: {
           wasm-bindgen-cli = prev.wasm-bindgen-cli.override {
-            version = "0.2.92";
-            hash = "sha256-1VwY8vQy7soKEgbki4LD+v259751kKxSxmo/gqE6yV0=";
-            cargoHash = "sha256-aACJ+lYNEU8FFBs158G1/JG8sc6Rq080PeKCMnwdpH0=";
+            version = "0.2.99";
+            hash = "sha256-1AN2E9t/lZhbXdVznhTcniy+7ZzlaEp/gwLEAucs6EA=";
+            cargoHash = "sha256-DbwAh8RJtW38LJp+J9Ht8fAROK9OabaJ85D9C/Vkve4=";
           };
         };
 
@@ -175,6 +175,7 @@
               toolchain
               iconv
               darwin.apple_sdk.frameworks.AppKit
+              darwin.apple_sdk.frameworks.CoreAudio
               nodejs
               wasm-bindgen-cli
               entr

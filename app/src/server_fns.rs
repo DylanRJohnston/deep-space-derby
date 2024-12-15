@@ -1,18 +1,19 @@
-use leptos::ServerFnError;
+use leptos::prelude::*;
 use shared::models::commands::{CommandHandler, API};
 use shared::models::game_code::GameCode;
 use std::future::Future;
 
-#[cfg(not(feature = "ssr"))]
+#[cfg(all(target_arch = "wasm32", feature = "hydrate"))]
 pub fn server_fn<C: CommandHandler + API>(
     game_id: GameCode,
     input: &C::Input,
-) -> impl Future<Output = Result<(), ServerFnError>> {
+) -> impl Future<Output = Result<(), ServerFnError>> + Send + 'static {
     use gloo_net::http::Request;
+    use worker::send::SendFuture;
 
     let req = Request::post(&C::url(game_id)).json(input);
 
-    async {
+    SendFuture::new(async {
         let response = req?.send().await?;
         let status_code = response.status();
 
@@ -26,7 +27,7 @@ pub fn server_fn<C: CommandHandler + API>(
         }
 
         Ok(())
-    }
+    })
 }
 
 // TODO make this invoke the Durable Object on the server for better SSR, for now, just block forever
@@ -35,6 +36,6 @@ pub fn server_fn<C: CommandHandler + API>(
 pub fn server_fn<C: CommandHandler + API>(
     game_id: GameCode,
     input: &C::Input,
-) -> impl Future<Output = Result<(), ServerFnError>> + 'static {
+) -> impl Future<Output = Result<(), ServerFnError>> + Send + 'static {
     async { std::future::pending().await }
 }
