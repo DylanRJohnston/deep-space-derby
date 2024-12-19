@@ -1,8 +1,14 @@
-use std::sync::LazyLock;
+use std::sync::{
+    self,
+    mpsc::{channel, Receiver, Sender},
+    LazyLock, Mutex,
+};
 
-use bevy::{prelude::*, utils::tracing};
+use bevy::{
+    prelude::*,
+    utils::{synccell::SyncCell, tracing},
+};
 
-use crossbeam_channel::{Receiver, Sender};
 use im::Vector;
 use shared::models::{events::Event, events::EventStream, game_code};
 
@@ -11,6 +17,7 @@ pub struct EventStreamPlugin;
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
+            .add_systems(Startup, init_event_stream)
             .add_systems(Update, read_event_stream);
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -20,13 +27,16 @@ impl Plugin for EventStreamPlugin {
 
 struct EventChannel<T> {
     sender: Sender<T>,
-    receiver: Receiver<T>,
+    receiver: Mutex<Option<Receiver<T>>>,
 }
 
 static EVENT_CHANNEL: LazyLock<EventChannel<EventStream>> = LazyLock::new(|| {
-    let (sender, receiver) = crossbeam_channel::unbounded::<EventStream>();
+    let (sender, receiver) = channel::<EventStream>();
 
-    EventChannel { sender, receiver }
+    EventChannel {
+        sender,
+        receiver: Mutex::new(Some(receiver)),
+    }
 });
 
 #[derive(Resource)]
@@ -34,6 +44,9 @@ pub struct Seed(pub u32);
 
 #[derive(Resource)]
 pub struct GameEvents(pub Vector<Event>);
+
+#[derive(Resource, Deref, DerefMut)]
+pub struct EventReceiver(SyncCell<Receiver<EventStream>>);
 
 impl std::ops::Deref for GameEvents {
     type Target = Vector<Event>;
@@ -43,11 +56,14 @@ impl std::ops::Deref for GameEvents {
     }
 }
 
-fn read_event_stream(
-    // mut next_state: ResMut<NextState<SceneState>>,
-    mut events: ResMut<GameEvents>,
-) {
-    while let Ok(new_events) = EVENT_CHANNEL.receiver.try_recv() {
+fn init_event_stream(mut commands: Commands) {
+    let receiver = EVENT_CHANNEL.receiver.lock().unwrap().take().unwrap();
+
+    commands.insert_resource(EventReceiver(SyncCell::new(receiver)));
+}
+
+fn read_event_stream(mut receiver: ResMut<EventReceiver>, mut events: ResMut<GameEvents>) {
+    while let Ok(new_events) = receiver.get().try_recv() {
         match new_events {
             EventStream::Events(new_events) => events.as_mut().0 = Vector::from(new_events),
             EventStream::Event(new_event) => events.as_mut().0.push_back(new_event),

@@ -1,6 +1,6 @@
 use std::{future::Future, task::Poll};
 
-use axum::{extract::Request, response::Response, Router};
+use axum::{response::Response, Router};
 use tower::Service;
 
 use crate::ports::game_service::{GameRequest, InternalServerError};

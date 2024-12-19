@@ -29,7 +29,7 @@ pub struct OrbitPoint {
 
 pub fn rotate(mut query: Query<(&mut Transform, &RotateSpeed)>, time: Res<Time>) {
     for (mut transform, rotation) in &mut query {
-        transform.rotate_y(time.delta_seconds() * rotation.speed);
+        transform.rotate_y(time.delta_secs() * rotation.speed);
     }
 }
 
@@ -37,7 +37,7 @@ pub fn orbit(mut query: Query<(&mut Transform, &OrbitPoint)>, time: Res<Time>) {
     for (mut transform, orbit) in &mut query {
         transform.translate_around(
             orbit.point,
-            Quat::from_rotation_y(time.delta_seconds() * orbit.velocity),
+            Quat::from_rotation_y(time.delta_secs() * orbit.velocity),
         )
     }
 }

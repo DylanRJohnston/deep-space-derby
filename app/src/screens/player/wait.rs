@@ -19,9 +19,9 @@ pub fn wait() -> impl IntoView {
         projections::time_left_in_pregame(&events())
     };
 
-    let (victim_modal, set_victim_modal) = create_signal(None);
+    let (victim_modal, set_victim_modal) = signal(None);
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if let Some(card) = projections::victim_of_card(&events(), player_id) {
             set_victim_modal(Some(card))
         }
@@ -44,7 +44,7 @@ pub fn wait() -> impl IntoView {
         {move || {
             victim_modal()
                 .map(|(card, perpetrator)| {
-                    view! { <VictimModal card perpetrator close=move || set_victim_modal(None)/> }
+                    view! { <VictimModal card perpetrator close=move || set_victim_modal(None) /> }
                 })
         }}
     }

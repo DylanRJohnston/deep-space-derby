@@ -20,12 +20,15 @@ impl Plugin for SpectatorPlugin {
 #[reflect(Component)]
 pub struct Spectator;
 
+#[derive(Debug, Clone, Component, Deref)]
+pub struct DanceAnimation(Handle<AnimationClip>);
+
 #[derive(Clone, Bundle)]
 pub struct SpectatorBundle {
-    pub scene: SceneBundle,
+    pub scene: SceneRoot,
     pub spectator: Spectator,
     pub animation_root: AnimationRoot,
-    pub dance: Handle<AnimationClip>,
+    pub dance: DanceAnimation,
 }
 
 pub fn spawn_spectators_on_scene_load(
@@ -56,39 +59,39 @@ pub fn spawn_spectators_on_scene_load(
         let mut transform = *transform;
         transform.scale = Vec3::splat(0.65);
 
-        commands.entity(entity).insert(SpectatorBundle {
-            scene: SceneBundle {
-                scene: model.scenes[0].clone(),
-                transform,
-                ..default()
+        commands.entity(entity).insert((
+            SpectatorBundle {
+                scene: SceneRoot(model.scenes[0].clone()),
+                animation_root: AnimationRoot,
+                spectator: Spectator,
+                dance: DanceAnimation(
+                    model
+                        .named_animations
+                        .get("Armature|mixamo.com|Layer0")
+                        .unwrap()
+                        .clone(),
+                ),
             },
-            animation_root: AnimationRoot,
-            spectator: Spectator,
-            dance: model
-                .named_animations
-                .get("Armature|mixamo.com|Layer0")
-                .unwrap()
-                .clone(),
-        });
+            transform,
+        ));
     }
 }
 
 pub fn init_animation(
     mut commands: Commands,
-    mut query: Query<
-        (&Handle<AnimationClip>, &AnimationLink),
-        (With<Spectator>, Added<AnimationLink>),
-    >,
+    mut query: Query<(&DanceAnimation, &AnimationLink), (With<Spectator>, Added<AnimationLink>)>,
     mut players: Query<&mut AnimationPlayer>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
     for (dance, animation_link) in &mut query {
         let mut player = players.get_mut(animation_link.0).unwrap();
 
-        let (graph, animation_index) = AnimationGraph::from_clip(dance.clone());
+        let (graph, animation_index) = AnimationGraph::from_clip(dance.0.clone());
         let graph_handle = graphs.add(graph);
 
-        commands.entity(animation_link.0).insert(graph_handle);
+        commands
+            .entity(animation_link.0)
+            .insert(AnimationGraphHandle(graph_handle));
 
         player
             .play(animation_index)

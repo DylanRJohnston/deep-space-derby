@@ -1,5 +1,4 @@
 #![feature(try_blocks)]
-#![feature(async_closure)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(impl_trait_in_fn_trait_return)]
 #![feature(more_qualified_paths)]

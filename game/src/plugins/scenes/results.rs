@@ -139,12 +139,9 @@ fn spawn_monsters(
             commands.spawn((
                 Name::from(format!("Podium {index}", index = spawn_point.id)),
                 StateScoped(SceneState::Results),
-                PbrBundle {
-                    transform: block_transform,
-                    mesh: podium_assets.mesh.clone(),
-                    material: podium_assets.material.clone(),
-                    ..default()
-                },
+                Mesh3d(podium_assets.mesh.clone()),
+                MeshMaterial3d(podium_assets.material.clone()),
+                block_transform,
             ));
         });
 }

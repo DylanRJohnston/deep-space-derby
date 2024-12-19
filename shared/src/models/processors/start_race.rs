@@ -1,5 +1,3 @@
-use std::usize;
-
 use im::Vector;
 use tracing::instrument;
 

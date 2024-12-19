@@ -1,6 +1,6 @@
 use bevy::{asset::AssetMetaCheck, prelude::*, window::WindowResolution};
 use bevy_tweening::TweeningPlugin;
-use iyes_progress::{ProgressCounter, ProgressPlugin, TrackedProgressSet};
+use iyes_progress::prelude::*;
 
 use crate::plugins::{
     animation_link::AnimationLinkPlugin,
@@ -54,14 +54,12 @@ pub fn start(f: impl FnOnce(&mut App)) {
     .add_plugins(SkinnedMeshPlugin)
     .add_plugins(MusicPlugin)
     .add_plugins(DelayedCommandPlugin)
-    .add_plugins(ProgressPlugin::new(SceneState::Loading).track_assets())
+    .add_plugins(ProgressPlugin::<SceneState>::new().set_asset_tracking(true))
     .add_systems(
         Update,
-        ui_progress_bar
-            .after(TrackedProgressSet)
-            .run_if(|state: Res<State<SceneState>>| {
-                matches!(state.get(), SceneState::Loading | SceneState::Spawning)
-            }),
+        ui_progress_bar.run_if(|state: Res<State<SceneState>>| {
+            matches!(state.get(), SceneState::Loading | SceneState::Spawning)
+        }),
     )
     .add_systems(OnEnter(SceneState::Loading), spawn_progress_bar)
     .add_systems(OnExit(SceneState::Spawning), remove_progress_bar)
@@ -87,59 +85,44 @@ pub struct ProgressBar;
 pub struct ProgressMessage;
 
 fn spawn_progress_bar(mut commands: Commands) {
-    let camera = commands.spawn(Camera3dBundle::default()).id();
+    let camera = commands.spawn(Camera3d::default()).id();
 
     commands
         .spawn((
             ProgressBarRoot,
             TargetCamera(camera),
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.),
-                    height: Val::Percent(100.),
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    flex_direction: FlexDirection::Column,
-                    ..default()
-                },
+            Node {
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
         ))
         .with_children(|parent| {
             parent.spawn((
                 ProgressMessage,
-                TextBundle {
-                    text: Text::from_section(
-                        "Loading",
-                        TextStyle {
-                            font_size: 100.0,
-                            ..default()
-                        },
-                    ),
-                    ..default()
-                },
+                Text::new("Loading"),
+                TextFont::from_font_size(100.),
             ));
 
             parent
-                .spawn(NodeBundle {
-                    background_color: bevy::color::palettes::basic::GRAY.into(),
-                    style: Style {
+                .spawn((
+                    Node {
                         height: Val::Px(50.0),
                         width: Val::Percent(80.0),
                         ..default()
                     },
-                    ..default()
-                })
+                    BackgroundColor(bevy::color::palettes::basic::GRAY.into()),
+                ))
                 .with_children(|parent| {
                     parent.spawn((
                         ProgressBar,
-                        NodeBundle {
-                            background_color: bevy::color::palettes::basic::GREEN.into(),
-                            style: Style {
-                                height: Val::Px(50.0),
-                                width: Val::Percent(0.0),
-                                ..default()
-                            },
+                        BackgroundColor(bevy::color::palettes::basic::GREEN.into()),
+                        Node {
+                            height: Val::Px(50.0),
+                            width: Val::Percent(0.0),
                             ..default()
                         },
                     ));
@@ -154,11 +137,13 @@ fn remove_progress_bar(progress_bar: Query<Entity, With<ProgressBarRoot>>, mut c
 }
 
 fn ui_progress_bar(
-    mut progress_bar: Query<&mut Style, With<ProgressBar>>,
+    mut progress_bar: Query<&mut Node, With<ProgressBar>>,
     mut progress_message: Query<&mut Text, With<ProgressMessage>>,
-    counter: Option<Res<ProgressCounter>>,
+    counter: Option<Res<ProgressTracker<SceneState>>>,
 ) {
-    let progress = counter.map(|it| it.progress().into()).unwrap_or(1.0);
+    let progress = counter
+        .map(|it| it.get_global_progress().into())
+        .unwrap_or(1.0);
     let mut progress_bar = progress_bar.get_single_mut().unwrap();
 
     progress_bar.width = Val::Percent(100. * progress);
@@ -166,6 +151,6 @@ fn ui_progress_bar(
     if progress > 0.99 {
         let mut text = progress_message.get_single_mut().unwrap();
 
-        "Creating World".clone_into(&mut text.sections[0].value);
+        text.0 = "Creating World".to_string();
     }
 }

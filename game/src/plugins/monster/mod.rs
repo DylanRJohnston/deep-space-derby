@@ -1,5 +1,5 @@
 #![allow(clippy::type_complexity)]
-use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, EaseFunction, Tween};
+use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, Tween};
 use rand::{distributions::Uniform, thread_rng, Rng};
 use shared::models::{monsters::Monster, projections::Jump};
 use std::time::Duration;
@@ -17,8 +17,8 @@ impl Plugin for MonsterPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, init_animation)
             .add_systems(Update, run_timers)
-            .observe(spawn_monster)
-            .observe(despawn_all_monsters);
+            .add_observer(spawn_monster)
+            .add_observer(despawn_all_monsters);
     }
 }
 
@@ -69,15 +69,18 @@ pub enum MonsterBehaviour {
     Dead,
 }
 
+#[derive(Component, Deref)]
+pub struct MonsterGltf(pub Handle<Gltf>);
+
 pub fn init_animation(
     mut commands: Commands,
     mut graphs: ResMut<Assets<AnimationGraph>>,
     clips: Res<Assets<AnimationClip>>,
-    new_monsters: Query<(Entity, &AnimationLink, &Handle<Gltf>), Added<AnimationLink>>,
+    new_monsters: Query<(Entity, &AnimationLink, &MonsterGltf), Added<AnimationLink>>,
     gltfs: Res<Assets<Gltf>>,
 ) {
     for (entity, animation_player_link, gltf_handle) in &new_monsters {
-        let gltf = gltfs.get(gltf_handle).unwrap();
+        let gltf = gltfs.get(&gltf_handle.0).unwrap();
 
         let mut graph = AnimationGraph::new();
 
@@ -109,7 +112,7 @@ pub fn init_animation(
         // gltf loads the animation as a child node, the animation graph must be on the same entity as the animation player
         commands
             .entity(animation_player_link.0)
-            .insert((graph_handle, transition));
+            .insert((AnimationGraphHandle(graph_handle), transition));
     }
 }
 
@@ -281,11 +284,8 @@ fn spawn_monster(
         },
         MonsterInfo(*monster),
         RaceTimer::default(),
-        handle.clone(),
-        SceneBundle {
-            scene: scene.scenes[0].clone(),
-            transform,
-            ..default()
-        },
+        MonsterGltf(handle.clone()),
+        SceneRoot(scene.scenes[0].clone()),
+        transform,
     ));
 }

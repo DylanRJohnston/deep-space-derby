@@ -1,5 +1,5 @@
 use bevy::{
-    core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping, Skybox},
+    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping, Skybox},
     gltf::Gltf,
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
     prelude::*,
@@ -144,14 +144,13 @@ fn scene_setup(
 ) {
     commands.spawn((
         Name::from("Scene"),
-        SceneBundle {
-            scene: models
+        SceneRoot(
+            models
                 .get(game_assets.world.id())
                 .expect("main level should have been loaded")
                 .scenes[0]
                 .clone(),
-            ..default()
-        },
+        ),
     ));
 
     for camera in &cameras {
@@ -169,20 +168,24 @@ fn setup_skybox(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if let Ok((id, mut camera)) = camera.get_single_mut() {
-        let mut bloom = BloomSettings::OLD_SCHOOL.clone();
+        let mut bloom = Bloom::OLD_SCHOOL.clone();
 
         bloom.intensity = 0.1;
-        bloom.prefilter_settings.threshold = 1.5;
+        bloom.prefilter.threshold = 1.5;
+
+        let rot = Quat::IDENTITY;
 
         commands.entity(id).insert((
             Skybox {
                 image: game_assets.skybox.clone(),
                 brightness: 2000.0,
+                rotation: rot,
             },
             EnvironmentMapLight {
                 diffuse_map: game_assets.envmap_diffuse.clone(),
                 specular_map: game_assets.envmap_specular.clone(),
                 intensity: 1000.0,
+                rotation: rot,
             },
             bloom,
             Tonemapping::AcesFitted,

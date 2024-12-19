@@ -1,9 +1,6 @@
 use im::vector::Vector;
 use leptos::prelude::*;
-use shared::models::{
-    events::{Event, EventStream},
-    game_code::GameCode,
-};
+use shared::models::{events::Event, game_code::GameCode};
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
@@ -45,6 +42,7 @@ pub fn create_event_signal(
     use futures_util::StreamExt;
     use gloo_net::websocket::{futures::WebSocket, Message};
     use leptos::{server_fn::error::NoCustomError, *};
+    use shared::models::events::EventStream;
     use wasm_bindgen_futures::spawn_local;
 
     let url = {

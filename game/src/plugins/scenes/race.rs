@@ -26,8 +26,8 @@ impl Plugin for RacePlugin {
             .add_systems(Update, run_race.run_if(in_state(RaceState::Race)))
             .add_systems(Update, race_camera.run_if(in_state(RaceState::Race)));
 
-        #[cfg(feature = "debug")]
-        app.add_systems(Update, debug_reset_race);
+        // #[cfg(feature = "debug")]
+        // app.add_systems(Update, debug_reset_race);
     }
 }
 
@@ -275,11 +275,11 @@ fn race_camera(
 
     projection.fov = projection.fov.lerp(
         0.05 + (transform.translation.x - 4.0) / 12. * 0.3,
-        time.delta_seconds(),
+        time.delta_secs(),
     );
 
     camera.rotation = camera.rotation.lerp(
         camera.looking_at(transform.translation, Vec3::Y).rotation,
-        time.delta_seconds(),
+        time.delta_secs(),
     );
 }

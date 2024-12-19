@@ -42,6 +42,7 @@
           ${pkgs.tree}/bin/tree
           cp ${src}/cargo-llvm-cov $out/bin/cargo-llvm-cov
         '';
+
       in rec {
         packages = {
           build-site = pkgs.writeShellScriptBin "build-site" ''
@@ -171,34 +172,42 @@
         devShell = with pkgs;
           with packages;
           mkShell {
+            nativeBuildInputs = with pkgs; [ rustPlatform.bindgenHook ];
             buildInputs = [
-              toolchain
-              iconv
-              darwin.apple_sdk.frameworks.AppKit
-              darwin.apple_sdk.frameworks.CoreAudio
-              nodejs
-              wasm-bindgen-cli
-              entr
-              cargo-watch
-              cargo-expand
-              cargo-leptos
-              leptosfmt
-              twiggy
-              mprocs
-              dev-clean
-              dev-copy-assets
-              dev-build-client
-              dev-build-game
-              dev-run-native-server
-              dev-run-wrangler-server
-              dev
-              dev-wrangler
               binaryen
               build-site
-              deploy-site
+              cargo-expand
+              cargo-leptos
               cargo-llvm-cov
+              cargo-watch
+              deploy-site
+              dev
+              dev-build-client
+              dev-build-game
+              dev-clean
+              dev-copy-assets
+              dev-run-native-server
+              dev-run-wrangler-server
+              dev-wrangler
+              entr
+              iconv
+              leptosfmt
               llvmPackages.bintools-unwrapped
-            ];
+              mprocs
+              nodejs
+              toolchain
+              twiggy
+              wasm-bindgen-cli
+            ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
+              (with pkgs.darwin.apple_sdk.frameworks; [
+                AudioToolbox
+                AudioUnit
+                AppKit
+                CoreAudio
+                CoreFoundation
+                CoreMIDI
+                OpenAL
+              ]);
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
           };

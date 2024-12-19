@@ -25,8 +25,8 @@ impl Plugin for MusicPlugin {
                     !matches!(state.get(), SceneState::Loading | SceneState::Spawning)
                 }),
             )
-            .observe(play_countdown)
-            .observe(play_pregame_countdown);
+            .add_observer(play_countdown)
+            .add_observer(play_pregame_countdown);
     }
 }
 

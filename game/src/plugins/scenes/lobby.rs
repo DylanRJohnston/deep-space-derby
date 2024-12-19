@@ -37,7 +37,7 @@ pub fn init_camera(mut query: Query<&mut Transform, Added<Camera>>) {
 
 pub fn orbit_camera(mut query: Query<&mut Transform, With<Camera>>, time: Res<Time>) {
     if let Ok(mut transform) = query.get_single_mut() {
-        let rot = Quat::from_axis_angle(Vec3::Y, time.elapsed_seconds() / 2.0);
+        let rot = Quat::from_axis_angle(Vec3::Y, time.elapsed_secs() / 2.0);
 
         transform.translation =
             ((rot * Vec3::new(1.0, 0.5, 1.0)) + Vec3::new(1.0, 0.0, 0.0)) * 15.0;

@@ -21,10 +21,10 @@ pub fn race() -> impl IntoView {
 
     let monster_cards = Memo::new(move |_| {
         tracing::info!("creating new signals for cards!!!!!!!!!!!!!!!!");
-        monsters().map(|monster| (monster.uuid, create_signal::<Option<PlayedCardInfo>>(None)))
+        monsters().map(|monster| (monster.uuid, signal::<Option<PlayedCardInfo>>(None)))
     });
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         let counter = timer.counter.get();
         tracing::info!(?counter);
 
@@ -66,11 +66,11 @@ pub fn race() -> impl IntoView {
                     >
                         <div class="flip-card-inner">
                             <div class="flip-card-front">
-                                <img src="/pkg/icons/spade.svg"/>
+                                <img src="/pkg/icons/spade.svg" />
                             </div>
                             <div class="flip-card-back">
                                 <h1>{move || data.1.0.get().map(|card| card.card.name())}</h1>
-                                <img src=move || data.1.0.get().map(|card| card.card.icon())/>
+                                <img src=move || data.1.0.get().map(|card| card.card.icon()) />
                                 <p>{move || data.1.0.get().map(|card| card.card.description())}</p>
                             </div>
                         </div>
