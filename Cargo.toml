@@ -18,4 +18,3 @@ debug-assertions = false
 [profile.release]
 lto = true
 opt-level = 's'
-strip = true

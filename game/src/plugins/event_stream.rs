@@ -1,7 +1,9 @@
-use std::sync::{
-    self,
-    mpsc::{channel, Receiver, Sender},
-    LazyLock, Mutex,
+use std::{
+    ops::{Deref, DerefMut},
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        LazyLock, Mutex,
+    },
 };
 
 use bevy::{
@@ -17,8 +19,8 @@ pub struct EventStreamPlugin;
 impl Plugin for EventStreamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameEvents(Vector::new()))
-            .add_systems(Startup, init_event_stream)
-            .add_systems(Update, read_event_stream);
+            .add_systems(Startup, EventReceiver::init)
+            .add_systems(Update, EventReceiver::read);
 
         #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(Startup, connect_to_server);
@@ -42,31 +44,25 @@ static EVENT_CHANNEL: LazyLock<EventChannel<EventStream>> = LazyLock::new(|| {
 #[derive(Resource)]
 pub struct Seed(pub u32);
 
-#[derive(Resource)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct GameEvents(pub Vector<Event>);
 
-#[derive(Resource, Deref, DerefMut)]
+#[derive(Resource)]
 pub struct EventReceiver(SyncCell<Receiver<EventStream>>);
 
-impl std::ops::Deref for GameEvents {
-    type Target = Vector<Event>;
+impl EventReceiver {
+    fn init(mut commands: Commands) {
+        let receiver = EVENT_CHANNEL.receiver.lock().unwrap().take().unwrap();
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+        commands.insert_resource(EventReceiver(SyncCell::new(receiver)));
     }
-}
 
-fn init_event_stream(mut commands: Commands) {
-    let receiver = EVENT_CHANNEL.receiver.lock().unwrap().take().unwrap();
-
-    commands.insert_resource(EventReceiver(SyncCell::new(receiver)));
-}
-
-fn read_event_stream(mut receiver: ResMut<EventReceiver>, mut events: ResMut<GameEvents>) {
-    while let Ok(new_events) = receiver.get().try_recv() {
-        match new_events {
-            EventStream::Events(new_events) => events.as_mut().0 = Vector::from(new_events),
-            EventStream::Event(new_event) => events.as_mut().0.push_back(new_event),
+    fn read(mut receiver: ResMut<EventReceiver>, mut events: ResMut<GameEvents>) {
+        while let Ok(new_events) = receiver.0.get().try_recv() {
+            match new_events {
+                EventStream::Events(new_events) => **events = Vector::from(new_events),
+                EventStream::Event(new_event) => events.push_back(new_event),
+            }
         }
     }
 }

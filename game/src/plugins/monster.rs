@@ -28,7 +28,7 @@ pub struct Start(Transform);
 #[derive(Bundle, Default)]
 pub struct MonsterBundle {
     pub id: MonsterID,
-    pub monster: MonsterBehaviour,
+    pub behaviour: MonsterBehaviour,
     // pub scene: SceneBundle,
     pub stats: Stats,
     // pub animations: NamedAnimations,
@@ -76,20 +76,26 @@ pub fn init_animation(
     mut commands: Commands,
     mut graphs: ResMut<Assets<AnimationGraph>>,
     clips: Res<Assets<AnimationClip>>,
-    new_monsters: Query<(Entity, &AnimationLink, &MonsterGltf), Added<AnimationLink>>,
+    new_monsters: Query<(Entity, &AnimationLink, &MonsterInfo, &MonsterGltf), Added<AnimationLink>>,
     gltfs: Res<Assets<Gltf>>,
 ) {
-    for (entity, animation_player_link, gltf_handle) in &new_monsters {
+    for (entity, animation_player_link, monster_info, gltf_handle) in &new_monsters {
         let gltf = gltfs.get(&gltf_handle.0).unwrap();
 
         let mut graph = AnimationGraph::new();
 
-        let mut get_timed_animation = |name: &str, alt_name: &str| {
+        let mut get_timed_animation = |name: &str| {
             let handle = gltf
                 .named_animations
                 .get(name)
-                .or_else(|| gltf.named_animations.get(alt_name))
-                .expect("failed to find animation")
+                .unwrap_or_else(|| {
+                    let keys = gltf.named_animations.keys().collect::<Vec<_>>();
+
+                    panic!(
+                        "failed to find animation {}, available animations: {:?}",
+                        name, keys
+                    );
+                })
                 .clone();
 
             let duration = clips.get(&handle).unwrap().duration();
@@ -100,10 +106,10 @@ pub fn init_animation(
         };
 
         commands.entity(entity).insert((NamedAnimations {
-            idle: get_timed_animation("CharacterArmature|Idle", "RobotArmature|Idle"),
-            jump: get_timed_animation("CharacterArmature|Jump", "RobotArmature|Jump"),
-            dance: get_timed_animation("CharacterArmature|Dance", "RobotArmature|Dance"),
-            death: get_timed_animation("CharacterArmature|Death", "RobotArmature|Death"),
+            idle: get_timed_animation(monster_info.idle_animation),
+            jump: get_timed_animation(monster_info.jump_animation),
+            dance: get_timed_animation(monster_info.dance_animation),
+            death: get_timed_animation(monster_info.death_animation),
         },));
 
         let graph_handle = graphs.add(graph);
@@ -131,13 +137,14 @@ pub fn run_timers(
             &AnimationLink,
             &NamedAnimations,
             &MonsterBehaviour,
+            &MonsterInfo,
             &Transform,
         ),
         Or<(Changed<MonsterBehaviour>, Added<NamedAnimations>)>,
     >,
     mut anim_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
 ) {
-    for (entity, start, anim_link, animations, monster, transform) in &mut query {
+    for (entity, start, anim_link, animations, monster, monster_info, transform) in &mut query {
         let (mut player, mut transition) = anim_players.get_mut(anim_link.0).unwrap();
 
         match *monster {
@@ -154,8 +161,8 @@ pub fn run_timers(
             MonsterBehaviour::Jumping(jump) => {
                 let duration = jump.end - jump.start;
                 let animation_speed = animations.jump.duration / duration;
-                let jump_delay = 0.3 * duration;
-                let jump_end = 0.1 * duration;
+                let jump_delay = monster_info.jump_delay * duration;
+                let jump_end = monster_info.jump_end * duration;
 
                 let stage_distance = 0.85;
                 let target =
@@ -177,8 +184,12 @@ pub fn run_timers(
                 //     .set_speed(animation_speed)
                 //     .replay();
 
-                player
-                    .start(animations.jump.index)
+                transition
+                    .play(
+                        &mut player,
+                        animations.jump.index,
+                        Duration::from_secs_f32(0.1),
+                    )
                     .set_speed(animation_speed)
                     .replay();
             }
@@ -273,12 +284,13 @@ fn spawn_monster(
 
     let mut transform = *transform;
     transform.scale = Vec3::splat(0.25);
+    transform.scale *= monster.scale;
 
     commands.spawn((
         Name::from(monster.name),
         MonsterBundle {
             id: MonsterID(*id),
-            monster: *behaviour,
+            behaviour: *behaviour,
             start: Start(start.unwrap_or(transform)),
             ..default()
         },
