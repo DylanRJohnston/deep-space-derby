@@ -46,7 +46,7 @@ pub fn creature_card(
                     "-"
                 // {increment_size}
                 </button>
-                <input type="number" prop:value=amount on:input=arbitrary_amount/>
+                <input type="number" prop:value=amount on:input=arbitrary_amount />
                 <button on:click=increment disabled=move || (available_money() <= 0)>
                     "+"
                 // {increment_size}
@@ -186,12 +186,6 @@ pub fn pre_game() -> impl IntoView {
                     </div>
                 </div>
                 <div class="action-grid">
-                    <div class="placeholder-image">
-                        <img src="/pkg/icons/spade.svg"/>
-                    </div>
-                    <div class="placeholder-image">
-                        <img src="/pkg/icons/shark.svg"/>
-                    </div>
                     <button
                         class="action"
                         on:click=move |_| {
@@ -200,10 +194,16 @@ pub fn pre_game() -> impl IntoView {
 
                         disabled=move || (cards().len() >= 5)
                     >
+                        <div class="placeholder-image">
+                            <img src="/pkg/icons/spade.svg" />
+                        </div>
                         <p>"Buy a card"</p>
                         <p>"(💎 100)"</p>
                     </button>
                     <button class="action" on:click=move |_| toggle_loan_modal()>
+                        <div class="placeholder-image">
+                            <img src="/pkg/icons/shark.svg" />
+                        </div>
                         "Loan Shark"
                     </button>
                     <button class="action double-width" on:click=move |_| toggle_bets_modal()>
@@ -249,7 +249,7 @@ pub fn pre_game() -> impl IntoView {
                     each=move || bets
                     key=|it| *it
                     children=move |Bet { name, amount, .. }| {
-                        view! { <CreatureCard name amount available_money/> }
+                        view! { <CreatureCard name amount available_money /> }
                     }
                 />
 
@@ -265,15 +265,15 @@ pub fn pre_game() -> impl IntoView {
             </div>
         </Show>
         <Show when=move || loan_modal() && victim_modal().is_none() fallback=|| view! {}>
-            <LoanModal debt=debt account_balance close=toggle_loan_modal/>
+            <LoanModal debt=debt account_balance close=toggle_loan_modal />
         </Show>
         <Show when=move || card_modal() && victim_modal().is_none() fallback=|| view! {}>
-            <CardModal close=toggle_card_modal/>
+            <CardModal close=toggle_card_modal />
         </Show>
         {move || {
             victim_modal()
                 .map(|(card, perpetrator)| {
-                    view! { <VictimModal card perpetrator close=move || set_victim_modal(None)/> }
+                    view! { <VictimModal card perpetrator close=move || set_victim_modal(None) /> }
                 })
         }}
     }
@@ -342,7 +342,7 @@ fn loan_modal(
                     <button on:click=decrement disabled=move || (borrow() <= minimum())>
                         "-"
                     </button>
-                    <input type="number" prop:value=borrow on:input=set_borrow_from_input/>
+                    <input type="number" prop:value=borrow on:input=set_borrow_from_input />
                     <button on:click=increment disabled=move || (total_debt() >= maximum_debt())>
                         "+"
                     </button>
@@ -383,7 +383,7 @@ fn card_preview(
             on:click=move |_| on_click()
         >
             <p>{card.name()}</p>
-            <img src=card.icon()/>
+            <img src=card.icon() />
         </button>
     }
 }
@@ -393,7 +393,7 @@ fn card_main(card: Card, on_click: impl FnMut(MouseEvent) + 'static) -> impl Int
     view! {
         <button class="card-main" on:click=on_click>
             <p>{card.name()}</p>
-            <img src=card.icon()/>
+            <img src=card.icon() />
             <p>{card.description()}</p>
         </button>
     }
@@ -428,7 +428,10 @@ fn card_modal(close: impl Fn() + Copy + Send + Sync + 'static) -> impl IntoView 
                             .into_iter()
                             .map(|card| {
                                 view! {
-                                    <CardMain card on_click=move |_| set_selected_card(Some(card))/>
+                                    <CardMain
+                                        card
+                                        on_click=move |_| set_selected_card(Some(card))
+                                    />
                                 }
                             })
                             .collect::<Vec<_>>()
@@ -447,7 +450,7 @@ fn card_modal(close: impl Fn() + Copy + Send + Sync + 'static) -> impl IntoView 
         {move || {
             selected_card()
                 .map(|card| {
-                    view! { <TargetModal card close=move || set_selected_card(None) done=close/> }
+                    view! { <TargetModal card close=move || set_selected_card(None) done=close /> }
                 })
         }}
     }
@@ -619,7 +622,7 @@ pub fn victim_modal(
                 "←"
             </button>
             <h1>{card.victim_description(&perpetrator)}</h1>
-            <img class="victim-icon" src=card.icon()/>
+            <img class="victim-icon" src=card.icon() />
         </div>
     }
 }

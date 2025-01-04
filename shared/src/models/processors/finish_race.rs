@@ -32,7 +32,6 @@ impl Processor for FinishRace {
         tracing::debug!(?duration, now = ?SystemTime::now(), ?start);
 
         if SystemTime::now() >= UNIX_EPOCH + Duration::from_secs(start as u64) + duration {
-            tracing::info!("race finished");
             return Some(Command::FinishRace(()));
         }
 

@@ -36,8 +36,6 @@ pub fn start() {
         .with_ansi(false)
         .without_time()
         .init();
-
-    tracing::info!("wasm module initialised");
 }
 
 #[cfg(target_arch = "wasm32")]

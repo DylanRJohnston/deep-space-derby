@@ -242,8 +242,6 @@ pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
 
                 let amount = ((target as f32) * 0.2) as i32;
 
-                tracing::info!(target = target, source = source, ?amount);
-
                 accounts.insert(*target_uuid, target - amount);
                 accounts.insert(*source_uuid, source + amount);
             }
@@ -460,8 +458,6 @@ pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
                 card: Card::Extortion,
                 target: Target::Player(target),
             } if source != target => {
-                // We verified above that source and target are disjoint keys
-
                 let target_cards = cards.entry(*target).or_default();
                 let mut removed_cards = (0..2)
                     .filter_map(|_| target_cards.pop())

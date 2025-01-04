@@ -103,7 +103,7 @@ pub fn pre_game() -> impl IntoView {
                 "Time Left "
                 {move || match time() {
                     Some(time) => format!("{time}s"),
-                    None => "∞".to_string(),
+                    None => "Unlimited".to_string(),
                 }}
 
             </div>
@@ -115,8 +115,8 @@ pub fn pre_game() -> impl IntoView {
                         {format!("{:.0}", data.odds)}
                         "%"
                     </p>
-                    <StatRow stat=Stat::Dexterity value=data.monster.dexterity/>
-                    <StatRow stat=Stat::Strength value=data.monster.strength/>
+                    <StatRow stat=Stat::Dexterity value=data.monster.dexterity />
+                    <StatRow stat=Stat::Strength value=data.monster.strength />
                 </div>
             </For>
         </div>

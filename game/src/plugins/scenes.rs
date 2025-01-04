@@ -260,7 +260,5 @@ fn scene_manager(events: Res<GameEvents>, mut next_state: ResMut<NextState<Scene
         })
         .unwrap_or(SceneState::Lobby);
 
-    tracing::info!(?state, "setting scene state");
-
     next_state.set(state);
 }

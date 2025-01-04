@@ -219,6 +219,7 @@ dependencies = [
  "futures",
  "futures-util",
  "gloo-net 0.5.0",
+ "gloo-utils",
  "http 1.2.0",
  "im",
  "js-sys",

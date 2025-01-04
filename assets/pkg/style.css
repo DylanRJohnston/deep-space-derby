@@ -279,8 +279,8 @@ h2 {
   width: 150px;
   height: 150px;
 
-  /* -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px); */
+  /* /* -webkit-backdrop-filter: blur(8px); */
+  backdrop-filter: blur(8px);
   box-shadow: 0px 0px 5px #db3ffd88;
   background-color: #db3ffd11;
   border: 2px solid #eee;
@@ -311,8 +311,8 @@ h2 {
 }
 
 .placeholder-image {
-  width: 150px;
-  height: 150px;
+  /* width: 150px;
+  height: 150px; */
 
   border-radius: 8px;
 
@@ -326,7 +326,7 @@ h2 {
   /* background-color: #7a09fa11; */
   /* border: 2px solid #eee; */
 
-  padding: 8px;
+  margin-bottom: 1em;
 }
 
 .placeholder-image > img {
@@ -341,7 +341,7 @@ h2 {
 
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
 
   border-radius: 8px;
@@ -950,7 +950,9 @@ div .two-columns {
 
 .host-lobby-container > img {
   width: 100%;
-  mix-blend-mode: lighten;
+  background-color: black;
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .host-lobby-player {

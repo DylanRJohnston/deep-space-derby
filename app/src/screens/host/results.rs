@@ -27,8 +27,6 @@ pub fn results() -> impl IntoView {
         let balances = balances();
         let debt = debt();
 
-        tracing::info!(?winnings);
-
         let mut info = players
             .into_iter()
             .filter_map(|(key, value)| {
@@ -74,8 +72,7 @@ pub fn results() -> impl IntoView {
                                         row,
                                         column + 1,
                                     )
-                                >
-                                </div>
+                                ></div>
                                 <div
                                     class="leaderboard-entry-position"
                                     style=format!("grid-row: {}; grid-column: {}", row, column + 1)

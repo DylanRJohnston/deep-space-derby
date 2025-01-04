@@ -57,8 +57,6 @@ fn update_audio(
         return;
     }
 
-    tracing::info!(?scene_state, "Updating audio");
-
     let audio_instances = RefCell::new(audio_instances.as_mut());
 
     // let play = |handle: &Option<Handle<AudioInstance>>| {
@@ -104,7 +102,6 @@ fn update_audio(
         SceneState::Loading => {}
         SceneState::Spawning => {}
         SceneState::Lobby => {
-            tracing::info!("starting lobby music");
             match handles.lobby.as_ref() {
                 Some(audio) => {
                     audio_instances

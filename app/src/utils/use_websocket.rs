@@ -77,8 +77,6 @@ pub fn create_event_signal(
                         Err(err) => Err(ServerFnError::ServerError(err.to_string())),
                     }?;
 
-                    tracing::info!(?event);
-
                     match event {
                         EventStream::Events(new_events) => {
                             set_events.update(|events| events.append(new_events.into()))

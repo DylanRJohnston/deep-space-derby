@@ -1,5 +1,7 @@
+use gloo_utils::format::JsValueSerdeExt;
 use shared::time::{Duration, SystemTime};
 use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::JsValue;
 
 use anyhow::Result;
 use im::Vector;
@@ -51,8 +53,16 @@ impl DurableObjectKeyValue {
         events
             .values()
             .into_iter()
-            .try_for_each::<_, worker::Result<_>>(&mut |value| {
-                let event = serde_wasm_bindgen::from_value::<Event>(value?)?;
+            .try_for_each::<_, worker::Result<_>>(&mut |value: Result<JsValue, JsValue>| {
+                let value = value?;
+
+                let event = JsValueSerdeExt::into_serde(&value).inspect_err(|err| {
+                    tracing::error!(
+                        ?err,
+                        ?value,
+                        "failed to parse value from log during hydration"
+                    );
+                })?;
 
                 self.inner.events.borrow_mut().push_back(event);
 
