@@ -110,11 +110,10 @@ pub fn pre_game() -> impl IntoView {
             <For each=monsters key=|it| it.monster.uuid let:data>
                 <div class="monster-stats-container">
                     <h1>{data.monster.name}</h1>
-                    <p class="odds">"Odds: "</p>
-                    <p class="odds" style="text-align: left;">
-                        {format!("{:.0}", data.odds)}
-                        "%"
-                    </p>
+                    <div class="odds">
+                        <p>"Odds: " {format!("{:.0}", data.odds)} "%"</p>
+                        <p>"Payout: " {format!("{:.2}", data.payout)}"x"</p>
+                    </div>
                     <StatRow stat=Stat::Dexterity value=data.monster.dexterity />
                     <StatRow stat=Stat::Strength value=data.monster.strength />
                 </div>

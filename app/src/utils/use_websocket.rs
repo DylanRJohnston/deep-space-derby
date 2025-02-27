@@ -52,8 +52,8 @@ pub fn create_event_signal(
         format!("wss://{}/api/object/game/by_code/{}/connect", host, game_id)
     };
 
-    let (connection, set_connection) = create_signal(Connection::Connecting);
-    let (events, set_events) = create_signal(Vector::new());
+    let (connection, set_connection) = signal(Connection::Connecting);
+    let (events, set_events) = signal(Vector::new());
 
     spawn_local(async move {
         let mut count = 0;

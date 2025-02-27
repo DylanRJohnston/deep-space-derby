@@ -45,7 +45,10 @@ mod test {
     use uuid::Uuid;
 
     use crate::models::{
-        commands::CommandHandler, events::Event, game_code::GameCode, projections::RaceResults,
+        commands::CommandHandler,
+        events::{Event, Settings},
+        game_code::GameCode,
+        projections::RaceResults,
     };
 
     use super::FinishRace;
@@ -56,11 +59,13 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: player,
-                name: "example".into()
+                name: "example".into(),
+                initial_cards: vec![]
             },
             Event::PlayerReady { session_id: player },
             Event::RoundStarted {
@@ -87,11 +92,13 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: player,
-                name: "example".into()
+                name: "example".into(),
+                initial_cards: vec![]
             },
             Event::PlayerReady { session_id: player },
             Event::RoundStarted {
@@ -127,11 +134,13 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: player,
-                name: "example".into()
+                name: "example".into(),
+                initial_cards: vec![]
             },
             Event::PlayerReady { session_id: player },
             Event::RoundStarted {

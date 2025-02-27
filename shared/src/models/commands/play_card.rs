@@ -1,6 +1,7 @@
 use anyhow::{bail, Result};
 use im::Vector;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::models::{
@@ -29,6 +30,7 @@ impl API for PlayCard {
 impl CommandHandler for PlayCard {
     type Input = Input;
 
+    #[instrument(skip(events), err)]
     fn handle(session_id: Uuid, events: &Vector<Event>, input: Input) -> Result<Vec<Event>> {
         if !projections::player_exists(events, session_id) {
             bail!("Player does not exist");
@@ -39,6 +41,7 @@ impl CommandHandler for PlayCard {
             .find(|card| *card == input.card)
             .is_some()
         {
+            tracing::warn!(cards = ?projections::cards_in_hand(events, session_id));
             bail!("Player does not have card in hand");
         }
 

@@ -22,7 +22,10 @@ mod test {
     use uuid::Uuid;
 
     use crate::models::{
-        commands::Command, events::Event, game_code::GameCode, processors::Processor,
+        commands::Command,
+        events::{Event, Settings},
+        game_code::GameCode,
+        processors::Processor,
     };
 
     use super::StartGame;
@@ -35,10 +38,12 @@ mod test {
         let mut events = Vector::from_iter([
             Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             },
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
         ]);
 
@@ -47,6 +52,7 @@ mod test {
         events.push_back(Event::PlayerJoined {
             session_id: b,
             name: "Test".into(),
+            initial_cards: vec![],
         });
 
         events.push_back(Event::PlayerReady { session_id: a })
@@ -60,14 +66,17 @@ mod test {
         let events = Vector::from_iter([
             Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             },
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerJoined {
                 session_id: b,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },

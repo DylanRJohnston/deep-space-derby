@@ -6,13 +6,14 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::models::events::Event;
+use crate::models::events::{Event, Settings};
 
 use super::{CommandHandler, GameCode, HasGameCode, API};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Input {
     pub code: GameCode,
+    pub settings: Option<Settings>,
 }
 
 impl HasGameCode for Input {
@@ -45,6 +46,7 @@ impl CommandHandler for CreateGame {
 
         Ok(vec![Event::GameCreated {
             game_id: input.code,
+            settings: input.settings.unwrap_or_default(),
         }])
     }
 }

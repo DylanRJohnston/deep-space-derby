@@ -24,7 +24,11 @@ pub struct Game {
     // sessions: Sessions,
 }
 
+// Safety: wasm32 is single threaded, axum just doesn't know that
+#[cfg(target_arch = "wasm32")]
 unsafe impl Send for Game {}
+
+#[cfg(target_arch = "wasm32")]
 unsafe impl Sync for Game {}
 
 #[durable_object]

@@ -3,6 +3,7 @@ use std::cmp::{max, min};
 use leptos::{either::Either, prelude::*};
 use leptos_use::use_scroll;
 use uuid::Uuid;
+use wasm_bindgen::JsCast;
 use web_sys::MouseEvent;
 
 use crate::{
@@ -15,6 +16,21 @@ use shared::models::{
     monsters::Monster,
     projections::{self},
 };
+
+// use web_sys::window;
+
+// fn start_view_transition(f: impl FnMut() + 'static) {
+//     let closure = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(f);
+
+//     window()
+//         .unwrap()
+//         .document()
+//         .unwrap()
+//         .start_view_transition_with_update_callback(Some(closure.as_ref().unchecked_ref()))
+//         .unwrap();
+
+//     closure.forget();
+// }
 
 #[component]
 pub fn creature_card(
@@ -378,7 +394,10 @@ fn card_preview(
     view! {
         <button
             class="card"
-            style=format!("transform: rotate({rotation}deg)")
+            style=format!(
+                "transform: rotate({rotation}deg); view-transition-name: card-{card}",
+                card = card.name(),
+            )
             disabled=disabled
             on:click=move |_| on_click()
         >
@@ -391,7 +410,11 @@ fn card_preview(
 #[component]
 fn card_main(card: Card, on_click: impl FnMut(MouseEvent) + 'static) -> impl IntoView {
     view! {
-        <button class="card-main" on:click=on_click>
+        <button
+            class="card-main"
+            on:click=on_click
+            style=format!("view-transition-name: card-{card}", card = card.name())
+        >
             <p>{card.name()}</p>
             <img src=card.icon() />
             <p>{card.description()}</p>
@@ -430,7 +453,9 @@ fn card_modal(close: impl Fn() + Copy + Send + Sync + 'static) -> impl IntoView 
                                 view! {
                                     <CardMain
                                         card
-                                        on_click=move |_| set_selected_card(Some(card))
+                                        on_click=move |_| {
+                                            set_selected_card(Some(card));
+                                        }
                                     />
                                 }
                             })

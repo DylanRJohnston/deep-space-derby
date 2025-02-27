@@ -59,6 +59,7 @@ impl CommandHandler for JoinGame {
         Ok(vec![Event::PlayerJoined {
             name: input.name,
             session_id,
+            initial_cards: projections::initial_cards(events, session_id),
         }])
     }
 }

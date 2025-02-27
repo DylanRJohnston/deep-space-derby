@@ -2,7 +2,10 @@ use std::{hash::Hash, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{models::monsters::MONSTERS, time::*};
+use crate::{
+    models::{events::OddsExt, monsters::MONSTERS},
+    time::*,
+};
 
 use rand::{
     distributions::{Uniform, WeightedIndex},
@@ -13,7 +16,7 @@ use rand::{
 
 use super::{
     cards::{Card, Target},
-    events::{Event, Odds, PlacedBet},
+    events::{Event, Odds, Payout, PlacedBet, Settings},
     game_code::GameCode,
     monsters::Monster,
     processors::start_race::PRE_GAME_TIMEOUT,
@@ -46,7 +49,9 @@ pub fn players(events: &Vector<Event>) -> OrdMap<Uuid, PlayerInfo> {
 
     for event in events {
         match event {
-            Event::PlayerJoined { name, session_id } => {
+            Event::PlayerJoined {
+                name, session_id, ..
+            } => {
                 map.insert(
                     *session_id,
                     PlayerInfo {
@@ -166,11 +171,24 @@ pub fn all_players_have_bet(events: &Vector<Event>) -> bool {
     true
 }
 
+#[instrument(skip_all)]
+pub fn settings(events: &Vector<Event>) -> Settings {
+    match &events[0] {
+        Event::GameCreated { settings, .. } => *settings,
+        event => {
+            tracing::error!(?event, "first event wasn't game created");
+            return Settings::default();
+        }
+    }
+}
+
 pub const INFLATION_FACTOR: i32 = 110;
 
 pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
     let mut accounts = OrdMap::<Uuid, i32>::new();
     let mut bets = Vector::new();
+
+    let mut maybe_odds = None;
 
     for event in events {
         match event {
@@ -198,35 +216,52 @@ pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
             }
+            Event::RoundStarted { odds, .. } => {
+                maybe_odds = *odds;
+            }
             Event::RaceFinished {
                 results: RaceResults { first, .. },
                 ..
-            } => {
-                let total_losses = bets
-                    .iter()
-                    .copied()
-                    .filter(|bet| bet.monster_id != *first)
-                    .fold(0, |total, bet| total + bet.amount);
+            } => match settings(events).payout {
+                Payout::Odds => {
+                    bets.iter()
+                        .filter(|bet| bet.monster_id == *first)
+                        .for_each(|bet| {
+                            let balance = accounts.entry(bet.session_id).or_default();
+                            let payout = maybe_odds.payout(bet.monster_id);
 
-                let total_wins = bets
-                    .iter()
-                    .copied()
-                    .filter(|bet| bet.monster_id == *first)
-                    .fold(0, |total, bet| total + bet.amount);
+                            *balance += (payout * (bet.amount as f32)) as i32;
+                        });
 
-                bets.iter()
-                    .filter(|bet| bet.monster_id == *first)
-                    .for_each(|bet| {
-                        let balance = accounts.entry(bet.session_id).or_default();
+                    bets.clear();
+                }
+                Payout::Pool => {
+                    let total_losses = bets
+                        .iter()
+                        .copied()
+                        .filter(|bet| bet.monster_id != *first)
+                        .fold(0, |total, bet| total + bet.amount);
 
-                        let amount = bet.amount
-                            + INFLATION_FACTOR * bet.amount * total_losses / total_wins / 100;
+                    let total_wins = bets
+                        .iter()
+                        .copied()
+                        .filter(|bet| bet.monster_id == *first)
+                        .fold(0, |total, bet| total + bet.amount);
 
-                        *balance += amount;
-                    });
+                    bets.iter()
+                        .filter(|bet| bet.monster_id == *first)
+                        .for_each(|bet| {
+                            let balance = accounts.entry(bet.session_id).or_default();
 
-                bets.clear();
-            }
+                            let amount = bet.amount
+                                + INFLATION_FACTOR * bet.amount * total_losses / total_wins / 100;
+
+                            *balance += amount;
+                        });
+
+                    bets.clear();
+                }
+            },
             Event::PlayedCard {
                 session_id: source_uuid,
                 card: Card::Theft,
@@ -291,6 +326,7 @@ pub fn last_round(events: &Vector<Event>) -> Option<Vector<Event>> {
 pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
     let mut winnings = OrdMap::new();
     let mut bets = Vec::new();
+    let odds = pre_computed_odds(events);
 
     for event in events {
         match event {
@@ -304,31 +340,46 @@ pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
             Event::RaceFinished {
                 results: RaceResults { first, .. },
                 ..
-            } => {
-                let total_losses = bets
-                    .iter()
-                    .copied()
-                    .filter(|bet| bet.monster_id != *first)
-                    .fold(0, |total, bet| total + bet.amount);
+            } => match settings(events).payout {
+                Payout::Odds => {
+                    for bet in bets.iter() {
+                        let balance = winnings.entry(bet.session_id).or_default();
 
-                let total_wins = bets
-                    .iter()
-                    .copied()
-                    .filter(|bet| bet.monster_id == *first)
-                    .fold(0, |total, bet| total + bet.amount);
+                        let amount = if bet.monster_id == *first {
+                            ((odds.payout(bet.monster_id) - 1.0) * (bet.amount as f32)) as i32
+                        } else {
+                            -1 * bet.amount
+                        };
 
-                bets.iter().for_each(|bet| {
-                    let balance = winnings.entry(bet.session_id).or_default();
+                        *balance += amount
+                    }
+                }
+                Payout::Pool => {
+                    let total_losses = bets
+                        .iter()
+                        .copied()
+                        .filter(|bet| bet.monster_id != *first)
+                        .fold(0, |total, bet| total + bet.amount);
 
-                    let amount = if bet.monster_id == *first {
-                        INFLATION_FACTOR * bet.amount * total_losses / total_wins / 100
-                    } else {
-                        -bet.amount
-                    };
+                    let total_wins = bets
+                        .iter()
+                        .copied()
+                        .filter(|bet| bet.monster_id == *first)
+                        .fold(0, |total, bet| total + bet.amount);
 
-                    *balance += amount;
-                });
-            }
+                    bets.iter().for_each(|bet| {
+                        let balance = winnings.entry(bet.session_id).or_default();
+
+                        let amount = if bet.monster_id == *first {
+                            INFLATION_FACTOR * bet.amount * total_losses / total_wins / 100
+                        } else {
+                            -bet.amount
+                        };
+
+                        *balance += amount;
+                    });
+                }
+            },
             _ => {}
         }
     }
@@ -430,13 +481,22 @@ fn bought_cards(events: &Vector<Event>) -> u32 {
     count
 }
 
-pub fn draw_card_from_deck(events: &Vector<Event>) -> Card {
+pub fn draw_n_cards_from_deck<const N: usize>(events: &Vector<Event>, seed: u64) -> [Card; N] {
     let dist = WeightedIndex::new(DECK.map(|(weight, _)| weight)).unwrap();
-    let seed = race_seed_for_round(events, bought_cards(events));
+    let race_seed = race_seed_for_round(events, bought_cards(events));
 
-    let mut rng = StdRng::seed_from_u64(seed as u64);
+    let mut rng = StdRng::seed_from_u64(race_seed as u64 ^ seed);
 
-    DECK[dist.sample(&mut rng)].1
+    core::array::from_fn(|_| DECK[dist.sample(&mut rng)].1)
+}
+
+pub fn initial_cards(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
+    match settings(events).starting_cards {
+        0 => vec![],
+        3 => draw_n_cards_from_deck::<3>(events, player.as_u128() as u64).into(),
+        // TODO: Remove this horrible hack
+        _ => panic!("unsupported number of starting cards"),
+    }
 }
 
 pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
@@ -450,6 +510,13 @@ pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
 
     for event in events {
         match event {
+            Event::PlayerJoined {
+                session_id,
+                initial_cards,
+                ..
+            } => {
+                cards.insert(*session_id, initial_cards.clone());
+            }
             Event::BoughtCard { session_id, card } => {
                 cards.entry(*session_id).or_default().push(*card)
             }
@@ -966,14 +1033,16 @@ pub fn currently_betting(events: &Vector<Event>) -> Option<u32> {
 #[cfg(test)]
 mod tests {
 
+    use std::default;
+
     use im::{vector, OrdMap, Vector};
     use uuid::Uuid;
 
     use crate::models::{
         cards::{Card, Target},
-        events::{Event, PlacedBet},
+        events::{Event, Payout, PlacedBet, Settings},
         game_code::GameCode,
-        projections::RaceResults,
+        projections::{self, RaceResults},
     };
 
     use super::{all_account_balances, INFLATION_FACTOR};
@@ -1014,15 +1083,17 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings::default(),
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             }
         ];
 
@@ -1044,15 +1115,17 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1086,15 +1159,17 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::BorrowedMoney {
                 session_id: alice,
@@ -1124,15 +1199,17 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::BorrowedMoney {
                 session_id: alice,
@@ -1169,15 +1246,17 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -1202,7 +1281,7 @@ mod tests {
     }
 
     #[test]
-    fn winning_money() {
+    fn winning_money_pool() {
         let alice = Uuid::new_v4();
         let bob = Uuid::new_v4();
 
@@ -1213,15 +1292,20 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings {
+                    payout: Payout::Pool,
+                    ..Default::default()
+                }
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -1254,7 +1338,7 @@ mod tests {
     }
 
     #[test]
-    fn multiple_rounds() {
+    fn winning_money_odds() {
         let alice = Uuid::new_v4();
         let bob = Uuid::new_v4();
 
@@ -1265,15 +1349,77 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings {
+                    payout: Payout::Odds,
+                    ..Default::default()
+                }
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_a,
+                amount: 200
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_b,
+                amount: 500
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                }
+            }
+        ];
+
+        let accounts = all_account_balances(&events);
+
+        assert_eq!(
+            accounts,
+            [(alice, 1400), (bob, 500)]
+                .into_iter()
+                .collect::<OrdMap<Uuid, i32>>()
+        )
+    }
+
+    #[test]
+    fn multiple_rounds_pool() {
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let monster_a = Uuid::new_v4();
+        let monster_b = Uuid::new_v4();
+        let monster_c = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: "ABCDEF".try_into().unwrap(),
+                settings: Settings {
+                    payout: Payout::Pool,
+                    ..Default::default()
+                }
+            },
+            Event::PlayerJoined {
+                session_id: bob,
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
+            },
+            Event::PlayerJoined {
+                session_id: alice,
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -1342,7 +1488,7 @@ mod tests {
     }
 
     #[test]
-    fn all_together() {
+    fn multiple_rounds_odds() {
         let alice = Uuid::new_v4();
         let bob = Uuid::new_v4();
 
@@ -1353,15 +1499,113 @@ mod tests {
         let events = vector![
             Event::GameCreated {
                 game_id: "ABCDEF".try_into().unwrap(),
-                // session_id: Uuid::new_v4()
+                settings: Settings {
+                    payout: Payout::Odds,
+                    ..Default::default()
+                }
             },
             Event::PlayerJoined {
                 session_id: bob,
-                name: "Bob".to_owned()
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 session_id: alice,
-                name: "Alice".to_owned()
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_a,
+                amount: 200
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_b,
+                amount: 500
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                }
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_a,
+                amount: 250
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_b,
+                amount: 500
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_b,
+                    second: monster_a,
+                    third: monster_c,
+                }
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_b,
+                amount: 50
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_c,
+                amount: 300
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_c,
+                    second: monster_b,
+                    third: monster_a,
+                }
+            }
+        ];
+
+        let accounts = all_account_balances(&events);
+
+        assert_eq!(
+            accounts,
+            [(alice, 1100), (bob, 2100)]
+                .into_iter()
+                .collect::<OrdMap<Uuid, i32>>()
+        )
+    }
+
+    #[test]
+    fn all_together_pool() {
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let monster_a = Uuid::new_v4();
+        let monster_b = Uuid::new_v4();
+        let monster_c = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: "ABCDEF".try_into().unwrap(),
+                settings: Settings {
+                    payout: Payout::Pool,
+                    ..Default::default()
+                }
+            },
+            Event::PlayerJoined {
+                session_id: bob,
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
+            },
+            Event::PlayerJoined {
+                session_id: alice,
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1450,6 +1694,119 @@ mod tests {
     }
 
     #[test]
+    fn all_together_odds() {
+        let alice = Uuid::new_v4();
+        let bob = Uuid::new_v4();
+
+        let monster_a = Uuid::new_v4();
+        let monster_b = Uuid::new_v4();
+        let monster_c = Uuid::new_v4();
+
+        let events = vector![
+            Event::GameCreated {
+                game_id: "ABCDEF".try_into().unwrap(),
+                settings: Settings {
+                    payout: Payout::Odds,
+                    ..Default::default()
+                }
+            },
+            Event::PlayerJoined {
+                session_id: bob,
+                name: "Bob".to_owned(),
+                initial_cards: vec![]
+            },
+            Event::PlayerJoined {
+                session_id: alice,
+                name: "Alice".to_owned(),
+                initial_cards: vec![]
+            },
+            Event::BoughtCard {
+                session_id: alice,
+                card: Card::Poison
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_a,
+                amount: 200
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_b,
+                amount: 500
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_a,
+                    second: monster_b,
+                    third: monster_c,
+                }
+            },
+            Event::BoughtCard {
+                session_id: bob,
+                card: Card::Poison
+            },
+            Event::BorrowedMoney {
+                session_id: bob,
+                amount: 500
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_a,
+                amount: 250
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_b,
+                amount: 400
+            }),
+            Event::BorrowedMoney {
+                session_id: alice,
+                amount: 100
+            },
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_b,
+                    second: monster_a,
+                    third: monster_c,
+                }
+            },
+            Event::PlacedBet(PlacedBet {
+                session_id: alice,
+                monster_id: monster_b,
+                amount: 50
+            }),
+            Event::PlacedBet(PlacedBet {
+                session_id: bob,
+                monster_id: monster_c,
+                amount: 300
+            }),
+            Event::RaceFinished {
+                time: Event::now(),
+                results: RaceResults {
+                    first: monster_c,
+                    second: monster_b,
+                    third: monster_a,
+                }
+            },
+            Event::PaidBackMoney {
+                session_id: bob,
+                amount: 500
+            }
+        ];
+
+        let accounts = all_account_balances(&events);
+
+        assert_eq!(
+            accounts,
+            [(alice, 1100), (bob, 1800)]
+                .into_iter()
+                .collect::<OrdMap<Uuid, i32>>()
+        )
+    }
+
+    #[test]
     fn winnings() {
         let alice = Uuid::new_v4();
         let bob = Uuid::new_v4();
@@ -1461,19 +1818,26 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings {
+                    payout: Payout::Pool,
+                    ..Default::default()
+                }
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Carol".into(),
-                session_id: carol
+                session_id: carol,
+                initial_cards: vec![]
             },
             Event::PlacedBet(PlacedBet {
                 session_id: alice,
@@ -1521,11 +1885,13 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1561,11 +1927,13 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1610,11 +1978,13 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1650,11 +2020,13 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1699,11 +2071,13 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1721,6 +2095,38 @@ mod tests {
     }
 
     #[test]
+    fn starting_cards() {
+        init_tracing();
+
+        // Initial cards are sensitive to player UUID & GameCode
+        let alice = Uuid::from_u128(1);
+
+        let game = Event::GameCreated {
+            game_id: GameCode::try_from("ABCDEF").unwrap(),
+            settings: Settings {
+                starting_cards: 3,
+                ..Default::default()
+            },
+        };
+
+        let events = vector![
+            game.clone(),
+            Event::PlayerJoined {
+                name: "Alice".into(),
+                session_id: alice,
+                initial_cards: projections::initial_cards(&vector![game], alice)
+            }
+        ];
+
+        let cards_in_hand = super::cards_in_hand(&events, alice);
+
+        assert_eq!(
+            cards_in_hand,
+            vec![Card::TasteTester, Card::Meditation, Card::TinfoilHat]
+        );
+    }
+
+    #[test]
     fn playing_a_card_removes_it_from_hand() {
         init_tracing();
 
@@ -1728,11 +2134,13 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1761,12 +2169,13 @@ mod tests {
     #[test]
     fn drawing_a_card_is_deterministic() {
         let events = vector![Event::GameCreated {
-            game_id: GameCode::random()
+            game_id: GameCode::random(),
+            settings: Settings::default()
         }];
 
         assert_eq!(
-            super::draw_card_from_deck(&events),
-            super::draw_card_from_deck(&events)
+            super::draw_n_cards_from_deck::<1>(&events, 0),
+            super::draw_n_cards_from_deck::<1>(&events, 0)
         );
     }
 
@@ -1779,15 +2188,18 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1815,15 +2227,18 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::try_from("ABCDEF").unwrap()
+                game_id: GameCode::try_from("ABCDEF").unwrap(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1853,15 +2268,18 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::try_from("ABCDEF").unwrap()
+                game_id: GameCode::try_from("ABCDEF").unwrap(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1898,15 +2316,18 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::try_from("ABCDEF").unwrap()
+                game_id: GameCode::try_from("ABCDEF").unwrap(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -1953,19 +2374,23 @@ mod tests {
 
         let mut events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Carol".into(),
-                session_id: carol
+                session_id: carol,
+                initial_cards: vec![]
             },
             Event::PlayerReady { session_id: alice },
             Event::PlayerReady { session_id: bob },
@@ -2059,6 +2484,7 @@ mod tests {
         let mut events = Vector::from_iter(
             [Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             }]
             .into_iter()
             .chain(players.iter().clone().flat_map(|id| {
@@ -2066,6 +2492,7 @@ mod tests {
                     Event::PlayerJoined {
                         session_id: *id,
                         name: id.to_string(),
+                        initial_cards: vec![],
                     },
                     Event::PlayerReady { session_id: *id },
                 ]
@@ -2117,6 +2544,7 @@ mod tests {
         let mut events = Vector::from_iter(
             [Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             }]
             .into_iter()
             .chain(players.iter().clone().flat_map(|id| {
@@ -2124,6 +2552,7 @@ mod tests {
                     Event::PlayerJoined {
                         session_id: *id,
                         name: id.to_string(),
+                        initial_cards: vec![],
                     },
                     Event::PlayerReady { session_id: *id },
                 ]
@@ -2241,19 +2670,26 @@ mod tests {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings {
+                    payout: Payout::Pool,
+                    ..Default::default()
+                }
             },
             Event::PlayerJoined {
                 name: "Alice".into(),
-                session_id: alice
+                session_id: alice,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Bob".into(),
-                session_id: bob
+                session_id: bob,
+                initial_cards: vec![]
             },
             Event::PlayerJoined {
                 name: "Carol".into(),
-                session_id: carol
+                session_id: carol,
+                initial_cards: vec![]
             },
             Event::PlayerReady { session_id: alice },
             Event::PlayerReady { session_id: bob },

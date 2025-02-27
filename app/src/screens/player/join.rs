@@ -33,7 +33,7 @@ pub fn join() -> impl IntoView {
                     title="player name between 1-10 characters long"
                     value=None
                 />
-                <input class="button join-button" type="submit" value="Join"/>
+                <input class="button join-button" type="submit" value="Join" />
             </Form>
         </div>
     }

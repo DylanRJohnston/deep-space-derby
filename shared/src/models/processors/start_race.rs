@@ -58,7 +58,7 @@ impl Processor for StartRace {
 
 #[cfg(test)]
 mod test {
-    use crate::{test::init_tracing, time::*};
+    use crate::{models::events::Settings, test::init_tracing, time::*};
 
     use im::Vector;
     use uuid::Uuid;
@@ -80,14 +80,17 @@ mod test {
         let events = Vector::from_iter([
             Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             },
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerJoined {
                 session_id: b,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
@@ -110,14 +113,17 @@ mod test {
         let events = Vector::from_iter([
             Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             },
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerJoined {
                 session_id: b,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },
@@ -152,14 +158,17 @@ mod test {
         let events = Vector::from_iter([
             Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default(),
             },
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerJoined {
                 session_id: b,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::PlayerReady { session_id: b },

@@ -105,8 +105,8 @@ pub const MONSTERS: [Monster; 11] = [
         name: "Cranius",
         uuid: Uuid::from_u128(0x73c68289e1334859a0f4e45883076e10u128),
         blueprint_name: "library/Monster_Pink_Slime.glb",
-        dexterity: 10,
-        strength: 0,
+        dexterity: 9,
+        strength: 1,
         ..Monster::DEFAULT
     },
     Monster {

@@ -1,6 +1,6 @@
 use gloo_utils::format::JsValueSerdeExt;
 use shared::time::{Duration, SystemTime};
-use std::{cell::RefCell, rc::Rc};
+use std::{borrow::BorrowMut, cell::RefCell, rc::Rc};
 use wasm_bindgen::JsValue;
 
 use anyhow::Result;
@@ -12,41 +12,44 @@ use worker::{ListOptions, Storage};
 use crate::ports::event_log::EventLog;
 
 struct Inner {
-    storage: RefCell<Storage>,
-    events: RefCell<Vector<Event>>,
-    hydrated: RefCell<bool>,
+    storage: Storage,
+    events: Vector<Event>,
+    hydrated: bool,
 }
 
 #[derive(Clone)]
 pub struct DurableObjectKeyValue {
-    inner: Rc<Inner>,
+    inner: Rc<RefCell<Inner>>,
 }
 
-// Safety: DOKV is only constructable in WASM
+// Safety: wasm32 is single threaded but axum doesn't know that
+// DurableObjectKeyValue isn't Send + Sync because Storage contains a JsObject which is a *mut u32
+#[cfg(target_arch = "wasm32")]
 unsafe impl Send for DurableObjectKeyValue {}
+#[cfg(target_arch = "wasm32")]
 unsafe impl Sync for DurableObjectKeyValue {}
 
 impl DurableObjectKeyValue {
     pub fn new(storage: Storage) -> DurableObjectKeyValue {
         DurableObjectKeyValue {
-            inner: Rc::new(Inner {
-                storage: RefCell::new(storage),
-                events: RefCell::new(Vector::new()),
-                hydrated: RefCell::new(false),
-            }),
+            inner: Rc::new(RefCell::new(Inner {
+                storage,
+                events: Vector::new(),
+                hydrated: false,
+            })),
         }
     }
 
     #[instrument(skip_all, err)]
     async fn hydrate(&self) -> worker::Result<()> {
-        if *self.inner.hydrated.borrow() {
+        let mut this = (*self.inner).borrow_mut();
+
+        if this.hydrated {
             return Ok(());
         }
 
-        let events = self
-            .inner
+        let events = this
             .storage
-            .borrow_mut()
             .list_with_options(ListOptions::new().prefix("EVENT#"))
             .await?;
 
@@ -64,12 +67,12 @@ impl DurableObjectKeyValue {
                     );
                 })?;
 
-                self.inner.events.borrow_mut().push_back(event);
+                this.events.push_back(event);
 
                 Ok(())
             })?;
 
-        *self.inner.hydrated.borrow_mut() = true;
+        this.hydrated = true;
 
         Ok(())
     }
@@ -77,9 +80,9 @@ impl DurableObjectKeyValue {
     pub async fn write_alarm(&self, alarm: Duration) -> Result<()> {
         let wakeup = time::SystemTime::now() + alarm;
 
-        self.inner
-            .storage
+        (*self.inner)
             .borrow_mut()
+            .storage
             .put(
                 "ALARM",
                 &wakeup.duration_since(time::UNIX_EPOCH)?.as_secs_f64(),
@@ -90,10 +93,9 @@ impl DurableObjectKeyValue {
     }
 
     pub async fn read_alarm(&self) -> Option<SystemTime> {
-        let time = self
-            .inner
-            .storage
+        let time = (*self.inner)
             .borrow_mut()
+            .storage
             .get::<f64>("ALARM")
             .await
             .ok()?;
@@ -107,10 +109,12 @@ impl EventLog for DurableObjectKeyValue {
     async fn push(&self, event: Event) -> Result<()> {
         self.hydrate().await?;
 
-        let key = format!("EVENT#{:0>5}", self.inner.events.borrow().len());
+        let mut this = (*self.inner).borrow_mut();
 
-        self.inner.storage.borrow_mut().put(&key, &event).await?;
-        self.inner.events.borrow_mut().push_back(event);
+        let key = format!("EVENT#{:0>5}", this.events.len());
+
+        this.storage.put(&key, &event).await?;
+        this.events.push_back(event);
 
         Ok(())
     }
@@ -119,13 +123,13 @@ impl EventLog for DurableObjectKeyValue {
     async fn iter(&self) -> Result<impl Iterator<Item = Event>> {
         self.hydrate().await?;
 
-        Ok(self.inner.events.borrow().clone().into_iter())
+        Ok((*self.inner).borrow().events.clone().into_iter())
     }
 
     #[instrument(skip_all)]
     async fn vector(&self) -> Result<Vector<Event>> {
         self.hydrate().await?;
 
-        Ok(self.inner.events.borrow().clone())
+        Ok((*self.inner).borrow().events.clone())
     }
 }

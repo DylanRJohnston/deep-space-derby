@@ -98,12 +98,11 @@ mod test {
         let a = Uuid::new_v4();
 
         let events = Vector::from_iter([
-            Event::GameCreated {
-                game_id: GameCode::random(),
-            },
+            Event::new_game(),
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
         ]);
@@ -125,12 +124,11 @@ mod test {
         let a = Uuid::new_v4();
 
         let events = Vector::from_iter([
-            Event::GameCreated {
-                game_id: GameCode::random(),
-            },
+            Event::new_game(),
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::RoundStarted {
@@ -153,12 +151,11 @@ mod test {
         let a = Uuid::new_v4();
 
         let events = Vector::from_iter([
-            Event::GameCreated {
-                game_id: GameCode::random(),
-            },
+            Event::new_game(),
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::start_round_now(),
@@ -179,12 +176,11 @@ mod test {
         let now = Event::now();
 
         let events = Vector::from_iter([
-            Event::GameCreated {
-                game_id: GameCode::random(),
-            },
+            Event::new_game(),
             Event::PlayerJoined {
                 session_id: a,
                 name: "Test".into(),
+                initial_cards: vec![],
             },
             Event::PlayerReady { session_id: a },
             Event::RoundStarted {

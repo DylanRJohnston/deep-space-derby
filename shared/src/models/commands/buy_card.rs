@@ -35,7 +35,7 @@ impl CommandHandler for BuyCard {
 
         Ok(vec![Event::BoughtCard {
             session_id: session_id,
-            card: projections::draw_card_from_deck(events),
+            card: projections::draw_n_cards_from_deck::<1>(events, 0)[0],
         }])
     }
 }

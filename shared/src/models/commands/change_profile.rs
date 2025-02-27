@@ -61,7 +61,7 @@ mod test {
 
     use crate::models::{
         commands::{change_profile, ChangeProfile, CommandHandler},
-        events::Event,
+        events::{Event, Settings},
         game_code::GameCode,
     };
 
@@ -72,11 +72,13 @@ mod test {
 
         let events = vector![
             Event::GameCreated {
-                game_id: GameCode::random()
+                game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: a,
-                name: "A".into()
+                name: "A".into(),
+                initial_cards: vec![]
             },
         ];
 

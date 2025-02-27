@@ -5,6 +5,7 @@ use axum::{
 };
 use shared::models::{
     commands::{self, API},
+    events::{Payout, Settings},
     game_code::generate_game_code,
 };
 
@@ -29,8 +30,16 @@ pub async fn create_game<G: GameService>(
         .unwrap()
         .insert("Content-Type", "application/json".parse().unwrap());
 
-    let req = do_req
-        .body(serde_json::to_string(&commands::create_game::Input { code: game_code })?.into())?;
+    let req = do_req.body(
+        serde_json::to_string(&commands::create_game::Input {
+            code: game_code,
+            settings: Some(Settings {
+                payout: Payout::Odds,
+                starting_cards: 3,
+            }),
+        })?
+        .into(),
+    )?;
 
     let response = game_service
         .call(GameRequest {

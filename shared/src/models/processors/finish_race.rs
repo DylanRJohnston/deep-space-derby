@@ -48,7 +48,7 @@ mod test {
     use crate::{
         models::{
             commands::Command,
-            events::{Event, PlacedBet},
+            events::{Event, PlacedBet, Settings},
             game_code::GameCode,
             processors::Processor,
         },
@@ -64,10 +64,12 @@ mod test {
         let events = vector![
             Event::GameCreated {
                 game_id: GameCode::random(),
+                settings: Settings::default()
             },
             Event::PlayerJoined {
                 session_id: Uuid::new_v4(),
                 name: "Test".into(),
+                initial_cards: vec![]
             },
             Event::PlayerReady {
                 session_id: Uuid::new_v4(),

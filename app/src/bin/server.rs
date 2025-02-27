@@ -1,14 +1,17 @@
-use std::net::SocketAddr;
-
-use app::{
-    adapters::{game_service::axum_router::AxumGameService, game_state::file::FileGameDirectory},
-    router::{into_game_router, into_outer_router},
-};
-use axum_server::tls_rustls::RustlsConfig;
-use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-
+#[cfg(not(target_arch = "wasm32"))]
 #[tokio::main]
 pub async fn main() {
+    use std::net::SocketAddr;
+
+    use app::{
+        adapters::{
+            game_service::axum_router::AxumGameService, game_state::file::FileGameDirectory,
+        },
+        router::{into_game_router, into_outer_router},
+    };
+    use axum_server::tls_rustls::RustlsConfig;
+    use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+
     tracing_subscriber::fmt().pretty().init();
 
     let app = into_outer_router(AxumGameService {
@@ -33,3 +36,6 @@ pub async fn main() {
 
     tokio::try_join!(ssl_fut, fut).unwrap();
 }
+
+#[cfg(target_arch = "wasm32")]
+pub fn main() {}

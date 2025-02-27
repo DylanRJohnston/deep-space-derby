@@ -78,15 +78,36 @@ pub enum EventStream {
     Event(Event),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[serde_wasm_bindgen]
+pub enum Payout {
+    #[default]
+    Odds,
+    Pool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[serde_wasm_bindgen]
+pub struct Settings {
+    #[serde(default)]
+    pub payout: Payout,
+    #[serde(default)]
+    pub starting_cards: usize,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 #[serde_wasm_bindgen]
 pub enum Event {
     GameCreated {
         game_id: GameCode,
+        #[serde(default)]
+        settings: Settings,
     },
     PlayerJoined {
         session_id: Uuid,
         name: String,
+        #[serde(default)]
+        initial_cards: Vec<Card>,
     },
     ChangedProfile {
         session_id: Uuid,
@@ -128,6 +149,13 @@ pub enum Event {
 }
 
 impl Event {
+    pub fn new_game() -> Event {
+        Event::GameCreated {
+            game_id: GameCode::random(),
+            settings: Settings::default(),
+        }
+    }
+
     pub fn start_round_now() -> Event {
         Event::RoundStarted {
             time: Event::now(),

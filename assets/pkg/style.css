@@ -783,11 +783,14 @@ input[type="number"] {
 }
 
 .odds {
+  grid-column: span 2;
   color: #ffbf00;
   /* margin-bottom: 0.5em; */
   font-size: 32px;
   -webkit-text-stroke: 2px #444;
-  text-align: right;
+
+  display: flex;
+  justify-content: space-between;
 }
 
 .space-between {
