@@ -1,9 +1,8 @@
 use std::cmp::{max, min};
 
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, leptos_dom::logging::console_log, prelude::*};
 use leptos_use::use_scroll;
 use uuid::Uuid;
-use wasm_bindgen::JsCast;
 use web_sys::MouseEvent;
 
 use crate::{
@@ -39,12 +38,12 @@ pub fn creature_card(
     available_money: Signal<i32>,
 ) -> impl IntoView {
     let set_bet = move |input: i32| {
-        // Available money reads all the bets, and so it needs to be called before amount.update for RWLock reasons
-        let available_money = available_money();
+        console_log(&format!("Setting bet to {input}"));
 
-        amount.update(|amount| {
-            *amount = max(*amount + min(input - *amount, available_money), 0);
-        });
+        // Available money reads all the bets, and so it needs to be called before amount.update for RWLock reasons
+        let available_money = available_money.try_get().unwrap_or_default();
+        let new_amount = max(amount() + min(input - amount(), available_money), 0);
+        amount.set(new_amount);
     };
 
     let decrement = move |_| set_bet(amount() - 25);
@@ -54,18 +53,24 @@ pub fn creature_card(
         set_bet(event_target_value(&ev).parse().unwrap_or_default());
     };
 
+    let button_disabled = Signal::derive(move || {
+        console_log(&format!("reading button state"));
+        return available_money.try_get().unwrap_or_default() <= 0;
+    });
+
     view! {
         <div class="creature-container">
             <h3>{name}</h3>
             <div class="betting-row">
                 <button on:click=decrement disabled=move || (amount() <= 0)>
                     "-"
-                // {increment_size}
                 </button>
                 <input type="number" prop:value=amount on:input=arbitrary_amount />
-                <button on:click=increment disabled=move || (available_money() <= 0)>
+                <button
+                    on:click=increment
+                    disabled=move || button_disabled.try_get().unwrap_or_default()
+                >
                     "+"
-                // {increment_size}
                 </button>
             </div>
         </div>
@@ -164,7 +169,7 @@ pub fn pre_game() -> impl IntoView {
     let new_modal = || {
         let (read, write) = signal(false);
 
-        (read, move || write(!read()))
+        (read, move || write(!read.get_untracked()))
     };
 
     let (bets_modal, toggle_bets_modal) = new_modal();
@@ -196,7 +201,7 @@ pub fn pre_game() -> impl IntoView {
                     <h2>{player_name}</h2>
                     <div class="finance">
                         <span style="justify-self: end">"Funds:"</span>
-                        <span>"💎 " {available_money}</span>
+                        <span>"💎 " {move || available_money.try_get().unwrap_or_default()}</span>
                         <span style="justify-self: end">"Debt:"</span>
                         <span>"💎 " {debt}</span>
                     </div>
@@ -260,7 +265,7 @@ pub fn pre_game() -> impl IntoView {
                     "←"
                 </button>
                 // <h2>"Place your Bets"</h2>
-                <p>"Available: 💎 " {available_money}</p>
+                <p>"Available: 💎 " {move || available_money.try_get().unwrap_or_default()}</p>
                 <For
                     each=move || bets
                     key=|it| *it

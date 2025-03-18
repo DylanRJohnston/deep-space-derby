@@ -1,6 +1,6 @@
 use gloo_utils::format::JsValueSerdeExt;
 use shared::time::{Duration, SystemTime};
-use std::{borrow::BorrowMut, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::JsValue;
 
 use anyhow::Result;

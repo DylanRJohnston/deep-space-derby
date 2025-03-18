@@ -79,9 +79,11 @@ pub fn create_event_signal(
 
                     match event {
                         EventStream::Events(new_events) => {
+                            tracing::info!(?new_events, "got new events");
                             set_events.update(|events| events.append(new_events.into()))
                         }
                         EventStream::Event(event) => {
+                            tracing::info!(?event, "got new event");
                             set_events.update(|events| events.push_back(event))
                         }
                     }

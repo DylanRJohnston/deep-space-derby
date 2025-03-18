@@ -14,10 +14,10 @@ pub fn wait() -> impl IntoView {
 
     let UseIntervalReturn { counter, .. } = use_interval(1000);
 
-    let time = move || {
+    let time = Signal::derive(move || {
         counter();
         projections::time_left_in_pregame(&events())
-    };
+    });
 
     let (victim_modal, set_victim_modal) = signal(None);
 
@@ -32,7 +32,7 @@ pub fn wait() -> impl IntoView {
             <div class="pre-game-container space-around">
                 <h1>"waiting for other players..."</h1>
                 <div class="countdown">
-                    {move || match time() {
+                    {move || match time.try_get().flatten() {
                         Some(time) => format!("{time}"),
                         None => "∞".to_string(),
                     }}

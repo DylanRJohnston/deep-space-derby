@@ -112,7 +112,7 @@
             CLIENT_TARGET="./target/wasm32-unknown-unknown/debug/app.wasm"
 
             cargo build --target wasm32-unknown-unknown --no-default-features -p app --lib --features app/hydrate
-            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $CLIENT_TARGET --no-typescript --out-name index --target web --out-dir ./site/pkg
+            ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen $CLIENT_TARGET --keep-debug --no-typescript --out-name index --target web --out-dir ./site/pkg
 
             echo "############### FINISHED BUILDING CLIENT ###############"
           '';

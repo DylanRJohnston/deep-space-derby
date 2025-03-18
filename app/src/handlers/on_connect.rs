@@ -5,7 +5,7 @@ mod wasm {
     use worker::WebSocketPair;
 
     use crate::{
-        extractors::{Game, GameCode, SessionID},
+        extractors::{Game, SessionID},
         ports::game_state::{GameDirectory, GameState},
     };
 
@@ -17,7 +17,6 @@ mod wasm {
     pub async fn on_connect<G: GameDirectory<WebSocket = WebSocket>>(
         Game(game_state): Game<G>,
         SessionID(_session_id): SessionID,
-        GameCode { code }: GameCode,
     ) -> Result<Response, InternalServerError> {
         let pair = WebSocketPair::new()?;
 
