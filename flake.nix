@@ -72,6 +72,7 @@
 
             cargo build --target wasm32-unknown-unknown --no-default-features --release -p game --bin game
             ${pkgs.wasm-bindgen-cli}/bin/wasm-bindgen ./target/wasm32-unknown-unknown/release/game.wasm   --no-typescript --remove-name-section --remove-producers-section --out-name game  --target web     --out-dir ./site/pkg
+            wasm-opt -all -Oz -o ./site/pkg/game_bg.reduced.wasm ./site/pkg/game_bg.wasm && mv ./site/pkg/game_bg.reduced.wasm ./site/pkg/game_bg.wasm
           '';
 
           deploy-site = pkgs.writeShellScriptBin "deploy-site" ''
