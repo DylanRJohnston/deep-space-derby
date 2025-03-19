@@ -20,3 +20,6 @@ lto = true
 opt-level = 's'
 strip = true
 debug = false
+
+[profile.dev.package.bevy_ecs]
+debug-assertions = false

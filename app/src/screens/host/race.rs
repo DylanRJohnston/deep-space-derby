@@ -1,4 +1,5 @@
-use leptos::prelude::*;
+use leptos::{leptos_dom::logging::console_log, prelude::*};
+use leptos_use::UseIntervalReturn;
 use shared::models::{cards::Card, projections};
 
 use crate::utils::use_events;
@@ -9,6 +10,12 @@ struct PlayedCardInfo {
     card: Card,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Countdown {
+    Counting(i64),
+    Finished,
+}
+
 #[component]
 pub fn race() -> impl IntoView {
     let events = use_events();
@@ -17,7 +24,7 @@ pub fn race() -> impl IntoView {
     let monsters = projections::monsters(&events.get_untracked(), race_seed);
     let cards = projections::unique_played_monster_cards(&events.get_untracked());
 
-    let timer = leptos_use::use_interval(1000);
+    let UseIntervalReturn { counter: timer, .. } = leptos_use::use_interval(1000);
 
     let monster_cards =
         monsters.map(|monster| (monster.uuid, signal::<Option<PlayedCardInfo>>(None)));
@@ -25,7 +32,7 @@ pub fn race() -> impl IntoView {
     Effect::new({
         let cards = cards.clone();
         move |_| {
-            let counter = timer.counter.get();
+            let counter = timer.get();
 
             tracing::info!(?counter, "counter trigger");
 
@@ -57,11 +64,29 @@ pub fn race() -> impl IntoView {
     let visible = {
         let cards = cards.clone();
 
-        move || ((timer.counter.get() / 4) as usize) < (cards.len())
+        move || ((timer.get() / 4) as usize) < (cards.len())
     };
 
+    let countdown = Signal::derive(move || {
+        if ((timer.get() / 4) as usize) >= (cards.len()) {
+            console_log("showing countdown");
+
+            let value = 3 - (timer.get() as i64 - cards.len() as i64 * 4);
+
+            match value {
+                ..0 => None,
+                0 => Some(Countdown::Finished),
+                _ => Some(Countdown::Counting(value)),
+            }
+        } else {
+            None
+        }
+    });
+
+    let go = move || matches!(countdown(), Some(Countdown::Finished));
+
     view! {
-        <Show when=visible fallback=move || {}>
+        <Show when=visible.clone() fallback=move || {}>
             <div class="host-race-container">
                 {monster_cards
                     .map(|data| {
@@ -91,6 +116,21 @@ pub fn race() -> impl IntoView {
                             </div>
                         }
                     })}
+            </div>
+        </Show>
+        <Show when=move || countdown().is_some()>
+            <div class="host-race-container">
+                <div class="glow-circle" class:red=go></div>
+                <div class="pulse-ring" class:red=go></div>
+                <div class="countdown-display" class:red=go>
+                    {move || {
+                        match countdown() {
+                            Some(Countdown::Counting(value)) => value.to_string(),
+                            Some(Countdown::Finished) => "Go!".to_string(),
+                            None => "".to_string(),
+                        }
+                    }}
+                </div>
             </div>
         </Show>
     }

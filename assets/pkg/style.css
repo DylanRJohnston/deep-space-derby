@@ -1119,3 +1119,112 @@ div .two-columns {
   width: 250px;
   height: 250px;
 }
+
+.countdown-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 00ff99 */
+
+.countdown-display {
+  position: absolute;
+  font-size: 20vw;
+  /* font-weight: bold; */
+  color: #ff9500;
+  text-shadow: 0 0 20px #ff9500, 0 0 40px #ff9500;
+  z-index: 10;
+  opacity: 0;
+  animation: numberAnimation 1s infinite forwards;
+}
+
+.countdown-display.red {
+  color: #00ff99;
+  text-shadow: 0 0 20px #00ff99, 0 0 40px #00ff99;
+  font-size: 15vw;
+}
+
+.glow-circle {
+  position: absolute;
+  width: 30vw;
+  height: 30vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff9500a7 0%, rgba(0, 0, 0, 0) 70%);
+  animation: glow-circle 1s infinite forwards;
+  scale: 1;
+}
+
+.glow-circle.red {
+  background: radial-gradient(circle, #00ff99b4 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 40vw;
+  height: 40vw;
+  border-radius: 50%;
+  border: 4px solid #ff9500;
+  opacity: 0;
+  animation: ringPulse 1s infinite forwards;
+}
+
+.pulse-ring.red {
+  border-color: #00ff99;
+}
+
+@keyframes glow-circle {
+  0% {
+    opacity: 0;
+    scale: 0;
+  }
+  50% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 0;
+  }
+}
+
+@keyframes numberAnimation {
+  0% {
+    opacity: 0;
+    transform: scale(3);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
