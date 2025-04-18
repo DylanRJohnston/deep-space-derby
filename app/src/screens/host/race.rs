@@ -68,18 +68,16 @@ pub fn race() -> impl IntoView {
     };
 
     let countdown = Signal::derive(move || {
-        if ((timer.get() / 4) as usize) >= (cards.len()) {
-            console_log("showing countdown");
+        if ((timer.get() / 4) as usize) < (cards.len()) {
+            return None;
+        }
 
-            let value = 3 - (timer.get() as i64 - cards.len() as i64 * 4);
+        let value = 3 + cards.len() as i64 * 4 - timer.get() as i64;
 
-            match value {
-                ..0 => None,
-                0 => Some(Countdown::Finished),
-                _ => Some(Countdown::Counting(value)),
-            }
-        } else {
-            None
+        match value {
+            1.. => Some(Countdown::Counting(value)),
+            0 => Some(Countdown::Finished),
+            _ => None,
         }
     });
 

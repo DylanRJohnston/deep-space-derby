@@ -118,9 +118,9 @@ canvas {
 .title {
   text-align: center;
   margin: 0px;
-  font-size: 10rem;
+  font-size: calc(min(20vw, 10em));
   color: #3b0042;
-  -webkit-text-stroke: 8px #e5e5e5;
+  -webkit-text-stroke: 0.5vw #e5e5e5;
 }
 
 .full-screen {

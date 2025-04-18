@@ -12,7 +12,7 @@ pub fn main_menu() -> impl IntoView {
             // <div class="splash-image">"Image"</div>
             <HorizontalStack>
                 <Form attr:class="button-form" action="/api/create_game" method="POST">
-                    <input class="button" type="submit" value="Host"/>
+                    <input class="button" type="submit" value="Host" />
                 </Form>
                 <a class="button" href="/play">
                     "Join"
