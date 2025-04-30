@@ -100,10 +100,7 @@ mod set_alarm {
 
     use super::Game;
 
-    pub fn set_alarm(
-        this: &Game,
-        duration: Duration,
-    ) -> impl Future<Output = Result<()>> + Send + '_ {
+    pub fn set_alarm(this: &Game, duration: Duration) -> impl Future<Output = Result<()>> + Send {
         async move {
             let mut game = this.inner.lock().await;
 

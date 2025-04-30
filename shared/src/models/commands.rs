@@ -6,12 +6,6 @@ use uuid::Uuid;
 
 use super::{events::Event, game_code::GameCode};
 
-#[derive(Debug)]
-pub enum Effect {
-    Alarm(i64),
-    SoftCommand(fn(&Vector<Event>) -> Option<Event>),
-}
-
 pub trait CommandHandler {
     type Input: Serialize + DeserializeOwned + std::fmt::Debug + Send + 'static;
 

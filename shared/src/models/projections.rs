@@ -66,6 +66,7 @@ pub fn players(events: &Vector<Event>) -> OrdMap<Uuid, PlayerInfo> {
                     info.name = name.clone();
                 }
             }
+
             Event::PlayerReady { session_id } => {
                 if let Some(info) = map.get_mut(session_id) {
                     info.ready = true

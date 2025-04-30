@@ -179,11 +179,6 @@ pub fn run_timers(
 
                 commands.entity(entity).insert(Animator::new(tween));
 
-                // transition
-                //     .play(&mut player, animations.jump.index, Duration::ZERO)
-                //     .set_speed(animation_speed)
-                //     .replay();
-
                 transition
                     .play(
                         &mut player,
@@ -199,7 +194,7 @@ pub fn run_timers(
                     .play(
                         &mut player,
                         animations.dance.index,
-                        Duration::from_secs_f32(1.0),
+                        Duration::from_secs_f32(0.3),
                     )
                     .set_speed(thread_rng().sample(Uniform::new(0.9, 1.1)))
                     .repeat();

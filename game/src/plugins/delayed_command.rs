@@ -10,17 +10,20 @@ impl Plugin for DelayedCommandPlugin {
     }
 }
 
-#[derive(Component)]
+trait Thunk: FnOnce(&mut Commands) + Send + Sync + 'static {}
+impl<T> Thunk for T where T: FnOnce(&mut Commands) + Send + Sync + 'static {}
+
+#[derive(Component, Deref, DerefMut)]
 pub struct DelayedCommand {
-    // This could be FnOnce if we did some mem/swap magic with a no-op closure
-    pub command: Box<dyn FnMut(&mut Commands) + Send + Sync + 'static>,
+    #[deref]
+    pub thunk: Option<Box<dyn Thunk>>,
     pub delay: Timer,
 }
 
 impl DelayedCommand {
-    pub fn new(secs: f32, command: impl FnMut(&mut Commands) + Send + Sync + 'static) -> Self {
+    pub fn new(secs: f32, thunk: impl Thunk) -> Self {
         Self {
-            command: Box::new(command),
+            thunk: Some(Box::new(thunk)),
             delay: Timer::new(Duration::from_secs_f32(secs), TimerMode::Once),
         }
     }
@@ -31,30 +34,26 @@ fn run_delayed_commands(
     mut delayed_commands: Query<(Entity, &mut DelayedCommand)>,
     time: Res<Time>,
 ) {
-    for (entity, mut command) in &mut delayed_commands {
-        if !command.delay.tick(time.delta()).just_finished() {
+    for (entity, mut delayed) in &mut delayed_commands {
+        if !delayed.delay.tick(time.delta()).just_finished() {
             continue;
         }
 
-        (command.command)(&mut commands);
+        let Some(mut thunk) = delayed.take() else {
+            continue;
+        };
+
+        (thunk)(&mut commands);
         commands.entity(entity).despawn_recursive();
     }
 }
 
 pub trait DelayedCommandExt {
-    fn delayed(
-        &mut self,
-        secs: f32,
-        command: impl FnMut(&mut Commands) + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn delayed(&mut self, secs: f32, thunk: impl Thunk) -> EntityCommands<'_>;
 }
 
 impl DelayedCommandExt for Commands<'_, '_> {
-    fn delayed(
-        &mut self,
-        secs: f32,
-        command: impl FnMut(&mut Commands) + Send + Sync + 'static,
-    ) -> EntityCommands<'_> {
-        self.spawn(DelayedCommand::new(secs, command))
+    fn delayed(&mut self, secs: f32, thunk: impl Thunk) -> EntityCommands<'_> {
+        self.spawn(DelayedCommand::new(secs, thunk))
     }
 }
