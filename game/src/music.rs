@@ -1,6 +1,6 @@
 use std::{cell::RefCell, time::Duration};
 
-use bevy::{prelude::*, utils::tracing};
+use bevy::prelude::*;
 use bevy_kira_audio::prelude::*;
 
 use super::scenes::{MusicAssets, RaceState, SceneState};

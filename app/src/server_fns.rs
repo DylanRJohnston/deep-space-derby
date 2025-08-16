@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use shared::models::commands::{CommandHandler, API};
+use shared::models::commands::{API, CommandHandler};
 use shared::models::game_code::GameCode;
 use std::future::Future;
 
@@ -7,7 +7,7 @@ use std::future::Future;
 pub fn server_fn<C: CommandHandler + API>(
     game_id: GameCode,
     input: &C::Input,
-) -> impl Future<Output = Result<(), ServerFnError>> + Send + 'static {
+) -> impl use<C> + Future<Output = Result<(), ServerFnError>> + Send + 'static {
     use gloo_net::http::Request;
     use worker::send::SendFuture;
 
@@ -36,6 +36,6 @@ pub fn server_fn<C: CommandHandler + API>(
 pub fn server_fn<C: CommandHandler + API>(
     game_id: GameCode,
     input: &C::Input,
-) -> impl Future<Output = Result<(), ServerFnError>> + Send + 'static {
+) -> impl use<C> + Future<Output = Result<(), ServerFnError>> + Send + 'static {
     async { std::future::pending().await }
 }

@@ -1,10 +1,6 @@
 use std::ops::Deref;
 
-use bevy::{
-    prelude::*,
-    scene::SceneInstance,
-    utils::{tracing, HashMap},
-};
+use bevy::{log::tracing, platform::collections::HashMap, prelude::*, scene::SceneInstance};
 
 /// AnimationLinkPlugin solves an awkward ergonimics problem in bevy
 /// with the way it's AnimationPlayer works when loading scenes.

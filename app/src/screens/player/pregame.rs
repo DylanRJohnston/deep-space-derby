@@ -11,25 +11,11 @@ use crate::{
 };
 use shared::models::{
     cards::{Card, Target, TargetKind},
-    commands::{borrow_money, place_bets, play_card, BorrowMoney, BuyCard, PlaceBets, PlayCard},
+    commands::{BorrowMoney, BuyCard, PlaceBets, PlayCard, borrow_money, place_bets, play_card},
+    events::{Event, OddsExt},
     monsters::Monster,
-    projections::{self},
+    projections::{self, race_seed},
 };
-
-// use web_sys::window;
-
-// fn start_view_transition(f: impl FnMut() + 'static) {
-//     let closure = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(f);
-
-//     window()
-//         .unwrap()
-//         .document()
-//         .unwrap()
-//         .start_view_transition_with_update_callback(Some(closure.as_ref().unchecked_ref()))
-//         .unwrap();
-
-//     closure.forget();
-// }
 
 #[component]
 pub fn creature_card(
@@ -62,7 +48,7 @@ pub fn creature_card(
         <div class="creature-container">
             <h3>{name}</h3>
             <div class="betting-row">
-                <button on:click=decrement disabled=move || (amount() <= 0)>
+                <button on:click=decrement disabled=move || amount() <= 0>
                     "-"
                 </button>
                 <input type="number" prop:value=amount on:input=arbitrary_amount />
@@ -544,10 +530,31 @@ fn target_modal(
         move || targets().unwrap_or_default().len() >= target_count && !target_selected()
     };
 
+    let base_monsters =
+        leptos::prelude::Memo::new(move |_| projections::monsters(&events(), race_seed()));
+
+    let base_odds =
+        leptos::prelude::Memo::new(move |_| projections::odds(&base_monsters(), race_seed()));
+
     let target_view = move || match card.target_kind() {
-        TargetKind::Monster => projections::monsters(&events(), race_seed())
+        TargetKind::Monster => base_monsters()
             .into_iter()
             .map(|monster| {
+                let base_odd = base_odds().odds(monster.uuid) * 100.0;
+
+                let mut simulate_card = events();
+                simulate_card.push_back(Event::PlayedCard {
+                    session_id: player_id,
+                    card: card,
+                    target: Target::Monster(monster.uuid),
+                });
+
+                let affected_monsters = projections::monsters(&simulate_card, race_seed());
+                let affected_odds =
+                    projections::odds(&affected_monsters, race_seed()).odds(monster.uuid) * 100.0;
+
+                let difference = affected_odds - base_odd;
+
                 view! {
                     <button
                         class="card-target"
@@ -555,7 +562,7 @@ fn target_modal(
                         on:click=toggle_target(monster.uuid)
                         disabled=disabled(monster.uuid)
                     >
-                        <p>{monster.name}</p>
+                        <p>{monster.name} {format!("  {difference:+.0}%")}</p>
                     </button>
                 }
                 .into_any()

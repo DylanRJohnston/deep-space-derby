@@ -1,15 +1,9 @@
-use std::{
-    ops::{Deref, DerefMut},
-    sync::{
-        mpsc::{channel, Receiver, Sender},
-        LazyLock, Mutex,
-    },
+use std::sync::{
+    LazyLock, Mutex,
+    mpsc::{Receiver, Sender, channel},
 };
 
-use bevy::{
-    prelude::*,
-    utils::{synccell::SyncCell, tracing},
-};
+use bevy::{log::tracing, prelude::*, utils::synccell::SyncCell};
 
 use im::Vector;
 use shared::models::{events::Event, events::EventStream, game_code};
@@ -59,6 +53,8 @@ impl EventReceiver {
 
     fn read(mut receiver: ResMut<EventReceiver>, mut events: ResMut<GameEvents>) {
         while let Ok(new_events) = receiver.0.get().try_recv() {
+            tracing::info!(?new_events, "game has recieved events from frontend",);
+
             match new_events {
                 EventStream::Events(new_events) => **events = Vector::from(new_events),
                 EventStream::Event(new_event) => events.push_back(new_event),

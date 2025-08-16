@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
-use bevy_tweening::{lens::TransformPositionLens, Animator, Delay, Tween};
-use rand::{distributions::Uniform, thread_rng, Rng};
+use bevy_tweening::{Animator, Delay, Tween, lens::TransformPositionLens};
+use rand::{Rng, distributions::Uniform, thread_rng};
 use shared::models::{monsters::Monster, projections::Jump};
 use std::time::Duration;
 
@@ -8,7 +8,7 @@ use bevy::prelude::*;
 
 use super::{
     animation_link::{AnimationLink, AnimationRoot},
-    scenes::{race::RaceTimer, GameAssets},
+    scenes::{GameAssets, race::RaceTimer},
 };
 
 pub struct MonsterPlugin;
@@ -219,7 +219,7 @@ fn despawn_all_monsters(
     monsters: Query<Entity, With<MonsterBehaviour>>,
 ) {
     for monster in &monsters {
-        commands.entity(monster).despawn_recursive();
+        commands.entity(monster).despawn();
     }
 }
 

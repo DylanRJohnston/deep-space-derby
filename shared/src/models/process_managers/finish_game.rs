@@ -1,6 +1,6 @@
 use im::Vector;
 
-use super::Processor;
+use super::ProcessManager;
 use crate::models::projections;
 use crate::models::{commands::Command, events::Event};
 
@@ -8,7 +8,7 @@ pub struct FinishGame;
 
 pub const SUMMARY_DURATION: f32 = 15.0;
 
-impl Processor for FinishGame {
+impl ProcessManager for FinishGame {
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
         if matches!(events.last(), Some(Event::GameFinished)) {
             return None;

@@ -1,18 +1,26 @@
 use bevy::{asset::AssetMetaCheck, prelude::*, window::WindowResolution};
 use bevy_tweening::TweeningPlugin;
-use iyes_progress::prelude::*;
 
-use crate::plugins::{
-    animation_link::AnimationLinkPlugin,
-    delayed_command::DelayedCommandPlugin,
-    event_stream::EventStreamPlugin,
-    monster::MonsterPlugin,
-    music::MusicPlugin,
-    planets::PlanetsPlugin,
-    scenes::{SceneState, ScenesPlugin},
-    skinned_mesh::SkinnedMeshPlugin,
-    spectators::SpectatorPlugin,
-};
+use animation_link::AnimationLinkPlugin;
+use delayed_command::DelayedCommandPlugin;
+use event_stream::EventStreamPlugin;
+use iyes_progress::prelude::*;
+use monster::MonsterPlugin;
+use music::MusicPlugin;
+use planets::PlanetsPlugin;
+use scenes::{SceneState, ScenesPlugin};
+use skinned_mesh::SkinnedMeshPlugin;
+use spectators::SpectatorPlugin;
+
+mod animation_link;
+mod delayed_command;
+mod event_stream;
+mod monster;
+mod music;
+mod planets;
+mod scenes;
+mod skinned_mesh;
+mod spectators;
 
 #[cfg(target_arch = "wasm32")]
 const FILE_PATH: &str = "/assets";
@@ -20,14 +28,14 @@ const FILE_PATH: &str = "/assets";
 #[cfg(not(target_arch = "wasm32"))]
 const FILE_PATH: &str = "assets";
 
-pub fn start(f: impl FnOnce(&mut App)) {
+pub fn main() {
     let mut app = App::new();
 
     #[cfg(not(target_arch = "wasm32"))]
     if let Some(game_id) = std::env::args().nth(1) {
         let game_id = shared::models::game_code::GameCode::try_from(game_id.as_str())
             .expect("failed to parse game_id");
-        app.insert_resource(crate::plugins::event_stream::GameCode(game_id));
+        app.insert_resource(event_stream::GameCode(game_id));
     }
 
     app.add_plugins(
@@ -68,9 +76,8 @@ pub fn start(f: impl FnOnce(&mut App)) {
     .insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 0.0,
+        ..default()
     });
-
-    f(&mut app);
 
     app.run();
 }
@@ -90,7 +97,7 @@ fn spawn_progress_bar(mut commands: Commands) {
     commands
         .spawn((
             ProgressBarRoot,
-            TargetCamera(camera),
+            UiTargetCamera(camera),
             Node {
                 width: Val::Percent(100.),
                 height: Val::Percent(100.),
@@ -131,9 +138,9 @@ fn spawn_progress_bar(mut commands: Commands) {
 }
 
 fn remove_progress_bar(progress_bar: Query<Entity, With<ProgressBarRoot>>, mut commands: Commands) {
-    let progress_bar = progress_bar.get_single().unwrap();
+    let progress_bar = progress_bar.single().unwrap();
 
-    commands.entity(progress_bar).despawn_recursive();
+    commands.entity(progress_bar).despawn();
 }
 
 fn ui_progress_bar(
@@ -144,12 +151,12 @@ fn ui_progress_bar(
     let progress = counter
         .map(|it| it.get_global_progress().into())
         .unwrap_or(1.0);
-    let mut progress_bar = progress_bar.get_single_mut().unwrap();
+    let mut progress_bar = progress_bar.single_mut().unwrap();
 
     progress_bar.width = Val::Percent(100. * progress);
 
     if progress > 0.99 {
-        let mut text = progress_message.get_single_mut().unwrap();
+        let mut text = progress_message.single_mut().unwrap();
 
         text.0 = "Creating World".to_string();
     }

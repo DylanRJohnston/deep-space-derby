@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -8,12 +8,12 @@ use uuid::Uuid;
 
 use crate::models::events::{Event, Settings};
 
-use super::{CommandHandler, GameCode, HasGameCode, API};
+use super::{API, CommandHandler, GameCode, HasGameCode};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Input {
     pub code: GameCode,
-    pub settings: Option<Settings>,
+    pub settings: Settings,
 }
 
 impl HasGameCode for Input {
@@ -46,7 +46,7 @@ impl CommandHandler for CreateGame {
 
         Ok(vec![Event::GameCreated {
             game_id: input.code,
-            settings: input.settings.unwrap_or_default(),
+            settings: input.settings,
         }])
     }
 }

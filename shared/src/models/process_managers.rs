@@ -18,7 +18,7 @@ pub mod start_game;
 pub mod start_race;
 pub mod start_round;
 
-const PROCESSORS: [&'static dyn Processor; 5] = [
+const PROCESS_MANAGERS: [&'static dyn ProcessManager; 5] = [
     &StartGame,
     &StartRace,
     &FinishRace,
@@ -27,7 +27,7 @@ const PROCESSORS: [&'static dyn Processor; 5] = [
 ];
 const ALARMS: [&'static dyn AlarmProcessor; 3] = [&StartRace, &FinishRace, &StartRound];
 
-pub trait Processor: Send + Sync + 'static {
+pub trait ProcessManager: Send + Sync + 'static {
     fn process(&self, events: &Vector<Event>) -> Option<Command>;
 }
 
@@ -44,8 +44,8 @@ pub fn run_processors(events: &Vector<Event>) -> Result<(Vec<Event>, Option<Alar
     let mut output_alarm = None;
 
     'outer: loop {
-        for processor in PROCESSORS {
-            let Some(command) = processor.process(&events) else {
+        for process_manager in PROCESS_MANAGERS {
+            let Some(command) = process_manager.process(&events) else {
                 continue;
             };
 
@@ -87,8 +87,7 @@ mod test {
     use crate::{
         models::{
             events::Event,
-            game_code::GameCode,
-            processors::{run_processors, Alarm},
+            process_managers::{Alarm, run_processors},
         },
         test::init_tracing,
     };

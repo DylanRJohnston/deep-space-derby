@@ -86,13 +86,22 @@ pub enum Payout {
     Pool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[serde_wasm_bindgen]
 pub struct Settings {
-    #[serde(default)]
     pub payout: Payout,
-    #[serde(default)]
     pub starting_cards: usize,
+    pub rounds: usize,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            payout: Payout::default(),
+            starting_cards: 3,
+            rounds: 5,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

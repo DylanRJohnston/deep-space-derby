@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos_router::{
-    components::{Route, Router as LeptosRouter, Routes},
     ParamSegment, StaticSegment,
+    components::{Route, Router as LeptosRouter, Routes},
 };
 
 use crate::{
@@ -39,8 +39,8 @@ pub fn router() -> impl IntoView {
                             <script type="module">
                                 "
                                 import init, { sendGameEvent as innerSendGameEvent } from '/pkg/game.js';
-                                
-                                init().catch(() => {
+
+                                init().finally(() => {
                                     globalThis['innerSendGameEvent'] = innerSendGameEvent;
                                     console.log('Module initialised, flushing pending events')
                                     console.log(pendingEvents);

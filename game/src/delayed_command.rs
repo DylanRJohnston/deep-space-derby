@@ -10,7 +10,7 @@ impl Plugin for DelayedCommandPlugin {
     }
 }
 
-trait Thunk: FnOnce(&mut Commands) + Send + Sync + 'static {}
+pub trait Thunk: FnOnce(&mut Commands) + Send + Sync + 'static {}
 impl<T> Thunk for T where T: FnOnce(&mut Commands) + Send + Sync + 'static {}
 
 #[derive(Component, Deref, DerefMut)]
@@ -39,12 +39,12 @@ fn run_delayed_commands(
             continue;
         }
 
-        let Some(mut thunk) = delayed.take() else {
+        let Some(thunk) = delayed.take() else {
             continue;
         };
 
         (thunk)(&mut commands);
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

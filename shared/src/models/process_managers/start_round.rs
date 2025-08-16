@@ -1,6 +1,6 @@
 use im::Vector;
 
-use super::{Alarm, AlarmProcessor, Processor};
+use super::{Alarm, AlarmProcessor, ProcessManager};
 use crate::models::projections;
 use crate::models::{commands::Command, events::Event};
 use crate::time::*;
@@ -23,7 +23,7 @@ impl AlarmProcessor for StartRound {
     }
 }
 
-impl Processor for StartRound {
+impl ProcessManager for StartRound {
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
         let Some(Event::RaceFinished { time, .. }) = events.last() else {
             return None;

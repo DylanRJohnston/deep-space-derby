@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::models::projections::{self, Jump, RaceResults};
 
-use crate::plugins::{
+use crate::{
     delayed_command::DelayedCommandExt,
     event_stream::GameEvents,
     monster::{DespawnAllMonsters, MonsterBehaviour, MonsterID, MonsterInfo, SpawnMonster},
@@ -9,8 +9,8 @@ use crate::plugins::{
 };
 
 use super::{
-    pregame::{PreGameCamera, PreGameSpawnPoint},
     RaceState, SceneMetadata,
+    pregame::{PreGameCamera, PreGameSpawnPoint},
 };
 
 pub struct RacePlugin;
@@ -93,8 +93,8 @@ fn init_pre_race(
             })
         });
 
-    let position = position.get_single().unwrap();
-    let (mut camera, mut projection) = camera.get_single_mut().unwrap();
+    let position = position.single().unwrap();
+    let (mut camera, mut projection) = camera.single_mut().unwrap();
 
     camera.translation = position.translation;
     // Don't know why the rotation coming from blender is fucked up
@@ -144,8 +144,8 @@ fn init_race(
 ) {
     commands.trigger(DespawnAllMonsters);
 
-    let position = position.get_single().unwrap();
-    let mut camera = camera.get_single_mut().unwrap();
+    let position = position.single().unwrap();
+    let mut camera = camera.single_mut().unwrap();
 
     camera.translation = position.translation;
     // Don't know why the rotation coming from blender is fucked up
@@ -209,14 +209,14 @@ fn run_race(
         &mut RaceTimer,
     )>,
 ) {
-    for (id, monster_info, mut behaviour_timer, mut race_timer) in &mut monsters {
+    for (id, _monster_info, mut behaviour_timer, mut race_timer) in &mut monsters {
         if !race_timer.timer.tick(time.delta()).just_finished() {
             continue;
         }
 
         let Some(jump) = race
             .0
-             .1
+            .1
             .iter()
             .filter(|jump| jump.monster_id == (**id - 1))
             .nth(race_timer.index)
@@ -267,7 +267,7 @@ fn race_camera(
         None => first().1,
     };
 
-    let (mut camera, mut projection) = camera.get_single_mut().unwrap();
+    let (mut camera, mut projection) = camera.single_mut().unwrap();
 
     let Projection::Perspective(ref mut projection) = *projection else {
         panic!("Camera is not a PerspectiveProjection");

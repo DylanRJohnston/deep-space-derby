@@ -8,10 +8,10 @@ use crate::{
 };
 
 use rand::{
+    Rng, SeedableRng,
     distributions::{Uniform, WeightedIndex},
     prelude::Distribution,
     rngs::StdRng,
-    Rng, SeedableRng,
 };
 
 use super::{
@@ -19,7 +19,7 @@ use super::{
     events::{Event, Odds, Payout, PlacedBet, Settings},
     game_code::GameCode,
     monsters::Monster,
-    processors::start_race::PRE_GAME_TIMEOUT,
+    process_managers::start_race::PRE_GAME_TIMEOUT,
 };
 use im::{HashMap, OrdMap, Vector};
 use tracing::instrument;
@@ -464,7 +464,7 @@ const DECK: [(usize, Card); 12] = [
     (3, Card::Nepotism),
     (8, Card::Theft),
     (8, Card::Extortion),
-    (4, Card::Stupify),
+    (0, Card::Stupify),
     (4, Card::Scrutiny),
     (5, Card::Crystals),
 ];
@@ -494,7 +494,12 @@ pub fn draw_n_cards_from_deck<const N: usize>(events: &Vector<Event>, seed: u64)
 pub fn initial_cards(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
     match settings(events).starting_cards {
         0 => vec![],
-        3 => draw_n_cards_from_deck::<3>(events, player.as_u128() as u64).into(),
+        3 => {
+            let mut hand = vec![Card::Theft];
+
+            hand.append(&mut draw_n_cards_from_deck::<2>(events, player.as_u128() as u64).into());
+            hand
+        }
         // TODO: Remove this horrible hack
         _ => panic!("unsupported number of starting cards"),
     }
@@ -547,11 +552,12 @@ pub fn cards_in_hand(events: &Vector<Event>, player: Uuid) -> Vec<Card> {
 }
 
 pub fn can_play_more_cards(events: &Vector<Event>, player: Uuid) -> bool {
-    let max_cards = match player_count(events) {
-        0..=3 => 3,
-        4..=8 => 2,
-        9.. => 1,
-    };
+    // let max_cards = match player_count(events) {
+    //     0..=3 => 3,
+    //     4..=8 => 2,
+    //     9.. => 1,
+    // };
+    let max_cards = 1;
 
     let mut count = 0;
 
@@ -730,23 +736,23 @@ pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
 
     for monster in &mut monsters {
         if poisoned(&played_cards, monster.uuid) {
-            monster.strength -= 3;
+            monster.strength -= 2;
         }
 
         if extra_rations(&played_cards, monster.uuid) {
-            monster.strength += 2;
+            monster.strength += 1;
         }
 
         if psyblast(&played_cards, monster.uuid) {
-            monster.dexterity -= 3;
+            monster.dexterity -= 2;
         }
 
         if meditation(&played_cards, monster.uuid) {
-            monster.dexterity += 2;
+            monster.dexterity += 1;
         }
 
         if nepotism(&played_cards, monster.uuid) {
-            monster.starting_position += 1.5;
+            monster.starting_position += 1.0;
         }
     }
 
@@ -760,6 +766,7 @@ pub fn pre_race_duration(events: &Vector<Event>) -> Duration {
 }
 
 pub fn game_finished(events: &Vector<Event>) -> bool {
+    let settings = settings(events);
     let mut rounds = 0;
 
     for event in events.iter() {
@@ -770,7 +777,7 @@ pub fn game_finished(events: &Vector<Event>) -> bool {
         }
     }
 
-    rounds >= 10
+    rounds >= settings.rounds
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -821,8 +828,8 @@ pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
         let mut jump_distance = 0.;
         let mut counter = 0;
 
-        let dexterity = (monster.dexterity as f32) / 5.;
-        let strength = (monster.strength as f32) / 5.;
+        let dexterity = (monster.dexterity.clamp(0, 10) as f32) / 5.;
+        let strength = (monster.strength.clamp(0, 10) as f32) / 5.;
 
         loop {
             if counter == 0 {
@@ -831,13 +838,13 @@ pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
                     let lower = f32::max(1.25 - dexterity, 0.0);
                     let upper = f32::max(2.0 - dexterity, 0.00);
 
-                    1.3 * (BASE_JUMP_TIME + 0.5 * (lower + rng.gen::<f32>() * (upper - lower)))
+                    1.3 * (BASE_JUMP_TIME + 0.5 * (lower + rng.r#gen::<f32>() * (upper - lower)))
                 };
                 jump_distance = {
                     let lower = f32::max(f32::powi(strength / 2.0, 2), 0.0);
                     let upper = f32::max(strength, 0.0);
 
-                    0.6 * (BASE_JUMP_DISTANCE + (lower + rng.gen::<f32>() * (upper - lower)))
+                    0.6 * (BASE_JUMP_DISTANCE + (lower + rng.r#gen::<f32>() * (upper - lower)))
                 };
 
                 // Confusion
@@ -944,12 +951,13 @@ pub fn pre_computed_odds(events: &Vector<Event>) -> Odds {
             ])
         })
 }
+
 pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
     let mut wins = OrdMap::<Uuid, u32>::new();
     let mut rng = StdRng::seed_from_u64(seed as u64);
 
     for _ in 0..1000 {
-        let (results, _) = race(monsters, rng.gen::<u32>());
+        let (results, _) = race(monsters, rng.r#gen::<u32>());
 
         *wins.entry(results.first).or_default() += 1;
     }
@@ -1034,9 +1042,7 @@ pub fn currently_betting(events: &Vector<Event>) -> Option<u32> {
 #[cfg(test)]
 mod tests {
 
-    use std::default;
-
-    use im::{vector, OrdMap, Vector};
+    use im::{OrdMap, Vector, vector};
     use uuid::Uuid;
 
     use crate::models::{
@@ -1046,9 +1052,9 @@ mod tests {
         projections::{self, RaceResults},
     };
 
-    use super::{all_account_balances, INFLATION_FACTOR};
+    use super::{INFLATION_FACTOR, all_account_balances};
 
-    use super::{race, MONSTERS};
+    use super::{MONSTERS, race};
     use quickcheck_macros::quickcheck;
 
     fn init_tracing() {
@@ -2123,7 +2129,7 @@ mod tests {
 
         assert_eq!(
             cards_in_hand,
-            vec![Card::TasteTester, Card::Meditation, Card::TinfoilHat]
+            vec![Card::Theft, Card::TasteTester, Card::Meditation]
         );
     }
 

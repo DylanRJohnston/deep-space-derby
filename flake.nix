@@ -47,7 +47,7 @@
           in
           pkgs.runCommand "cargo-llvm-cov" { } ''
             mkdir -p $out/bin
-            ${pkgs.tree}/bin/tree
+
             cp ${src}/cargo-llvm-cov $out/bin/cargo-llvm-cov
           '';
 
@@ -181,45 +181,33 @@
           with packages;
           mkShell {
             nativeBuildInputs = with pkgs; [ rustPlatform.bindgenHook ];
-            buildInputs =
-              [
-                binaryen
-                build-site
-                cargo-expand
-                cargo-leptos
-                cargo-llvm-cov
-                cargo-watch
-                deploy-site
-                dev
-                dev-build-client
-                dev-build-game
-                dev-clean
-                dev-copy-assets
-                dev-run-native-server
-                dev-run-wrangler-server
-                dev-wrangler
-                entr
-                iconv
-                leptosfmt
-                llvmPackages.bintools-unwrapped
-                mprocs
-                nodejs
-                toolchain
-                twiggy
-                wasm-bindgen-cli
-              ]
-              ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (
-                with pkgs.darwin.apple_sdk.frameworks;
-                [
-                  AudioToolbox
-                  AudioUnit
-                  AppKit
-                  CoreAudio
-                  CoreFoundation
-                  CoreMIDI
-                  OpenAL
-                ]
-              );
+            buildInputs = [
+              binaryen
+              build-site
+              cargo-expand
+              cargo-leptos
+              cargo-llvm-cov
+              cargo-watch
+              deploy-site
+              dev
+              dev-build-client
+              dev-build-game
+              dev-clean
+              dev-copy-assets
+              dev-run-native-server
+              dev-run-wrangler-server
+              dev-wrangler
+              entr
+              iconv
+              leptosfmt
+              llvmPackages.bintools-unwrapped
+              mprocs
+              nodejs
+              toolchain
+              twiggy
+              wasm-bindgen-cli
+              cargo-leptos
+            ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
           };

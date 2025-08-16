@@ -2,11 +2,11 @@ use im::Vector;
 
 use crate::models::{commands::Command, events::Event, projections};
 
-use super::Processor;
+use super::ProcessManager;
 
 pub struct StartGame;
 
-impl Processor for StartGame {
+impl ProcessManager for StartGame {
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
         if !matches!(events.last(), Some(Event::PlayerReady { .. })) {
             return None;
@@ -25,7 +25,7 @@ mod test {
         commands::Command,
         events::{Event, Settings},
         game_code::GameCode,
-        processors::Processor,
+        process_managers::ProcessManager,
     };
 
     use super::StartGame;

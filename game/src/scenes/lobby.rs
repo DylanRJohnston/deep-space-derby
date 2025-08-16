@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 use shared::models::projections;
 
-use crate::plugins::{
+use crate::{
     event_stream::GameEvents,
     monster::{MonsterBehaviour, SpawnMonster},
+    scenes::{SceneState, pregame::PreGameSpawnPoint},
 };
-
-use super::{pregame::PreGameSpawnPoint, SceneState};
 
 pub struct LobbyPlugin;
 
@@ -27,7 +26,7 @@ impl Plugin for LobbyPlugin {
 }
 
 pub fn init_camera(mut query: Query<&mut Transform, Added<Camera>>) {
-    if let Ok(mut transform) = query.get_single_mut() {
+    if let Ok(mut transform) = query.single_mut() {
         transform.translation = Vec3::new(10.0, 10.0, 10.0);
         *transform = transform.looking_at(Vec3::ZERO, Vec3::Y);
 
@@ -36,7 +35,7 @@ pub fn init_camera(mut query: Query<&mut Transform, Added<Camera>>) {
 }
 
 pub fn orbit_camera(mut query: Query<&mut Transform, With<Camera>>, time: Res<Time>) {
-    if let Ok(mut transform) = query.get_single_mut() {
+    if let Ok(mut transform) = query.single_mut() {
         let rot = Quat::from_axis_angle(Vec3::Y, time.elapsed_secs() / 2.0);
 
         transform.translation =

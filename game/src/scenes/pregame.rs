@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::models::projections;
 
-use crate::plugins::{
+use crate::{
     event_stream::GameEvents,
     monster::{DespawnAllMonsters, MonsterBehaviour, SpawnMonster},
     music::PlayPreGameCountdown,
@@ -108,8 +108,8 @@ fn init_pregame(
     mut camera: Query<(&mut Transform, &mut Projection), With<Camera>>,
     mut commands: Commands,
 ) {
-    let position = position.get_single().unwrap();
-    let (mut camera, mut projection) = camera.get_single_mut().unwrap();
+    let position = position.single().unwrap();
+    let (mut camera, mut projection) = camera.single_mut().unwrap();
 
     camera.translation = position.translation;
     // Don't know why the rotation coming from blender is fucked up

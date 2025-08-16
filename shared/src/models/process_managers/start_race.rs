@@ -1,7 +1,7 @@
 use im::Vector;
 use tracing::instrument;
 
-use super::{Alarm, AlarmProcessor, Processor};
+use super::{Alarm, AlarmProcessor, ProcessManager};
 use crate::models::projections;
 use crate::models::{commands::Command, events::Event};
 use crate::time::*;
@@ -24,7 +24,7 @@ impl AlarmProcessor for StartRace {
     }
 }
 
-impl Processor for StartRace {
+impl ProcessManager for StartRace {
     #[instrument(skip_all)]
     fn process(&self, events: &Vector<Event>) -> Option<Command> {
         let Some(start) = projections::currently_betting(events) else {
@@ -67,7 +67,7 @@ mod test {
         commands::Command,
         events::{Event, PlacedBet},
         game_code::GameCode,
-        processors::Processor,
+        process_managers::ProcessManager,
     };
 
     use super::StartRace;

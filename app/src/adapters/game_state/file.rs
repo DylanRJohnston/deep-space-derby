@@ -93,7 +93,7 @@ impl GameDirectory for FileGameDirectory {
 // of the opaque type satisfies the auto trait bounds.
 mod set_alarm {
     use anyhow::Result;
-    use shared::models::processors::run_processors;
+    use shared::models::process_managers::run_processors;
     use std::{future::Future, sync::Arc, time::Duration};
 
     use crate::ports::{event_log::EventLog, game_state::GameState};

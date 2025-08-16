@@ -1,10 +1,11 @@
 use bevy::{
-    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping, Skybox},
+    core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping},
     gltf::Gltf,
+    log::tracing,
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
+    platform::collections::HashMap,
     prelude::*,
     render::camera::Exposure,
-    utils::{tracing, HashMap},
 };
 use bevy_asset_loader::prelude::*;
 use results::ResultsPlugin;
@@ -154,7 +155,7 @@ fn scene_setup(
     ));
 
     for camera in &cameras {
-        commands.entity(camera).despawn_recursive();
+        commands.entity(camera).despawn();
     }
 }
 
@@ -167,7 +168,7 @@ fn setup_skybox(
     mut exposure: Query<&mut Exposure>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if let Ok((id, mut camera)) = camera.get_single_mut() {
+    if let Ok((id, mut camera)) = camera.single_mut() {
         let mut bloom = Bloom::OLD_SCHOOL.clone();
 
         bloom.intensity = 0.1;
@@ -186,6 +187,7 @@ fn setup_skybox(
                 specular_map: game_assets.envmap_specular.clone(),
                 intensity: 1000.0,
                 rotation: rot,
+                ..default()
             },
             bloom,
             Tonemapping::AcesFitted,
@@ -195,11 +197,11 @@ fn setup_skybox(
         camera.hdr = true;
     }
 
-    if let Ok(mut sun) = sun.get_single_mut() {
+    if let Ok(mut sun) = sun.single_mut() {
         sun.shadows_enabled = true;
     }
 
-    if let Ok(mut shadow_config) = shadows.get_single_mut() {
+    if let Ok(mut shadow_config) = shadows.single_mut() {
         *shadow_config = CascadeShadowConfigBuilder {
             num_cascades: 4,
             minimum_distance: 0.1,
@@ -210,7 +212,7 @@ fn setup_skybox(
         .build()
     }
 
-    if let Ok(mut exposure) = exposure.get_single_mut() {
+    if let Ok(mut exposure) = exposure.single_mut() {
         exposure.ev100 = 9.0;
     }
 

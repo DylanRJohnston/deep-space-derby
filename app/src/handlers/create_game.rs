@@ -33,10 +33,7 @@ pub async fn create_game<G: GameService>(
     let req = do_req.body(
         serde_json::to_string(&commands::create_game::Input {
             code: game_code,
-            settings: Some(Settings {
-                payout: Payout::Odds,
-                starting_cards: 3,
-            }),
+            settings: Settings::default(),
         })?
         .into(),
     )?;

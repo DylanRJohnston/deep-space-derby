@@ -1,4 +1,4 @@
-use leptos::{leptos_dom::logging::console_log, prelude::*};
+use leptos::prelude::*;
 use leptos_use::UseIntervalReturn;
 use shared::models::{cards::Card, projections};
 

@@ -1,5 +1,5 @@
 use leptos::{either::Either, prelude::*};
-use leptos_use::{use_interval, UseIntervalReturn};
+use leptos_use::{UseIntervalReturn, use_interval};
 use shared::models::{events::OddsExt, monsters::Monster, projections};
 
 use crate::utils::use_events;
@@ -65,6 +65,8 @@ struct MonsterData {
 pub fn pre_game() -> impl IntoView {
     let events = use_events();
 
+    let settings = move || projections::settings(&events());
+
     let race_seed = move || projections::race_seed(&events());
     let monsters = move || projections::monsters(&events(), race_seed());
 
@@ -97,7 +99,8 @@ pub fn pre_game() -> impl IntoView {
             <div class="host-pre-game-timer" style="left: 1em;">
                 "Round "
                 {round_number}
-                " of 10"
+                " of "
+                {settings().rounds}
             </div>
             <div class="host-pre-game-timer" style="justify-self: center;">
                 "Time Left "
