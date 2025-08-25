@@ -6,7 +6,7 @@ use std::sync::{
 use bevy::{log::tracing, prelude::*, utils::synccell::SyncCell};
 
 use im::Vector;
-use shared::models::{events::Event, events::EventStream, game_code};
+use shared::models::{events::Event, events::EventStream};
 
 pub struct EventStreamPlugin;
 
@@ -35,9 +35,8 @@ static EVENT_CHANNEL: LazyLock<EventChannel<EventStream>> = LazyLock::new(|| {
     }
 });
 
-#[derive(Resource)]
-pub struct Seed(pub u32);
-
+// #[derive(Resource)]
+// pub struct Seed(pub u32);
 #[derive(Resource, Deref, DerefMut)]
 pub struct GameEvents(pub Vector<Event>);
 
@@ -70,8 +69,7 @@ pub fn send_game_event(events: EventStream) -> Result<(), wasm_bindgen::JsError>
 }
 
 #[derive(Debug, Resource, Deref)]
-pub struct GameCode(pub game_code::GameCode);
-
+// pub struct GameCode(pub game_code::GameCode);
 #[cfg(not(target_arch = "wasm32"))]
 fn connect_to_server(game_code: Res<GameCode>) {
     use anyhow::Context;

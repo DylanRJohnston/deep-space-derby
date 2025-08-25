@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use shared::models::projections::{self, Jump, RaceResults};
+use shared::models::projections::{
+    self,
+    race::{Jump, RaceResults},
+};
 
 use crate::{
     delayed_command::DelayedCommandExt,
@@ -72,7 +75,7 @@ fn init_pre_race(
 ) {
     commands.trigger(DespawnAllMonsters);
 
-    let seed = projections::race_seed(&game_events);
+    let seed = projections::race::race_seed(&game_events);
     let monsters = projections::monsters(&game_events, seed);
 
     spawn_points
@@ -151,9 +154,9 @@ fn init_race(
     // Don't know why the rotation coming from blender is fucked up
     camera.rotation = position.rotation * Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
 
-    let seed = projections::race_seed(&game_events);
+    let seed = projections::race::race_seed(&game_events);
     let monsters = projections::monsters(&game_events, seed);
-    let (results, jump) = projections::race(&monsters, seed);
+    let (results, jump) = projections::race::results(&monsters, seed);
 
     commands.insert_resource(Race((results, jump)));
 

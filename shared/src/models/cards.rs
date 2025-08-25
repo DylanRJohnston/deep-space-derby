@@ -84,13 +84,13 @@ impl Card {
 
     pub fn description(&self) -> &'static str {
         match self {
-            Card::Poison => "-2 Strength",
+            Card::Poison => "-3 Strength",
             Card::TasteTester => "Blocks Strength Effects",
-            Card::ExtraRations => "+1 Strength",
-            Card::PsyBlast => "-2 Dexterity",
+            Card::ExtraRations => "+2 Strength",
+            Card::PsyBlast => "-3 Dexterity",
             Card::TinfoilHat => "Blocks Dexterity Effects",
             Card::Nepotism => "Monster starts race 1m ahead",
-            Card::Meditation => "+1 Dexterity",
+            Card::Meditation => "+2 Dexterity",
             Card::Theft => "Take 20% of a player's Crystals",
             Card::Extortion => "Take 2 random cards from a player",
             Card::Stupify => "(Free Action) Player must speak loudly and in single syllables",

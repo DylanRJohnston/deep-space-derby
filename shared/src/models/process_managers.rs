@@ -133,10 +133,12 @@ mod test {
             Event::RoundStarted {
                 time: 0,
                 odds: None,
+                enemies: None,
             },
             Event::RoundStarted {
                 time: 0,
                 odds: None,
+                enemies: None,
             },
         ]);
 
@@ -185,6 +187,7 @@ mod test {
             Event::RoundStarted {
                 time: now,
                 odds: None,
+                enemies: None,
             },
             Event::RaceStarted { time: now - 60 },
         ]);

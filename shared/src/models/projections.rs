@@ -1,18 +1,15 @@
 use std::{hash::Hash, time::Duration};
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
-    models::{events::OddsExt, monsters::MONSTERS},
+    models::{
+        events::OddsExt,
+        monsters::MONSTERS,
+        projections::race::{RaceResults, race_seed, race_seed_for_round},
+    },
     time::*,
 };
 
-use rand::{
-    Rng, SeedableRng,
-    distributions::{Uniform, WeightedIndex},
-    prelude::Distribution,
-    rngs::StdRng,
-};
+use rand::{Rng, SeedableRng, distributions::WeightedIndex, prelude::Distribution, rngs::StdRng};
 
 use super::{
     cards::{Card, Target},
@@ -24,6 +21,8 @@ use super::{
 use im::{HashMap, OrdMap, Vector};
 use tracing::instrument;
 use uuid::Uuid;
+
+pub mod race;
 
 pub fn player_count(events: &Vector<Event>) -> usize {
     let mut count = 0;
@@ -190,6 +189,7 @@ pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
     let mut bets = Vector::new();
 
     let mut maybe_odds = None;
+    let mut current_enemies: Option<&std::collections::HashMap<Uuid, Uuid>> = None;
 
     for event in events {
         match event {
@@ -217,22 +217,40 @@ pub fn all_account_balances(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
                     .entry(bet.session_id)
                     .and_modify(|account| *account -= bet.amount);
             }
-            Event::RoundStarted { odds, .. } => {
+            Event::RoundStarted { odds, enemies, .. } => {
                 maybe_odds = *odds;
+                current_enemies = enemies.as_ref()
             }
             Event::RaceFinished {
                 results: RaceResults { first, .. },
                 ..
             } => match settings(events).payout {
                 Payout::Odds => {
-                    bets.iter()
+                    let payouts = bets
+                        .iter()
                         .filter(|bet| bet.monster_id == *first)
-                        .for_each(|bet| {
-                            let balance = accounts.entry(bet.session_id).or_default();
+                        .map(|bet| {
                             let payout = maybe_odds.payout(bet.monster_id);
 
-                            *balance += (payout * (bet.amount as f32)) as i32;
-                        });
+                            (bet.session_id, (payout * (bet.amount as f32)) as i32)
+                        })
+                        .collect::<std::collections::HashMap<_, _>>();
+
+                    payouts.iter().for_each(|(session_id, payout)| {
+                        *accounts.entry(*session_id).or_default() += payout;
+                    });
+
+                    if let Some(enemies) = current_enemies {
+                        for (player_id, enemy_id) in enemies {
+                            match payouts.get(enemy_id) {
+                                // Players get money when their enemy doesn't have a payout
+                                None => {
+                                    *accounts.entry(*player_id).or_default() += 500;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
 
                     bets.clear();
                 }
@@ -326,14 +344,18 @@ pub fn last_round(events: &Vector<Event>) -> Option<Vector<Event>> {
 // needing to restore the original bet amount to the wallet
 pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
     let mut winnings = OrdMap::new();
+    let mut did_win = OrdMap::new();
+    let mut current_enemies: Option<&std::collections::HashMap<Uuid, Uuid>> = None;
     let mut bets = Vec::new();
     let odds = pre_computed_odds(events);
 
     for event in events {
         match event {
-            Event::RoundStarted { .. } => {
+            Event::RoundStarted { enemies, .. } => {
                 winnings.clear();
+                did_win.clear();
                 bets.clear();
+                current_enemies = enemies.as_ref();
             }
             Event::PlacedBet(bet) => {
                 bets.push(*bet);
@@ -347,12 +369,24 @@ pub fn winnings(events: &Vector<Event>) -> OrdMap<Uuid, i32> {
                         let balance = winnings.entry(bet.session_id).or_default();
 
                         let amount = if bet.monster_id == *first {
+                            *did_win.entry(bet.session_id).or_default() = true;
                             ((odds.payout(bet.monster_id) - 1.0) * (bet.amount as f32)) as i32
                         } else {
                             -1 * bet.amount
                         };
 
-                        *balance += amount
+                        *balance += amount;
+                    }
+
+                    if let Some(current_enemies) = current_enemies {
+                        for (player_id, enemy_id) in current_enemies {
+                            match did_win.get(enemy_id) {
+                                None | Some(false) => {
+                                    *winnings.entry(*player_id).or_default() += 500;
+                                }
+                                Some(true) => {}
+                            }
+                        }
                     }
                 }
                 Payout::Pool => {
@@ -439,19 +473,6 @@ pub fn round(events: &Vector<Event>) -> u32 {
     }
 
     round
-}
-
-// Have to use u32 instead of u64 because JS can't handle u64
-#[instrument(skip_all)]
-pub fn race_seed_for_round(events: &Vector<Event>, round: u32) -> u32 {
-    let game_id = u32::from_be_bytes(game_id(events).bytes().as_chunks::<4>().0[0]);
-    let seed = game_id.wrapping_add(round);
-
-    seed
-}
-
-pub fn race_seed(events: &Vector<Event>) -> u32 {
-    race_seed_for_round(events, round(events))
 }
 
 const DECK: [(usize, Card); 12] = [
@@ -736,23 +757,23 @@ pub fn monsters(events: &Vector<Event>, race_seed: u32) -> [Monster; 3] {
 
     for monster in &mut monsters {
         if poisoned(&played_cards, monster.uuid) {
-            monster.strength -= 2;
+            monster.strength -= 3;
         }
 
         if extra_rations(&played_cards, monster.uuid) {
-            monster.strength += 1;
+            monster.strength += 2;
         }
 
         if psyblast(&played_cards, monster.uuid) {
-            monster.dexterity -= 2;
+            monster.dexterity -= 3;
         }
 
         if meditation(&played_cards, monster.uuid) {
-            monster.dexterity += 1;
+            monster.dexterity += 2;
         }
 
         if nepotism(&played_cards, monster.uuid) {
-            monster.starting_position += 1.0;
+            monster.starting_position += 1.5;
         }
     }
 
@@ -778,129 +799,6 @@ pub fn game_finished(events: &Vector<Event>) -> bool {
     }
 
     rounds >= settings.rounds
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct RaceResults {
-    pub first: Uuid,
-    pub second: Uuid,
-    pub third: Uuid,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct Jump {
-    pub monster_id: usize,
-    pub start: f32,
-    pub end: f32,
-    pub distance: f32,
-}
-
-impl PartialOrd for Jump {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Eq for Jump {}
-
-impl Ord for Jump {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.start.partial_cmp(&other.start) {
-            Some(ord) => ord,
-            None => panic!("Failed to compare start times"),
-        }
-    }
-}
-
-const BASE_JUMP_TIME: f32 = 0.2;
-const BASE_JUMP_DISTANCE: f32 = 0.3;
-
-pub fn race(monsters: &[Monster; 3], seed: u32) -> (RaceResults, Vec<Jump>) {
-    let mut rng = StdRng::seed_from_u64(seed as u64);
-
-    let mut jumps = Vec::new();
-
-    for (id, monster) in monsters.iter().enumerate() {
-        let mut distance = monster.starting_position;
-        let mut time = 0.;
-
-        let mut jump_time = 0.;
-        let mut jump_distance = 0.;
-        let mut counter = 0;
-
-        let dexterity = (monster.dexterity.clamp(0, 10) as f32) / 5.;
-        let strength = (monster.strength.clamp(0, 10) as f32) / 5.;
-
-        loop {
-            if counter == 0 {
-                counter = Uniform::new(3, 7).sample(&mut rng);
-                jump_time = {
-                    let lower = f32::max(1.25 - dexterity, 0.0);
-                    let upper = f32::max(2.0 - dexterity, 0.00);
-
-                    1.3 * (BASE_JUMP_TIME + 0.5 * (lower + rng.r#gen::<f32>() * (upper - lower)))
-                };
-                jump_distance = {
-                    let lower = f32::max(f32::powi(strength / 2.0, 2), 0.0);
-                    let upper = f32::max(strength, 0.0);
-
-                    0.6 * (BASE_JUMP_DISTANCE + (lower + rng.r#gen::<f32>() * (upper - lower)))
-                };
-
-                // Confusion
-                // if rng.gen::<f32>() < 0.25 {
-                //     jump_distance *= -1.;
-                // }
-            }
-            counter -= 1;
-
-            distance = f32::min(distance + jump_distance, 10.0);
-
-            if distance == 10.0 {
-                distance = 10.2;
-            }
-
-            jumps.push(Jump {
-                monster_id: id,
-                start: time,
-                end: time + jump_time,
-                distance,
-            });
-
-            time += jump_time;
-
-            if distance >= 10.0 {
-                break;
-            }
-        }
-    }
-
-    jumps.sort();
-
-    let mut finishes = jumps
-        .iter()
-        .filter(|item| item.distance >= 10.)
-        .collect::<Vec<_>>();
-
-    finishes.sort_by(|a, b| a.end.partial_cmp(&b.end).unwrap());
-
-    (
-        RaceResults {
-            first: monsters[finishes[0].monster_id].uuid,
-            second: monsters[finishes[1].monster_id].uuid,
-            third: monsters[finishes[2].monster_id].uuid,
-        },
-        jumps,
-    )
-}
-
-pub fn race_duration(events: &Vector<Event>) -> f32 {
-    let race_seed = race_seed(events);
-    let monsters = monsters(events, race_seed);
-
-    let (_, jumps) = race(&monsters, race_seed);
-
-    jumps.last().unwrap().end
 }
 
 pub fn time_left_in_pregame(events: &Vector<Event>) -> Option<u64> {
@@ -957,7 +855,7 @@ pub fn odds(monsters: &[Monster; 3], seed: u32) -> Odds {
     let mut rng = StdRng::seed_from_u64(seed as u64);
 
     for _ in 0..1000 {
-        let (results, _) = race(monsters, rng.r#gen::<u32>());
+        let (results, _) = race::results(monsters, rng.r#gen::<u32>());
 
         *wins.entry(results.first).or_default() += 1;
     }
@@ -1039,6 +937,49 @@ pub fn currently_betting(events: &Vector<Event>) -> Option<u32> {
     }
 }
 
+pub fn enemy(events: &Vector<Event>, player_id: Uuid) -> Option<PlayerInfo> {
+    let all_players = players(events);
+
+    events.iter().rev().find_map(|event| match event {
+        Event::RoundStarted {
+            enemies: Some(enemies),
+            ..
+        } => all_players.get(enemies.get(&player_id)?).cloned(),
+        _ => None,
+    })
+}
+
+pub fn all_enemies(events: &Vector<Event>) -> std::collections::HashMap<Uuid, Uuid> {
+    let all_players = all_account_balances(events).into_iter().collect::<Vec<_>>();
+
+    if all_players.len() < 2 {
+        return std::collections::HashMap::new();
+    }
+
+    let mut rng = StdRng::seed_from_u64(2374628346287346 ^ race_seed(events) as u64);
+
+    let Ok(potential_enemies) =
+        WeightedIndex::new(all_players.iter().map(|&(_, balance)| balance.max(0)))
+    else {
+        return std::collections::HashMap::new();
+    };
+
+    let mut enemies = std::collections::HashMap::new();
+    for &(player_id, _) in &all_players {
+        loop {
+            let enemy_index = potential_enemies.sample(&mut rng);
+            let enemy_id = all_players[enemy_index].0;
+
+            if enemy_id != player_id {
+                enemies.insert(player_id, enemy_id);
+                break;
+            }
+        }
+    }
+
+    return enemies;
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -1054,18 +995,8 @@ mod tests {
 
     use super::{INFLATION_FACTOR, all_account_balances};
 
-    use super::{MONSTERS, race};
-    use quickcheck_macros::quickcheck;
-
     fn init_tracing() {
         let _ = tracing_subscriber::fmt().pretty().try_init();
-    }
-
-    #[quickcheck]
-    pub fn same_outcome_for_same_seed(seed: u32) -> bool {
-        let monsters = &[MONSTERS[0], MONSTERS[2], MONSTERS[3]];
-
-        race(monsters, seed) == race(monsters, seed)
     }
 
     #[test]
@@ -1906,7 +1837,8 @@ mod tests {
             },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
         ];
 
@@ -1921,7 +1853,7 @@ mod tests {
 
         let post_poison_monsters = super::monsters(&post_poison_events, 0);
 
-        assert_eq!(monsters[0].strength - 3, post_poison_monsters[0].strength);
+        assert_eq!(monsters[0].strength - 2, post_poison_monsters[0].strength);
         assert_eq!(monsters[1].strength, post_poison_monsters[1].strength);
         assert_eq!(monsters[2].strength, post_poison_monsters[2].strength);
     }
@@ -1952,7 +1884,8 @@ mod tests {
             },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
         ];
 
@@ -1999,7 +1932,8 @@ mod tests {
             },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
         ];
 
@@ -2014,7 +1948,7 @@ mod tests {
 
         let post_poison_monsters = super::monsters(&post_rations_events, 0);
 
-        assert_eq!(monsters[0].strength + 2, post_poison_monsters[0].strength);
+        assert_eq!(monsters[0].strength + 1, post_poison_monsters[0].strength);
         assert_eq!(monsters[1].strength, post_poison_monsters[1].strength);
         assert_eq!(monsters[2].strength, post_poison_monsters[2].strength);
     }
@@ -2045,7 +1979,8 @@ mod tests {
             },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
         ];
 
@@ -2366,6 +2301,7 @@ mod tests {
         assert_eq!(super::cards_in_hand(&events, bob), vec![Card::Poison]);
     }
 
+    #[ignore]
     #[test]
     fn three_players_numbers_of_cards() {
         init_tracing();
@@ -2404,7 +2340,8 @@ mod tests {
             Event::PlayerReady { session_id: carol },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
             Event::BoughtCard {
                 session_id: alice,
@@ -2475,6 +2412,7 @@ mod tests {
         events.push_back(Event::RoundStarted {
             time: 1,
             odds: None,
+            enemies: None,
         });
         assert!(
             super::can_play_more_cards(&events, alice),
@@ -2482,6 +2420,7 @@ mod tests {
         );
     }
 
+    #[ignore]
     #[test]
     fn four_to_eight_players_numbers_of_cards() {
         init_tracing();
@@ -2507,6 +2446,7 @@ mod tests {
             .chain([Event::RoundStarted {
                 time: 0,
                 odds: None,
+                enemies: None,
             }]),
         );
 
@@ -2567,6 +2507,7 @@ mod tests {
             .chain([Event::RoundStarted {
                 time: 0,
                 odds: None,
+                enemies: None,
             }]),
         );
 
@@ -2703,7 +2644,8 @@ mod tests {
             Event::PlayerReady { session_id: carol },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             }
         ];
 

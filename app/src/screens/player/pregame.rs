@@ -14,7 +14,7 @@ use shared::models::{
     commands::{BorrowMoney, BuyCard, PlaceBets, PlayCard, borrow_money, place_bets, play_card},
     events::{Event, OddsExt},
     monsters::Monster,
-    projections::{self, race_seed},
+    projections::{self, PlayerInfo, race::race_seed},
 };
 
 #[component]
@@ -82,8 +82,10 @@ pub fn pre_game() -> impl IntoView {
     let untracked_events = events.get_untracked();
 
     // let minimum_bet = projections::minimum_bet(&untracked_events);
-    let monsters =
-        projections::monsters(&untracked_events, projections::race_seed(&untracked_events));
+    let monsters = projections::monsters(
+        &untracked_events,
+        projections::race::race_seed(&untracked_events),
+    );
 
     let account_balance = Signal::derive(move || {
         projections::all_account_balances(&events())
@@ -152,15 +154,18 @@ pub fn pre_game() -> impl IntoView {
         }
     });
 
-    let new_modal = || {
-        let (read, write) = signal(false);
+    let new_modal = |default: bool| {
+        let (read, write) = signal(default);
 
         (read, move || write(!read.get_untracked()))
     };
 
-    let (bets_modal, toggle_bets_modal) = new_modal();
-    let (loan_modal, toggle_loan_modal) = new_modal();
-    let (card_modal, toggle_card_modal) = new_modal();
+    let (bets_modal, toggle_bets_modal) = new_modal(false);
+    let (loan_modal, toggle_loan_modal) = new_modal(false);
+    let (card_modal, toggle_card_modal) = new_modal(false);
+
+    let enemy = Signal::derive(move || projections::enemy(&events(), player_id));
+    let (enemy_modal, toggle_enemy_modal) = new_modal(enemy.read_untracked().is_some());
 
     // TODO: Fix this, it causes the modal to pop up during re-hydration of the event stream
     let (victim_modal, set_victim_modal) = signal(None);
@@ -178,7 +183,7 @@ pub fn pre_game() -> impl IntoView {
 
     view! {
         <Show
-            when=move || !(bets_modal() || loan_modal() || card_modal() || victim_modal().is_some())
+            when=move || !(bets_modal() || loan_modal() || card_modal() || enemy_modal() || victim_modal().is_some())
             fallback=|| view! {}
         >
             <div class="pre-game-container">
@@ -276,6 +281,9 @@ pub fn pre_game() -> impl IntoView {
         </Show>
         <Show when=move || card_modal() && victim_modal().is_none() fallback=|| view! {}>
             <CardModal close=toggle_card_modal />
+        </Show>
+        <Show when=move || enemy_modal() && victim_modal().is_none() fallback=|| view! {}>
+            {move || enemy().map(|enemy| view!{ <EnemyModal enemy=enemy close=toggle_enemy_modal /> })}
         </Show>
         {move || {
             victim_modal()
@@ -482,7 +490,7 @@ fn target_modal(
     let game_id = use_game_id();
     let player_id = use_session_id();
 
-    let race_seed = move || projections::race_seed(&events());
+    let race_seed = move || projections::race::race_seed(&events());
 
     let target_count = match card.target_kind() {
         TargetKind::Player | TargetKind::Monster => 1,
@@ -660,6 +668,21 @@ pub fn victim_modal(
             </button>
             <h1>{card.victim_description(&perpetrator)}</h1>
             <img class="victim-icon" src=card.icon() />
+        </div>
+    }
+}
+
+#[component]
+pub fn enemy_modal(enemy: PlayerInfo, close: impl Fn() + Copy + 'static) -> impl IntoView {
+    view! {
+        <div class="pre-game-container blurred">
+            <button class="back-button" on:click=move |_| close()>
+                "←"
+            </button>
+            <h1>"Your Rival Is"</h1>
+            <h1>{enemy.name}</h1>
+            <p class="enemy-description">"If they loose this round you get 500 💎"</p>
+            <img class="enemy-icon" />
         </div>
     }
 }

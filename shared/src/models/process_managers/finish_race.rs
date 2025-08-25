@@ -13,7 +13,7 @@ impl AlarmProcessor for FinishRace {
         }
 
         let duration = projections::pre_race_duration(events)
-            + Duration::from_secs_f32(projections::race_duration(events));
+            + Duration::from_secs_f32(projections::race::race_duration(events));
 
         Some(Alarm(duration))
     }
@@ -27,7 +27,7 @@ impl ProcessManager for FinishRace {
         };
 
         let duration = projections::pre_race_duration(events)
-            + Duration::from_secs_f32(projections::race_duration(events) - 1.);
+            + Duration::from_secs_f32(projections::race::race_duration(events) - 1.);
 
         tracing::debug!(?duration, now = ?SystemTime::now(), ?start);
 
@@ -77,6 +77,7 @@ mod test {
             Event::RoundStarted {
                 time: Event::now(),
                 odds: None,
+                enemies: None,
             },
             Event::RaceStarted {
                 time: Event::now() - 60,

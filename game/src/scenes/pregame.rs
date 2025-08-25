@@ -80,7 +80,7 @@ fn spawn_monsters(
 ) {
     commands.trigger(DespawnAllMonsters);
 
-    let seed = projections::race_seed(&game_events);
+    let seed = projections::race::race_seed(&game_events);
     let monsters = projections::monsters(&game_events, seed);
 
     spawn_points

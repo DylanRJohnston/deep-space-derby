@@ -67,7 +67,7 @@ pub fn pre_game() -> impl IntoView {
 
     let settings = move || projections::settings(&events());
 
-    let race_seed = move || projections::race_seed(&events());
+    let race_seed = move || projections::race::race_seed(&events());
     let monsters = move || projections::monsters(&events(), race_seed());
 
     let odds = move || projections::pre_computed_odds(&events());

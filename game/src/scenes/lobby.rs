@@ -49,7 +49,8 @@ pub fn spawn_racers(
     mut commands: Commands,
     spawn_points: Query<(&PreGameSpawnPoint, &Transform), Added<PreGameSpawnPoint>>,
 ) {
-    let monsters = projections::monsters(&events, projections::race_seed_for_round(&events, 1));
+    let monsters =
+        projections::monsters(&events, projections::race::race_seed_for_round(&events, 1));
 
     spawn_points
         .into_iter()

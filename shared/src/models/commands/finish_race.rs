@@ -27,9 +27,9 @@ impl CommandHandler for FinishRace {
             bail!("race can only finish if its in progress");
         }
 
-        let race_seed = projections::race_seed(events);
+        let race_seed = projections::race::race_seed(events);
         let monsters = projections::monsters(events, race_seed);
-        let (results, _) = projections::race(&monsters, race_seed);
+        let (results, _) = projections::race::results(&monsters, race_seed);
 
         Ok(vec![Event::RaceFinished {
             time: Event::now(),
@@ -48,7 +48,7 @@ mod test {
         commands::CommandHandler,
         events::{Event, Settings},
         game_code::GameCode,
-        projections::RaceResults,
+        projections::race::RaceResults,
     };
 
     use super::FinishRace;
@@ -70,7 +70,8 @@ mod test {
             Event::PlayerReady { session_id: player },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             }
         ];
 
@@ -103,7 +104,8 @@ mod test {
             Event::PlayerReady { session_id: player },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
             Event::RaceStarted { time: 0 },
             Event::RaceFinished {
@@ -145,7 +147,8 @@ mod test {
             Event::PlayerReady { session_id: player },
             Event::RoundStarted {
                 time: 0,
-                odds: None
+                odds: None,
+                enemies: None,
             },
             Event::RaceStarted { time: 0 },
         ];

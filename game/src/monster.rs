@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 use bevy_tweening::{Animator, Delay, Tween, lens::TransformPositionLens};
 use rand::{Rng, distributions::Uniform, thread_rng};
-use shared::models::{monsters::Monster, projections::Jump};
+use shared::models::{monsters::Monster, projections::race::Jump};
 use std::time::Duration;
 
 use bevy::prelude::*;
@@ -64,8 +64,10 @@ pub enum MonsterBehaviour {
     #[default]
     Idle,
     Jumping(Jump),
+    #[allow(dead_code)]
     Recovering,
     Dancing,
+    #[allow(dead_code)]
     Dead,
 }
 
@@ -120,12 +122,6 @@ pub fn init_animation(
             .entity(animation_player_link.0)
             .insert((AnimationGraphHandle(graph_handle), transition));
     }
-}
-
-#[derive(Debug, Component, Reflect)]
-pub struct JumpTarget {
-    pub start: Vec3,
-    pub end: Vec3,
 }
 
 pub fn run_timers(

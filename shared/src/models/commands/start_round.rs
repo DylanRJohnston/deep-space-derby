@@ -31,12 +31,13 @@ impl CommandHandler for StartRound {
             bail!("round can only start if all players are ready");
         }
 
-        let seed = projections::race_seed_for_round(events, projections::round(events) + 1);
+        let seed = projections::race::race_seed_for_round(events, projections::round(events) + 1);
         let monsters = projections::monsters(events, seed);
 
         Ok(vec![Event::RoundStarted {
             time: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as u32,
             odds: Some(projections::odds(&monsters, seed)),
+            enemies: Some(projections::all_enemies(events)),
         }])
     }
 }

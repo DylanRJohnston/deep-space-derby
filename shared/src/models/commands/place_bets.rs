@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -11,7 +11,7 @@ use crate::models::{
     projections::{self},
 };
 
-use super::{CommandHandler, API};
+use super::{API, CommandHandler};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Bet {
@@ -65,7 +65,7 @@ impl CommandHandler for PlaceBets {
         //     bail!("bet cannot be less than the minimum bet");
         // }
 
-        let race_seed = projections::race_seed(events);
+        let race_seed = projections::race::race_seed(events);
         let monsters = projections::monsters(events, race_seed);
 
         for bet in input.bets.iter() {

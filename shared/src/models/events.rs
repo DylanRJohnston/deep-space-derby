@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
 use macros::serde_wasm_bindgen;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use uuid::Uuid;
 use super::{
     cards::{Card, Target},
     game_code::GameCode,
-    projections::RaceResults,
+    projections::race::RaceResults,
 };
 
 use crate::time::*;
@@ -128,6 +128,7 @@ pub enum Event {
     RoundStarted {
         time: u32,
         odds: Option<Odds>,
+        enemies: Option<HashMap<Uuid, Uuid>>,
     },
     BoughtCard {
         session_id: Uuid,
@@ -169,6 +170,7 @@ impl Event {
         Event::RoundStarted {
             time: Event::now(),
             odds: None,
+            enemies: None,
         }
     }
 

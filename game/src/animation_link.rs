@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use bevy::{log::tracing, platform::collections::HashMap, prelude::*, scene::SceneInstance};
+use bevy::{log::tracing, prelude::*, scene::SceneInstance};
 
 /// AnimationLinkPlugin solves an awkward ergonimics problem in bevy
 /// with the way it's AnimationPlayer works when loading scenes.
@@ -22,8 +22,8 @@ pub struct AnimationLink(pub Entity);
 #[derive(Component, Debug, Reflect, Clone, Copy, Default)]
 pub struct AnimationRoot;
 
-#[derive(Component, Debug, Clone)]
-pub struct NamedAnimations(pub HashMap<String, Handle<AnimationClip>>);
+// #[derive(Component, Debug, Clone)]
+// pub struct NamedAnimations(pub HashMap<String, Handle<AnimationClip>>);
 
 impl Deref for AnimationLink {
     type Target = Entity;

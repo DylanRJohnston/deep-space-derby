@@ -19,7 +19,7 @@ enum Countdown {
 #[component]
 pub fn race() -> impl IntoView {
     let events = use_events();
-    let race_seed = projections::race_seed(&events.get_untracked());
+    let race_seed = projections::race::race_seed(&events.get_untracked());
 
     let monsters = projections::monsters(&events.get_untracked(), race_seed);
     let cards = projections::unique_played_monster_cards(&events.get_untracked());

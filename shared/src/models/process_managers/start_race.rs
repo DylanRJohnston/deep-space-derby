@@ -175,10 +175,12 @@ mod test {
             Event::RoundStarted {
                 time: start - 90,
                 odds: None,
+                enemies: None,
             },
             Event::RoundStarted {
                 time: start - 90,
                 odds: None,
+                enemies: None,
             },
             Event::PlacedBet(PlacedBet {
                 session_id: a,
